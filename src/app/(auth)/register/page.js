@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
@@ -609,7 +610,7 @@ export default function RegisterPage() {
                     <p className="text-xs text-secondary/60 mb-3 font-maven">This is mandatory and will be displayed on your profile</p>
                     {formData.profilePicture ? (
                       <div className="relative w-24 h-24 mx-auto">
-                        <img src={formData.profilePicture.preview} alt="Profile" className="w-full h-full object-cover rounded-lg border-2 border-primary" />
+                        <Image src={formData.profilePicture.preview} alt="Profile" fill className="object-cover rounded-lg border-2 border-primary" />
                         <button
                           type="button"
                           onClick={() => setFormData(prev => ({ ...prev, profilePicture: null }))}
@@ -676,8 +677,8 @@ export default function RegisterPage() {
                     {formData.profileBannerType === 'image' && (
                       <>
                         {formData.profileBannerImage ? (
-                          <div className="relative">
-                            <img src={formData.profileBannerImage.preview} alt="Banner" className="w-full h-32 object-cover rounded-lg border-2 border-secondary" />
+                          <div className="relative w-full h-32">
+                            <Image src={formData.profileBannerImage.preview} alt="Banner" fill className="object-cover rounded-lg border-2 border-secondary" />
                             <button
                               type="button"
                               onClick={() => setFormData(prev => ({ ...prev, profileBannerImage: null }))}

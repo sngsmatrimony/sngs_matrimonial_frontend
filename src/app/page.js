@@ -1,10 +1,23 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/store/authStore';
+import Dashboard from '@/components/layout/Dashboard';
 
 export default function Home() {
+  const { token, user } = useAuthStore();
+  const router = useRouter();
+
+  // Check if user is authenticated directly from store
+  const isAuthenticated = token && user;
+
+  if (isAuthenticated) {
+    return <Dashboard />;
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header Navigation */}

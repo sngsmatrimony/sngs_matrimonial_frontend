@@ -131,15 +131,15 @@
 /* Gradient utilities for brand colors */
 @layer components {
   .gradient-warm {
-    @apply bg-gradient-to-r from-primary via-[#FFC900] to-accent;
+    @apply bg-linear-to-r from-primary via-[#FFC900] to-accent;
   }
 
   .gradient-warm-btn {
-    @apply bg-gradient-to-r from-primary via-[#FFC900] to-accent text-primary-foreground font-semibold rounded-lg hover:shadow-lg hover:scale-105 transition-all;
+    @apply bg-linear-to-r from-primary via-[#FFC900] to-accent text-primary-foreground font-semibold rounded-lg hover:shadow-lg hover:scale-105 transition-all;
   }
 
   .gradient-warm-subtle {
-    @apply bg-gradient-to-br from-accent/10 to-primary/5;
+    @apply bg-linear-to-br from-accent/10 to-primary/5;
   }
 }
 
