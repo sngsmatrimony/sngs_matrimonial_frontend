@@ -56,7 +56,7 @@ export default function Dashboard() {
       </header>
 
       {/* Tab Navigation */}
-      <div className="bg-white border-b border-gray-200 sticky top-16 z-40">
+      <div className="bg-black border-b border-gray-900 sticky top-16 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-8">
             {/* Browse Tab */}
@@ -65,7 +65,7 @@ export default function Dashboard() {
               className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all ${
                 activeTab === 'browse'
                   ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  : 'border-transparent text-white hover:text-gray-300'
               }`}
             >
               <Compass size={20} />
@@ -78,7 +78,7 @@ export default function Dashboard() {
               className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all ${
                 activeTab === 'liked'
                   ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  : 'border-transparent text-white hover:text-gray-300'
               }`}
             >
               <Heart size={20} />
@@ -91,7 +91,7 @@ export default function Dashboard() {
               className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all ${
                 activeTab === 'profile'
                   ? 'border-primary text-primary'
-                  : 'border-transparent text-gray-600 hover:text-gray-900'
+                  : 'border-transparent text-white hover:text-gray-300'
               }`}
             >
               <User size={20} />

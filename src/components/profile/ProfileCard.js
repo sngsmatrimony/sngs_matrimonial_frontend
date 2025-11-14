@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Heart } from 'lucide-react';
 import { useLandingStore } from '@/store/landingStore';
 import { client } from '@/lib/api/client';
@@ -40,21 +41,23 @@ export default function ProfileCard({ profile, isLiked = false }) {
   const profileImageUrl =
     profile?.profilePicture?.url || '/images/default-profile.png';
 
-  // Get profile banner
-  const bannerStyle = profile?.profileBanner?.type === 'image'
-    ? { backgroundImage: `url(${profile.profileBanner.image?.url})` }
-    : { backgroundColor: profile?.profileBanner?.color || '#FFE100' };
+  // Get profile picture as background
+  const profilePictureBackground = {
+    backgroundImage: `url(${profileImageUrl})`,
+    backgroundColor: '#e5e7eb' // fallback gray
+  };
 
   return (
-    <div
-      className="relative h-96 rounded-2xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Profile Banner Background */}
+    <Link href={`/profiles/${profile._id}`}>
+      <div
+        className="relative h-96 rounded-2xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+      {/* Profile Picture Background */}
       <div
         className="absolute inset-0 bg-cover bg-center transition-transform duration-300 hover:scale-105"
-        style={bannerStyle}
+        style={profilePictureBackground}
       />
 
       {/* Dark overlay on hover */}
@@ -64,35 +67,22 @@ export default function ProfileCard({ profile, isLiked = false }) {
         }`}
       />
 
-      {/* Profile Picture - Always visible */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between p-4 z-10">
-        <div className="flex items-end gap-3">
-          <div className="relative w-20 h-20 rounded-full border-4 border-white bg-gray-200 overflow-hidden flex items-center justify-center">
-            <img
-              src={profileImageUrl}
-              alt={profile.fullName}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                console.error('Profile card image failed to load:', profileImageUrl);
-                e.target.style.display = 'none';
-              }}
-              onLoad={() => {
-                console.log('Profile card image loaded:', profileImageUrl);
-              }}
-            />
-          </div>
-          {!isHovered && (
-            <div className="text-white mb-2">
-              <h3 className="font-viga text-2xl font-bold">
-                {profile.fullName}
-              </h3>
-              <p className="font-telex text-sm text-gray-100">
-                {profile.age || 'Age'} • {profile.gender}
-              </p>
-            </div>
-          )}
+      {/* Gradient overlay at bottom for text readability */}
+      {!isHovered && (
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black via-black/60 to-transparent z-10" />
+      )}
+
+      {/* Profile Info - Always visible when not hovered */}
+      {!isHovered && (
+        <div className="absolute bottom-0 left-0 right-0 p-6 z-10 text-white">
+          <h3 className="font-viga text-3xl font-bold mb-1">
+            {profile.fullName}
+          </h3>
+          <p className="font-telex text-sm text-gray-200">
+            {profile.age || 'Age'} • {profile.gender}
+          </p>
         </div>
-      </div>
+      )}
 
       {/* Hover Details Content */}
       {isHovered && (
@@ -176,6 +166,7 @@ export default function ProfileCard({ profile, isLiked = false }) {
 
       {/* Online indicator dot */}
       <div className="absolute top-3 right-3 w-3 h-3 bg-green-500 rounded-full border-2 border-white z-20" />
-    </div>
+      </div>
+    </Link>
   );
 }
