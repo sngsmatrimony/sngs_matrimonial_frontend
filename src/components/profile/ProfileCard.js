@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Heart } from 'lucide-react';
+import { Heart, MessageCircle } from 'lucide-react';
 import { useLandingStore } from '@/store/landingStore';
 import { client } from '@/lib/api/client';
 import { toastSuccess, toastError } from '@/lib/toast';
 
 export default function ProfileCard({ profile, isLiked = false }) {
+  const { setActiveTab, setSelectedChatUserId } = useLandingStore();
   const [isHovered, setIsHovered] = useState(false);
   const [liked, setLiked] = useState(isLiked);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,6 +36,13 @@ export default function ProfileCard({ profile, isLiked = false }) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleChat = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActiveTab('messages');
+    setSelectedChatUserId(profile._id);
   };
 
   // Get profile picture URL
@@ -143,24 +151,40 @@ export default function ProfileCard({ profile, isLiked = false }) {
             )}
           </div>
 
-          {/* Like Button */}
-          <button
-            onClick={handleLike}
-            disabled={isLoading}
-            className={`self-start mt-4 transition-all duration-200 ${
-              isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'
-            }`}
-            aria-label="Like profile"
-          >
-            <Heart
-              size={40}
-              className={`${
-                liked
-                  ? 'fill-red-500 stroke-red-500'
-                  : 'stroke-white fill-none'
-              } transition-all duration-200`}
-            />
-          </button>
+          {/* Action Buttons */}
+          <div className="flex gap-4 self-start mt-4">
+            {/* Chat Button */}
+            <button
+              onClick={handleChat}
+              className="transition-all duration-200 hover:scale-110 hover:bg-primary hover:bg-opacity-20 rounded-full p-2"
+              aria-label="Send message"
+              title="Send message"
+            >
+              <MessageCircle
+                size={40}
+                className="stroke-white fill-none transition-all duration-200"
+              />
+            </button>
+
+            {/* Like Button */}
+            <button
+              onClick={handleLike}
+              disabled={isLoading}
+              className={`transition-all duration-200 ${
+                isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'
+              }`}
+              aria-label="Like profile"
+            >
+              <Heart
+                size={40}
+                className={`${
+                  liked
+                    ? 'fill-red-500 stroke-red-500'
+                    : 'stroke-white fill-none'
+                } transition-all duration-200`}
+              />
+            </button>
+          </div>
         </div>
       )}
 

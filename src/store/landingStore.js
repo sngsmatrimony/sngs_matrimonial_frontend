@@ -2,8 +2,13 @@ import { create } from 'zustand';
 
 export const useLandingStore = create((set) => ({
   // Tab state
-  activeTab: 'browse', // 'browse', 'liked', 'profile'
+  activeTab: 'browse', // 'browse', 'liked', 'messages', 'profile'
   setActiveTab: (tab) => set({ activeTab: tab }),
+
+  // Chat state - for navigating to a specific user's chat
+  selectedChatUserId: null,
+  setSelectedChatUserId: (userId) => set({ selectedChatUserId: userId }),
+  clearSelectedChatUserId: () => set({ selectedChatUserId: null }),
 
   // Browse profiles state
   profiles: [],
@@ -29,6 +34,7 @@ export const useLandingStore = create((set) => ({
   reset: () =>
     set({
       activeTab: 'browse',
+      selectedChatUserId: null,
       profiles: [],
       likedProfilesIds: [],
       likedProfiles: [],
