@@ -1,15 +1,19 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useLandingStore } from '@/store/landingStore';
 import { useAuthStore } from '@/store/authStore';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
+import { Button } from '@/components/ui/button';
+import EditProfileForm from './EditProfileForm';
+import { Pencil } from 'lucide-react';
 
 export default function UserProfileView() {
   const { userProfile, setUserProfile, isLoading, setIsLoading } =
     useLandingStore();
   const { user } = useAuthStore();
+  const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
     fetchUserProfile();
@@ -53,6 +57,25 @@ export default function UserProfileView() {
     );
   }
 
+  // Show edit form when in edit mode
+  if (isEditMode) {
+    return (
+      <div className="min-h-screen bg-white p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          <EditProfileForm
+            userProfile={userProfile}
+            user={user}
+            onCancel={() => setIsEditMode(false)}
+            onSuccess={() => {
+              setIsEditMode(false);
+              fetchUserProfile();
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   // Get banner style
   const bannerStyle = userProfile?.profileBanner?.type === 'image'
     ? {
@@ -71,9 +94,18 @@ export default function UserProfileView() {
     <div className="min-h-screen bg-white">
       {/* Profile Banner */}
       <div
-        className="w-full h-64 bg-cover bg-center"
+        className="w-full h-64 bg-cover bg-center relative"
         style={bannerStyle}
-      />
+      >
+        {/* Edit Button */}
+        <Button
+          onClick={() => setIsEditMode(true)}
+          className="absolute top-4 right-4 bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg font-semibold gap-2"
+        >
+          <Pencil className="w-4 h-4" />
+          Edit Profile
+        </Button>
+      </div>
 
       {/* Profile Header - Overlapped */}
       <div className="px-4 md:px-8">
