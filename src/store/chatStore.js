@@ -209,7 +209,9 @@ const useChatStore = create(
        */
       markMessageAsRead: async (messageId, conversationId) => {
         try {
-          await axiosClient.patch(`/api/chat/messages/${messageId}/read`);
+          await axiosClient.patch(`/api/chat/messages/${messageId}/read`, {
+            conversationId,
+          });
 
           get().updateMessageStatus(messageId, 'readBy', {
             userId: get().currentUserKeys?.userId,
@@ -245,7 +247,9 @@ const useChatStore = create(
 
           // Mark all unread messages as read
           for (const message of unreadMessages) {
-            await axiosClient.patch(`/api/chat/messages/${message._id}/read`);
+            await axiosClient.patch(`/api/chat/messages/${message._id}/read`, {
+              conversationId,
+            });
             get().updateMessageStatus(message._id, 'readBy', {
               userId: get().currentUserKeys?.userId,
               readAt: new Date(),
