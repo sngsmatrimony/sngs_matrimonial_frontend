@@ -75,7 +75,7 @@ export default function ChatList({
   return (
     <div className="w-full h-full flex flex-col bg-white border-r">
       {/* Header */}
-      <div className="px-4 py-4 border-b bg-white">
+      <div className="px-4 py-4 border-b bg-white shrink-0">
         <h2 className="text-xl font-viga text-secondary mb-3">Messages</h2>
 
         {/* Search Bar */}
@@ -92,7 +92,7 @@ export default function ChatList({
       </div>
 
       {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {/* Loading State */}
         {isLoading && (
           <div className="flex items-center justify-center h-32">

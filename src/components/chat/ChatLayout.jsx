@@ -166,7 +166,7 @@ export default function ChatLayout({ initialUserId = null }) {
       {/* Chat List Sidebar - Hidden on mobile when conversation is shown */}
       <div
         className={cn(
-          "w-full md:w-80 lg:w-96 border-r bg-white",
+          "w-full md:w-80 lg:w-96 border-r bg-white flex flex-col min-h-0",
           isMobileView && showConversationOnMobile && "hidden"
         )}
       >
@@ -182,13 +182,13 @@ export default function ChatLayout({ initialUserId = null }) {
       {/* Conversation Panel - Hidden on mobile when no conversation is selected */}
       <div
         className={cn(
-          "flex-1 flex flex-col",
+          "flex-1 flex flex-col min-h-0",
           isMobileView && !showConversationOnMobile && "hidden"
         )}
       >
         {/* Conversation Header */}
         {activeConversation && (
-          <div className="bg-white border-b px-4 py-3 flex items-center justify-between">
+          <div className="bg-white border-b px-4 py-3 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               {/* Back Button (Mobile Only) */}
               {isMobileView && (
