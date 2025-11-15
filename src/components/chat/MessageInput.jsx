@@ -120,7 +120,7 @@ export default function MessageInput({
           disabled={disabled || isLoading}
           className={cn(
             "min-h-[40px] max-h-[120px] resize-none font-maven text-[15px] leading-relaxed",
-            "border-gray-300 focus:border-primary focus:ring-primary/20",
+            "border-gray-300 focus:ring-0",
             "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
           rows={1}

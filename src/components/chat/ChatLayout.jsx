@@ -34,6 +34,7 @@ export default function ChatLayout({ initialUserId = null }) {
     getOrCreateConversation,
     sendMessage,
     markMessageAsRead,
+    markConversationAsRead,
     loadMessages,
     isLoadingConversations,
     isLoadingMessages,
@@ -98,8 +99,10 @@ export default function ChatLayout({ initialUserId = null }) {
     if (activeConversationId) {
       console.log('ChatLayout: Loading messages for conversation:', activeConversationId);
       loadMessages(activeConversationId, 50, 0);
+      // Mark all messages in conversation as read
+      markConversationAsRead(activeConversationId);
     }
-  }, [activeConversationId, loadMessages]);
+  }, [activeConversationId, loadMessages, markConversationAsRead]);
 
   // Detect mobile view
   useEffect(() => {

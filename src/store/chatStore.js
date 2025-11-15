@@ -234,6 +234,42 @@ const useChatStore = create(
       },
 
       /**
+       * Mark all messages in a conversation as read
+       */
+      markConversationAsRead: async (conversationId) => {
+        try {
+          const state = get();
+          const unreadMessages = state.messages.filter(
+            (msg) => !msg.readBy || msg.readBy.length === 0
+          );
+
+          // Mark all unread messages as read
+          for (const message of unreadMessages) {
+            await axiosClient.patch(`/api/chat/messages/${message._id}/read`);
+            get().updateMessageStatus(message._id, 'readBy', {
+              userId: get().currentUserKeys?.userId,
+              readAt: new Date(),
+            });
+          }
+
+          // Update conversation unread count to 0
+          set((state) => {
+            const conversations = state.conversations.map((conv) =>
+              conv._id === conversationId
+                ? {
+                    ...conv,
+                    unreadCount: 0,
+                  }
+                : conv
+            );
+            return { conversations };
+          });
+        } catch (error) {
+          console.error('Failed to mark conversation as read:', error);
+        }
+      },
+
+      /**
        * Delete conversation
        */
       deleteConversation: async (conversationId) => {
