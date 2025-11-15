@@ -66,7 +66,7 @@ export default function MessageBubble({ message, currentUserId, onMarkAsRead }) 
         )}
       >
         {/* Message Content */}
-        <p className="text-[15px] leading-relaxed font-maven break-words whitespace-pre-wrap">
+        <p className="text-[15px] leading-relaxed font-maven wrap-break-words whitespace-pre-wrap">
           {message.content}
         </p>
 
@@ -90,7 +90,7 @@ export default function MessageBubble({ message, currentUserId, onMarkAsRead }) 
           {isSentByCurrentUser && (
             <span className="ml-1 flex items-center">
               {message.isRead ? (
-                <CheckCheck className="w-4 h-4 text-success" strokeWidth={2.5} />
+                <CheckCheck className="w-4 h-4 text-[#0084FF]" strokeWidth={2.5} />
               ) : message.isDelivered ? (
                 <CheckCheck className="w-4 h-4 text-black/70" strokeWidth={2.5} />
               ) : (
