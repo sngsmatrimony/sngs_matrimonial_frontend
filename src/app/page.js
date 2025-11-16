@@ -33,16 +33,6 @@ export default function Home() {
             />
             <h1 className="font-viga text-2xl text-accent">SNGS Matrimonial</h1>
           </div>
-          <nav className="flex items-center gap-4">
-            <Link href="/login" className="font-telex text-secondary hover:text-primary transition-colors">
-              Sign In
-            </Link>
-            <Link href="/register">
-              <Button className="font-telex bg-primary hover:bg-primary/90 text-primary-foreground">
-                Sign Up
-              </Button>
-            </Link>
-          </nav>
         </div>
       </header>
 
