@@ -61,7 +61,7 @@ export default function UserProfileView() {
   if (isEditMode) {
     return (
       <div className="min-h-screen bg-white p-4 md:p-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-md mx-auto">
           <EditProfileForm
             userProfile={userProfile}
             user={user}
@@ -139,6 +139,32 @@ export default function UserProfileView() {
               <p className="font-telex text-secondary mb-4">
                 {user?.age || 'Age'} • {user?.gender}
               </p>
+
+              {/* Personal Details */}
+              {(user?.caste || user?.religion || user?.isDivorcee) && (
+                <div className="mb-6 pb-6 border-b border-gray-200">
+                  <h3 className="font-viga text-lg text-secondary mb-3">
+                    Personal Details
+                  </h3>
+                  <div className="space-y-2">
+                    {user?.caste && (
+                      <p className="font-telex text-sm text-gray-700">
+                        <span className="font-semibold text-secondary">Caste:</span> {user.caste}
+                      </p>
+                    )}
+                    {user?.religion && (
+                      <p className="font-telex text-sm text-gray-700">
+                        <span className="font-semibold text-secondary">Religion:</span> {user.religion}
+                      </p>
+                    )}
+                    {user?.isDivorcee && (
+                      <p className="font-telex text-sm text-gray-700">
+                        <span className="font-semibold text-secondary">Divorcee:</span> Yes
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* About */}
               {user?.about && (

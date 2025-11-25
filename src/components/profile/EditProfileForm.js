@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, setMonth, setYear } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Input } from '@/components/ui/input';
 import { MediaUpload } from '@/components/auth/MediaUpload';
 import { toastSuccess, toastError } from '@/lib/toast';
 import { Check, X } from 'lucide-react';
@@ -20,6 +24,25 @@ import { client } from '@/lib/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { useLandingStore } from '@/store/landingStore';
 import Image from 'next/image';
+
+const step1Schema = z.object({
+  dateOfBirth: z.date({ message: 'Please select your date of birth' }),
+  caste: z.string().optional().transform(val => val?.trim() || ''),
+  religion: z.string().optional().transform(val => val?.trim() || ''),
+  isDivorcee: z.boolean().optional(),
+}).refine((data) => {
+  if (!data.dateOfBirth) return false;
+  const today = new Date();
+  let age = today.getFullYear() - data.dateOfBirth.getFullYear();
+  const monthDiff = today.getMonth() - data.dateOfBirth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < data.dateOfBirth.getDate())) {
+    age--;
+  }
+  return age >= 18 && age <= 90;
+}, {
+  message: 'Age must be between 18 and 90 years',
+  path: ['dateOfBirth'],
+});
 
 const step2Schema = z.object({
   gender: z.string().min(1, 'Please select your gender'),
@@ -65,13 +88,17 @@ const ValidationCheck = ({ isValid, label }) => (
 );
 
 export default function EditProfileForm({ userProfile, user, onCancel, onSuccess }) {
-  const [currentStep, setCurrentStep] = useState(2); // Start from step 2 (preferences)
+  const [currentStep, setCurrentStep] = useState(1); // Start from step 1 (personal details)
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const { uploadProfilePicture, uploadProfileBanner, setProfileBannerColor } = useAuthStore();
   const { setUserProfile } = useLandingStore();
 
   const [formData, setFormData] = useState({
+    dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth) : null,
+    caste: user?.caste || '',
+    religion: user?.religion || '',
+    isDivorcee: user?.isDivorcee || false,
     gender: user?.gender || '',
     seekingGender: user?.seekingGender || '',
     ageFrom: user?.ageFrom?.toString() || '',
@@ -97,16 +124,21 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
 
   const getSchemaForStep = (step) => {
     switch (step) {
+      case 1: return step1Schema;
       case 2: return step2Schema;
       case 3: return step3Schema;
       case 4: return step4Schema;
-      default: return step2Schema;
+      default: return step1Schema;
     }
   };
 
   const form = useForm({
     resolver: zodResolver(getSchemaForStep(currentStep)),
     defaultValues: {
+      dateOfBirth: formData.dateOfBirth,
+      caste: formData.caste,
+      religion: formData.religion,
+      isDivorcee: formData.isDivorcee,
       gender: formData.gender,
       seekingGender: formData.seekingGender,
       ageFrom: formData.ageFrom,
@@ -161,6 +193,10 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     try {
       // Update basic profile information
       const updateData = {
+        dateOfBirth: formData.dateOfBirth,
+        caste: formData.caste,
+        religion: formData.religion,
+        isDivorcee: formData.isDivorcee,
         gender: formData.gender,
         seekingGender: formData.seekingGender,
         ageFrom: parseInt(formData.ageFrom),
@@ -298,18 +334,16 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     }));
   }, []);
 
-  const stepTitles = ['❤️ Tell Us Your Preferences', '✨ About You', '📸 Update Your Media'];
-  const stepNumbers = [2, 3, 4];
-  const currentStepIndex = stepNumbers.indexOf(currentStep);
-  const progressValue = ((currentStepIndex + 1) / 3) * 100;
+  const stepTitles = ['💑 Personal Details', '❤️ Tell Us Your Preferences', '✨ About You', '📸 Update Your Media'];
+  const progressValue = (currentStep / 4) * 100;
 
   return (
     <Card className="border-0 shadow-lg bg-white">
       <CardHeader className="space-y-4 pb-6 border-b border-gray-100">
-        <CardTitle className="font-viga text-3xl text-center text-primary">{stepTitles[currentStepIndex]}</CardTitle>
+        <CardTitle className="font-viga text-3xl text-center text-primary">{stepTitles[currentStep - 1]}</CardTitle>
         <Progress value={progressValue} className="mt-2 h-2" />
         <div className="font-telex text-center text-sm text-secondary/70 font-medium">
-          Step <span className="text-primary font-bold">{currentStepIndex + 1}</span> of <span className="text-primary font-bold">3</span>
+          Step <span className="text-primary font-bold">{currentStep}</span> of <span className="text-primary font-bold">4</span>
         </div>
       </CardHeader>
 
@@ -320,6 +354,142 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
               <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-lg text-sm font-medium whitespace-pre-wrap">
                 {error}
               </div>
+            )}
+
+            {currentStep === 1 && (
+              <>
+                <FormField control={form.control} name="dateOfBirth" render={({ field }) => {
+                  const [displayDate, setDisplayDate] = useState(field.value || new Date(2000, 0, 1));
+                  const today = new Date();
+                  const minYear = today.getFullYear() - 90;
+                  const maxYear = today.getFullYear() - 18;
+
+                  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+                  const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+                  const days = Array.from({ length: daysInMonth(displayDate.getFullYear(), displayDate.getMonth()) }, (_, i) => i + 1);
+
+                  return (
+                    <FormItem className="flex flex-col">
+                      <FormLabel className="font-telex text-secondary font-semibold">Date of Birth</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={`w-full border-2 justify-start text-left font-normal h-11 ${!field.value ? 'text-gray-500' : ''} focus:ring-primary`}
+                          >
+                            📅 {field.value ? format(field.value, 'MMM dd, yyyy') : 'Pick a date'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-4 z-50 border-2 border-gray-200 shadow-xl bg-white" align="start">
+                          <div className="space-y-4 w-80">
+                            {/* Year and Month Selectors */}
+                            <div className="grid grid-cols-2 gap-3">
+                              <Select value={displayDate.getFullYear().toString()} onValueChange={(year) => setDisplayDate(setYear(displayDate, parseInt(year)))}>
+                                <SelectTrigger className="border-2 border-gray-200">
+                                  <SelectValue placeholder="Year" />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-60">
+                                  {Array.from({ length: maxYear - minYear + 1 }, (_, i) => minYear + i).reverse().map(year => (
+                                    <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Select value={displayDate.getMonth().toString()} onValueChange={(month) => setDisplayDate(setMonth(displayDate, parseInt(month)))}>
+                                <SelectTrigger className="border-2 border-gray-200">
+                                  <SelectValue placeholder="Month" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {monthNames.map((name, idx) => (
+                                    <SelectItem key={idx} value={idx.toString()}>{name}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* Calendar Days Grid */}
+                            <div className="border-t pt-3">
+                              <div className="grid grid-cols-7 gap-1 mb-2">
+                                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                                  <div key={day} className="text-center text-xs font-semibold text-secondary/70">
+                                    {day}
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="grid grid-cols-7 gap-1">
+                                {Array.from({ length: new Date(displayDate.getFullYear(), displayDate.getMonth(), 1).getDay() }).map((_, i) => (
+                                  <div key={`empty-${i}`} />
+                                ))}
+                                {days.map(day => {
+                                  const date = new Date(displayDate.getFullYear(), displayDate.getMonth(), day);
+                                  const isSelected = field.value && format(field.value, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd');
+                                  const isDisabled = date > new Date(maxYear, today.getMonth(), today.getDate()) || date < new Date(minYear, 0, 1);
+
+                                  return (
+                                    <button
+                                      key={day}
+                                      type="button"
+                                      onClick={() => {
+                                        if (!isDisabled) {
+                                          field.onChange(date);
+                                        }
+                                      }}
+                                      disabled={isDisabled}
+                                      className={`p-2 text-sm rounded transition-colors ${
+                                        isSelected
+                                          ? 'bg-primary text-secondary font-semibold'
+                                          : isDisabled
+                                          ? 'text-gray-300 cursor-not-allowed'
+                                          : 'hover:bg-primary/20 text-secondary'
+                                      }`}
+                                    >
+                                      {day}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                      {field.value && (
+                        <div className="text-xs text-secondary/70 mt-2 font-maven">
+                          Age: {Math.floor((new Date() - field.value) / (365.25 * 24 * 60 * 60 * 1000))} years old
+                        </div>
+                      )}
+                      <FormMessage className="text-destructive" />
+                    </FormItem>
+                  );
+                }} />
+
+                <FormField control={form.control} name="caste" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-telex text-secondary font-semibold">Caste (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your caste" className="border-2 border-gray-200 focus:border-primary focus:ring-primary" {...field} />
+                    </FormControl>
+                    <FormMessage className="text-destructive" />
+                  </FormItem>
+                )} />
+
+                <FormField control={form.control} name="religion" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-telex text-secondary font-semibold">Religion (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter your religion" className="border-2 border-gray-200 focus:border-primary focus:ring-primary" {...field} />
+                    </FormControl>
+                    <FormMessage className="text-destructive" />
+                  </FormItem>
+                )} />
+
+                <FormField control={form.control} name="isDivorcee" render={({ field }) => (
+                  <FormItem className="flex items-center space-x-2">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <FormLabel className="text-sm font-normal cursor-pointer text-secondary">I am a divorcee</FormLabel>
+                  </FormItem>
+                )} />
+              </>
             )}
 
             {currentStep === 2 && (
@@ -748,7 +918,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
             )}
 
             <div className="flex gap-4 pt-4">
-              {currentStep > 2 ? (
+              {currentStep > 1 ? (
                 <Button
                   type="button"
                   onClick={() => setCurrentStep(currentStep - 1)}
