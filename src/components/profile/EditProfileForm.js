@@ -14,12 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { MediaUpload } from '@/components/auth/MediaUpload';
 import { toastSuccess, toastError } from '@/lib/toast';
-import { Check, X } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { client } from '@/lib/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { useLandingStore } from '@/store/landingStore';
@@ -80,17 +79,11 @@ const PROFILE_BANNER_COLORS = [
   { value: '#FFEAA7', label: 'Pastel Butter', name: 'butter' },
 ];
 
-const ValidationCheck = ({ isValid, label }) => (
-  <div className={`text-xs flex items-center gap-1 ${isValid ? 'text-success' : 'text-secondary/60'}`}>
-    {isValid ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-    <span>{label}</span>
-  </div>
-);
-
 export default function EditProfileForm({ userProfile, user, onCancel, onSuccess }) {
   const [currentStep, setCurrentStep] = useState(1); // Start from step 1 (personal details)
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [displayDate, setDisplayDate] = useState(user?.dateOfBirth ? new Date(user.dateOfBirth) : new Date(2000, 0, 1));
   const { uploadProfilePicture, uploadProfileBanner, setProfileBannerColor } = useAuthStore();
   const { setUserProfile } = useLandingStore();
 
@@ -166,7 +159,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     if (!isValid) {
       const errors = form.formState.errors;
       const errorMessages = [];
-      Object.entries(errors).forEach(([field, error]) => {
+      Object.entries(errors).forEach(([, error]) => {
         if (error?.message) {
           errorMessages.push(error.message);
         }
@@ -359,7 +352,6 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
             {currentStep === 1 && (
               <>
                 <FormField control={form.control} name="dateOfBirth" render={({ field }) => {
-                  const [displayDate, setDisplayDate] = useState(field.value || new Date(2000, 0, 1));
                   const today = new Date();
                   const minYear = today.getFullYear() - 90;
                   const maxYear = today.getFullYear() - 18;
