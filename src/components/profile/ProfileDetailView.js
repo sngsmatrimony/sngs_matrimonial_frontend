@@ -1,12 +1,35 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Heart, MessageCircle } from 'lucide-react';
+import { Heart, MessageCircle, MapPin, Briefcase, Book, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLandingStore } from '@/store/landingStore';
+import Header from '@/components/layout/Header';
 import { client } from '@/lib/api/client';
 import { toastSuccess, toastError } from '@/lib/toast';
+
+// Information Card Component
+const InfoCard = ({ icon: Icon, title, children, className = '' }) => (
+  <div className={`bg-white border-2 border-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow ${className}`}>
+    <div className="flex items-center gap-2 mb-4">
+      {Icon && <Icon size={24} className="text-primary" />}
+      <h3 className="font-viga text-xl text-secondary">{title}</h3>
+    </div>
+    {children}
+  </div>
+);
+
+// Info Field Component
+const InfoField = ({ label, value, icon: Icon }) => (
+  <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+    <div className="flex items-center gap-2">
+      {Icon && <Icon size={16} className="text-secondary/60" />}
+      <span className="font-telex text-secondary/70 text-sm">{label}</span>
+    </div>
+    <span className="font-maven text-secondary font-medium">{value || '—'}</span>
+  </div>
+);
 
 export default function ProfileDetailView({ profileId }) {
   const router = useRouter();
@@ -88,19 +111,15 @@ export default function ProfileDetailView({ profileId }) {
   }
 
   // Get banner style
-  const bannerStyle = profile?.profileBanner?.type === 'image'
-    ? {
-        backgroundImage: `url(${profile.profileBanner.image?.url})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }
-    : { backgroundColor: profile?.profileBanner?.color || '#FFE100' };
+  const bannerStyle = {
+    backgroundColor: profile?.profileBanner?.bannerColor || '#FFB3BA'
+  };
 
-  const profileImageUrl =
-    profile?.profilePicture?.url || '/images/default-profile.png';
+  const profileImageUrl = profile?.profilePicture?.url;
 
   return (
     <div className="min-h-screen bg-white">
+      <Header showLogout={true} />
       {/* Profile Banner with overlay buttons */}
       <div
         className="w-full h-64 bg-cover bg-center relative"
@@ -186,72 +205,185 @@ export default function ProfileDetailView({ profileId }) {
                 {profile?.age || 'Age'} • {profile?.gender}
               </p>
 
-              {/* About */}
-              {profile?.about && (
+              {/* About Myself */}
+              {profile?.aboutMyself && (
                 <div className="mb-6">
                   <h3 className="font-viga text-lg text-secondary mb-2">
                     About
                   </h3>
-                  <p className="font-maven text-gray-700">{profile.about}</p>
+                  <p className="font-maven text-gray-700 leading-relaxed">{profile.aboutMyself}</p>
                 </div>
               )}
 
-              {/* Seeking */}
+              {/* Seeking Preferences */}
               {(profile?.seekingGender || profile?.ageFrom || profile?.ageTo) && (
-                <p className="font-telex text-sm text-gray-500">
-                  Seeking: {profile?.seekingGender} | Age: {profile?.ageFrom}-
-                  {profile?.ageTo}
+                <p className="font-telex text-sm text-secondary/70">
+                  Seeking: <span className="font-maven text-secondary">{profile?.seekingGender}</span> |
+                  Age: <span className="font-maven text-secondary">{profile?.ageFrom}-{profile?.ageTo}</span>
                 </p>
               )}
             </div>
           </div>
         </div>
 
-        {/* Tabs and Content */}
+        {/* Profile Information Cards */}
         <div className="max-w-4xl mx-auto">
+          {/* Personal Details Card */}
+          {(profile?.motherTongue || profile?.height || profile?.physicalStatus || profile?.maritalStatus) && (
+            <InfoCard title="💑 Personal Details" className="mb-6">
+              <InfoField label="Mother Tongue" value={profile?.motherTongue} />
+              <InfoField label="Height" value={profile?.height} />
+              <InfoField label="Physical Status" value={profile?.physicalStatus} />
+              <InfoField label="Marital Status" value={profile?.maritalStatus} />
+            </InfoCard>
+          )}
+
+          {/* Religion & Location Card */}
+          {(profile?.religion || profile?.caste || profile?.shuddhaJathakam || profile?.nakshatra || profile?.raasi || profile?.country || profile?.state || profile?.city) && (
+            <InfoCard title="🙏 Religion & Location" icon={MapPin} className="mb-6">
+              <InfoField label="Religion" value={profile?.religion} />
+              {profile?.caste && <InfoField label="Caste" value={profile.caste} />}
+              {profile?.shuddhaJathakam && <InfoField label="Shuddha Jathakam" value={profile.shuddhaJathakam} />}
+              {profile?.doshamTypes && profile.doshamTypes.length > 0 && (
+                <div className="py-2 border-b border-gray-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="font-telex text-secondary/70 text-sm">Dosham Types</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.doshamTypes.map((dosham, idx) => (
+                      <span key={idx} className="text-xs bg-secondary/10 text-secondary px-2 py-1 rounded">
+                        {dosham}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {profile?.nakshatra && <InfoField label="Star Details" value={profile.nakshatra} />}
+              {profile?.raasi && <InfoField label="Raasi" value={profile.raasi} />}
+              <InfoField label="Country" value={profile?.country} />
+              {profile?.state && <InfoField label="State" value={profile.state} />}
+              {profile?.city && <InfoField label="City" value={profile.city} />}
+            </InfoCard>
+          )}
+
+          {/* Professional Information Card */}
+          {(profile?.education || profile?.employmentType || profile?.occupation || profile?.annualIncome) && (
+            <InfoCard title="💼 Professional" icon={Briefcase} className="mb-6">
+              <InfoField label="Education" value={profile?.education} />
+              <InfoField label="Employment Type" value={profile?.employmentType} />
+              <InfoField label="Occupation" value={profile?.occupation} />
+              {profile?.annualIncome && (
+                <InfoField
+                  label="Annual Income"
+                  value={profile.annualIncome.displayText || `${profile.annualIncome.currency} ${profile.annualIncome.min?.toLocaleString()}-${profile.annualIncome.max?.toLocaleString()}`}
+                />
+              )}
+            </InfoCard>
+          )}
+
+          {/* Address Information Card */}
+          {((profile?.presentResidentialAddress && Object.values(profile.presentResidentialAddress).some(v => v)) ||
+            (profile?.nativePlaceAddress && Object.values(profile.nativePlaceAddress).some(v => v))) && (
+            <InfoCard title="📍 Address Information" className="mb-6">
+              {profile?.presentResidentialAddress && Object.values(profile.presentResidentialAddress).some(v => v) && (
+                <div className="py-3 border-b border-gray-100">
+                  <span className="font-telex text-secondary/70 text-sm block mb-2">Present Residential Address</span>
+                  <span className="font-maven text-secondary">
+                    {[
+                      profile.presentResidentialAddress.street,
+                      profile.presentResidentialAddress.area,
+                      profile.presentResidentialAddress.landmark,
+                      profile.presentResidentialAddress.city,
+                      profile.presentResidentialAddress.state,
+                      profile.presentResidentialAddress.pincode,
+                    ].filter(Boolean).join(', ') || '—'}
+                  </span>
+                </div>
+              )}
+              {profile?.nativePlaceAddress && Object.values(profile.nativePlaceAddress).some(v => v) && (
+                <div className="py-3">
+                  <span className="font-telex text-secondary/70 text-sm block mb-2">Native Place Address</span>
+                  <span className="font-maven text-secondary">
+                    {[
+                      profile.nativePlaceAddress.street,
+                      profile.nativePlaceAddress.area,
+                      profile.nativePlaceAddress.landmark,
+                      profile.nativePlaceAddress.city,
+                      profile.nativePlaceAddress.state,
+                      profile.nativePlaceAddress.pincode,
+                    ].filter(Boolean).join(', ') || '—'}
+                  </span>
+                </div>
+              )}
+            </InfoCard>
+          )}
+
+          {/* Family Information Card */}
+          {(profile?.fatherName || profile?.motherName || profile?.familyStatus || profile?.weight || profile?.bloodGroup || profile?.residentialStatus) && (
+            <InfoCard title="👨‍👩‍👧‍👦 Family Information" icon={Users} className="mb-6">
+              {profile?.fatherName && <InfoField label="Father's Name" value={profile.fatherName} />}
+              {profile?.fatherOccupation && <InfoField label="Father's Occupation" value={profile.fatherOccupation} />}
+              {profile?.motherName && <InfoField label="Mother's Name" value={profile.motherName} />}
+              {profile?.motherOccupation && <InfoField label="Mother's Occupation" value={profile.motherOccupation} />}
+              <InfoField label="Family Status" value={profile?.familyStatus} />
+            </InfoCard>
+          )}
+
+          {/* Physical & Residential Details Card */}
+          {(profile?.weight || profile?.bloodGroup || profile?.residentialStatus) && (
+            <InfoCard title="💪 Physical & Residential Details" className="mb-6">
+              {profile?.weight && <InfoField label="Weight" value={`${profile.weight} kg`} />}
+              {profile?.bloodGroup && <InfoField label="Blood Group" value={profile.bloodGroup} />}
+              {profile?.residentialStatus && <InfoField label="Residential Status" value={profile.residentialStatus} />}
+            </InfoCard>
+          )}
+
+          {/* About Section */}
+          {profile?.about && (
+            <InfoCard title="📝 About Me" className="mb-6">
+              <p className="font-maven text-gray-700 leading-relaxed">{profile.about}</p>
+            </InfoCard>
+          )}
+
           {/* Interests Section */}
           {profile?.interests && profile.interests.length > 0 && (
-            <div className="mb-8">
-              <h3 className="font-viga text-2xl text-secondary mb-4">
-                Interests
-              </h3>
+            <InfoCard title="⭐ Interests" className="mb-6">
               <div className="flex flex-wrap gap-2">
                 {profile.interests.map((interest, idx) => (
                   <span
                     key={idx}
-                    className="bg-primary text-black font-telex px-4 py-2 rounded-full"
+                    className="bg-primary text-black font-telex text-sm px-4 py-2 rounded-full hover:bg-accent transition-colors"
                   >
                     {interest}
                   </span>
                 ))}
               </div>
-            </div>
+            </InfoCard>
           )}
 
           {/* Hobbies Section */}
           {profile?.hobbies && (
-            <div className="mb-8">
-              <h3 className="font-viga text-2xl text-secondary mb-4">
-                Hobbies
-              </h3>
-              <p className="font-maven text-gray-700">{profile.hobbies}</p>
-            </div>
+            <InfoCard title="🎨 Hobbies" className="mb-6">
+              <p className="font-maven text-gray-700 leading-relaxed">{profile.hobbies}</p>
+            </InfoCard>
           )}
 
           {/* Photos Gallery */}
           {profile?.gallery?.photos && profile.gallery.photos.length > 0 && (
             <div className="mb-8">
-              <h3 className="font-viga text-2xl text-secondary mb-4">Photos</h3>
+              <h3 className="font-viga text-2xl text-secondary mb-4 flex items-center gap-2">
+                📸 Photos ({profile.gallery.photos.length})
+              </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {profile.gallery.photos.map((photo, idx) => (
                   <div
                     key={idx}
-                    className="relative aspect-square rounded-lg overflow-hidden"
+                    className="relative aspect-square rounded-xl overflow-hidden border-2 border-gray-100 hover:shadow-lg transition-shadow"
                   >
                     <img
                       src={photo.url}
                       alt={`Photo ${idx + 1}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
                   </div>
                 ))}
@@ -262,12 +394,14 @@ export default function ProfileDetailView({ profileId }) {
           {/* Videos Section */}
           {profile?.gallery?.videos && profile.gallery.videos.length > 0 && (
             <div className="mb-8">
-              <h3 className="font-viga text-2xl text-secondary mb-4">Videos</h3>
+              <h3 className="font-viga text-2xl text-secondary mb-4 flex items-center gap-2">
+                🎬 Videos ({profile.gallery.videos.length})
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {profile.gallery.videos.map((video, idx) => (
                   <div
                     key={idx}
-                    className="relative aspect-video rounded-lg overflow-hidden bg-gray-200"
+                    className="relative aspect-video rounded-xl overflow-hidden bg-gray-200 border-2 border-gray-100 hover:shadow-lg transition-shadow"
                   >
                     <video
                       src={video.url}

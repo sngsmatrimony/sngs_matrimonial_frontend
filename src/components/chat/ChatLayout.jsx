@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import useChatStore from "@/store/chatStore";
 import { useAuthStore } from "@/store/authStore";
 import { useLandingStore } from "@/store/landingStore";
+import { toastError } from "@/lib/toast";
 
 /**
  * ChatLayout Component
@@ -50,7 +51,7 @@ export default function ChatLayout({ initialUserId = null }) {
     (conv) => conv._id === activeConversationId
   );
 
-  // Load conversations on mount (but don't fail if we have an initialUserId)
+  // Load conversations on mount
   useEffect(() => {
     const load = async () => {
       try {
@@ -59,24 +60,19 @@ export default function ChatLayout({ initialUserId = null }) {
         console.log('ChatLayout: Conversations loaded successfully');
       } catch (err) {
         console.error('ChatLayout: Failed to load conversations:', err);
-        // If we're opening a conversation with initialUserId, this error is not fatal
-        // The conversation will be created by getOrCreateConversation
       }
     };
-    if (!initialUserId) {
-      // Only load conversations if we're not opening a specific one
-      load();
-    } else {
-      // Clear any previous errors since we're opening a specific conversation
-      // (error clearing happens in the other effect)
-    }
-  }, [initialUserId, loadConversations]);
+    load();
+  }, [loadConversations]);
 
   // Handle initialUserId - open conversation with that user
   useEffect(() => {
     if (initialUserId && user) {
       const openInitialConversation = async () => {
         try {
+          // Reset active conversation to prevent showing old conversation
+          setActiveConversationId(null);
+
           // Get or create conversation with the initial user
           const conversation = await getOrCreateConversation(initialUserId);
           if (conversation) {
@@ -85,6 +81,7 @@ export default function ChatLayout({ initialUserId = null }) {
           }
         } catch (error) {
           console.error("Failed to open initial conversation:", error);
+          toastError('Failed to open conversation. Please try again.');
         } finally {
           // Clear the selectedChatUserId from store after opening
           clearSelectedChatUserId();

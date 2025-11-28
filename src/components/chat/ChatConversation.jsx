@@ -203,13 +203,15 @@ export default function ChatConversation({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input */}
-      <MessageInput
-        onSendMessage={onSendMessage}
-        onTyping={onTyping}
-        isLoading={isSending}
-        disabled={!conversationId}
-      />
+      {/* Message Input - Only show when there's an active conversation */}
+      {conversationId && (
+        <MessageInput
+          onSendMessage={onSendMessage}
+          onTyping={onTyping}
+          isLoading={isSending}
+          disabled={!conversationId}
+        />
+      )}
     </div>
   );
 }

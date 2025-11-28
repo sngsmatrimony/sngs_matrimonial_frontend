@@ -21,6 +21,7 @@ import {
   encryptMessage,
   decryptMessage,
 } from '@/lib/encryption';
+import Header from '@/components/layout/Header';
 import ChatLayout from '@/components/chat/ChatLayout';
 import { toastError, toastSuccess, toastInfo } from '@/lib/toast';
 import axiosClient from '@/lib/api/client';
@@ -204,14 +205,19 @@ function ChatPageContent() {
   }
 
   return (
-    <ChatLayout
-      initialUserId={userIdFromParams}
-      conversations={conversations}
-      socket={socket}
-      userKeys={userKeys}
-      isSending={isSending}
-      setIsSending={setIsSending}
-    />
+    <div className="flex flex-col h-screen bg-white">
+      <Header showLogout={true} />
+      <div className="flex-1 overflow-hidden">
+        <ChatLayout
+          initialUserId={userIdFromParams}
+          conversations={conversations}
+          socket={socket}
+          userKeys={userKeys}
+          isSending={isSending}
+          setIsSending={setIsSending}
+        />
+      </div>
+    </div>
   );
 }
 

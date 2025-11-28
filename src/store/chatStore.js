@@ -57,18 +57,24 @@ const useChatStore = create(
           );
           const conversation = response.data.data;
 
-          // Add to conversations list if not already there
+          // Add to conversations list if not already there, and always set as active
           set((state) => {
             const exists = state.conversations.find(
               (c) => c._id === conversation._id
             );
-            if (exists) return state;
 
-            return {
-              conversations: [conversation, ...state.conversations],
+            // Always set the active conversation ID when opening a conversation
+            const newState = {
               activeConversationId: conversation._id,
               isLoading: false,
             };
+
+            // Only add to conversations list if it's a new conversation
+            if (!exists) {
+              newState.conversations = [conversation, ...state.conversations];
+            }
+
+            return newState;
           });
 
           return conversation;

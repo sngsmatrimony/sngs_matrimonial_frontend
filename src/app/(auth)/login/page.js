@@ -48,7 +48,8 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="border-0 shadow-lg bg-white">
+    <div className="w-full max-w-md">
+      <Card className="border-0 shadow-lg bg-white">
       <CardHeader className="space-y-2 pb-6">
         <div className="text-center mb-2">
           <div className="inline-block p-3 bg-gradient-warm-subtle rounded-full mb-4">
@@ -119,6 +120,7 @@ export default function LoginPage() {
           </Link>
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }

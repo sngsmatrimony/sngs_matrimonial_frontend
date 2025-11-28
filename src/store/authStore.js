@@ -62,6 +62,24 @@ export const useAuthStore = create(
         }
       },
 
+      // Initialize auth from localStorage
+      initializeAuth: async () => {
+        // First, try to restore from localStorage
+        const storedToken = localStorage.getItem('authToken');
+        if (storedToken) {
+          set({ token: storedToken });
+          // Try to get current user from API
+          try {
+            const response = await client.get('/api/auth/me');
+            set({ user: response.data.user });
+          } catch (error) {
+            // Token is invalid, clear it
+            localStorage.removeItem('authToken');
+            set({ token: null, user: null });
+          }
+        }
+      },
+
       // Logout action
       logout: () => {
         localStorage.removeItem('authToken');
@@ -87,28 +105,13 @@ export const useAuthStore = create(
         formData.append('photo', file);
 
         try {
-          const response = await client.post('/api/auth/upload-profile-picture', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
+          console.log('[authStore] Uploading profile picture:', file.name, formData);
+          const response = await client.post('/api/auth/upload-profile-picture', formData);
+          console.log('[authStore] Profile picture response:', response.data);
           set({ user: response.data.user });
           return { success: true, profilePictureUrl: response.data.profilePictureUrl };
         } catch (error) {
-          return { success: false, error: error.response?.data?.message || 'Upload failed' };
-        }
-      },
-
-      // Upload profile banner image
-      uploadProfileBanner: async (file) => {
-        const formData = new FormData();
-        formData.append('banner', file);
-
-        try {
-          const response = await client.post('/api/auth/upload-profile-banner', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
-          set({ user: response.data.user });
-          return { success: true, bannerUrl: response.data.bannerUrl };
-        } catch (error) {
+          console.error('[authStore] Profile picture upload error:', error);
           return { success: false, error: error.response?.data?.message || 'Upload failed' };
         }
       },
@@ -130,12 +133,13 @@ export const useAuthStore = create(
         formData.append('photo', file);
 
         try {
-          const response = await client.post('/api/auth/upload-photo', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
+          console.log('[authStore] Uploading gallery photo:', file.name);
+          const response = await client.post('/api/auth/upload-photo', formData);
+          console.log('[authStore] Gallery photo response:', response.data);
           set({ user: response.data.user });
           return { success: true, photoUrl: response.data.photoUrl };
         } catch (error) {
+          console.error('[authStore] Gallery photo upload error:', error);
           return { success: false, error: error.response?.data?.message || 'Upload failed' };
         }
       },
@@ -147,12 +151,13 @@ export const useAuthStore = create(
         formData.append('duration', duration);
 
         try {
-          const response = await client.post('/api/auth/upload-video', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
+          console.log('[authStore] Uploading gallery video:', file.name);
+          const response = await client.post('/api/auth/upload-video', formData);
+          console.log('[authStore] Gallery video response:', response.data);
           set({ user: response.data.user });
           return { success: true, videoUrl: response.data.videoUrl };
         } catch (error) {
+          console.error('[authStore] Gallery video upload error:', error);
           return { success: false, error: error.response?.data?.message || 'Upload failed' };
         }
       },
