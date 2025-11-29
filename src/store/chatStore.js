@@ -87,6 +87,47 @@ const useChatStore = create(
       },
 
       /**
+       * Create conversation and send first message
+       * Used when starting a new conversation from profile chat button
+       */
+      createConversationWithMessage: async (otherUserId, messageContent) => {
+        set({ isSending: true, error: null });
+        try {
+          const response = await axiosClient.post(
+            `/api/chat/conversations/${otherUserId}/messages`,
+            { content: messageContent }
+          );
+
+          const { conversation, message } = response.data.data;
+
+          console.log('createConversationWithMessage response:', { conversation, message });
+          console.log('createConversationWithMessage conversation.otherParticipant:', conversation.otherParticipant);
+          console.log('createConversationWithMessage conversation._id:', conversation._id);
+
+          // Add conversation to list and set as active
+          set((state) => {
+            const newConversations = [conversation, ...state.conversations];
+            console.log('createConversationWithMessage: Setting state with conversations:', newConversations);
+            return {
+              conversations: newConversations,
+              activeConversationId: conversation._id,
+              messages: [message],
+              isSending: false,
+            };
+          });
+
+          return { conversation, message };
+        } catch (error) {
+          console.error('createConversationWithMessage error:', error);
+          set({
+            error: error.response?.data?.message || 'Failed to send message',
+            isSending: false,
+          });
+          throw error;
+        }
+      },
+
+      /**
        * Load messages for a conversation
        */
       loadMessages: async (conversationId, limit = 50, offset = 0) => {

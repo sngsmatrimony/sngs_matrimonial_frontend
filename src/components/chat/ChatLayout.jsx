@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ChatList from "./ChatList";
 import ChatConversation from "./ChatConversation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -37,6 +37,8 @@ export default function ChatLayout({ initialUserId = null }) {
     markMessageAsRead,
     markConversationAsRead,
     loadMessages,
+    createConversationWithMessage,
+    deleteConversation,
     isLoadingConversations,
     isLoadingMessages,
     isSending,
@@ -56,8 +58,8 @@ export default function ChatLayout({ initialUserId = null }) {
     const load = async () => {
       try {
         console.log('ChatLayout: Loading conversations...');
-        await loadConversations();
-        console.log('ChatLayout: Conversations loaded successfully');
+        const convs = await loadConversations();
+        console.log('ChatLayout: Conversations loaded successfully:', convs);
       } catch (err) {
         console.error('ChatLayout: Failed to load conversations:', err);
       }
@@ -65,31 +67,28 @@ export default function ChatLayout({ initialUserId = null }) {
     load();
   }, [loadConversations]);
 
-  // Handle initialUserId - open conversation with that user
+  // Handle initialUserId - create conversation immediately when chat button is clicked
   useEffect(() => {
     if (initialUserId && user) {
-      const openInitialConversation = async () => {
-        try {
-          // Reset active conversation to prevent showing old conversation
-          setActiveConversationId(null);
+      console.log('ChatLayout: Chat button clicked for user:', initialUserId);
 
-          // Get or create conversation with the initial user
+      // Create or get conversation immediately
+      const createConv = async () => {
+        try {
           const conversation = await getOrCreateConversation(initialUserId);
-          if (conversation) {
-            console.log('ChatLayout: Setting active conversation to:', conversation._id);
-            setActiveConversationId(conversation._id);
-          }
+          console.log('ChatLayout: Conversation created/retrieved:', conversation);
+          // getOrCreateConversation already sets activeConversationId in the store
         } catch (error) {
-          console.error("Failed to open initial conversation:", error);
-          toastError('Failed to open conversation. Please try again.');
-        } finally {
-          // Clear the selectedChatUserId from store after opening
-          clearSelectedChatUserId();
+          console.error('ChatLayout: Failed to create conversation:', error);
         }
       };
-      openInitialConversation();
+
+      createConv();
+
+      // Clear from landing store to prevent persistence
+      clearSelectedChatUserId();
     }
-  }, [initialUserId, user, getOrCreateConversation, setActiveConversationId, clearSelectedChatUserId]);
+  }, [initialUserId, user, getOrCreateConversation, clearSelectedChatUserId]);
 
   // Load messages when conversation is selected
   useEffect(() => {
@@ -100,6 +99,32 @@ export default function ChatLayout({ initialUserId = null }) {
       markConversationAsRead(activeConversationId);
     }
   }, [activeConversationId, loadMessages, markConversationAsRead]);
+
+  // Clean up empty conversations when navigating away from Messages tab
+  // Store reference to current empty conversations to delete on unmount
+  const emptyConversationIdsRef = useRef([]);
+
+  useEffect(() => {
+    // Update the list of empty conversation IDs whenever conversations change
+    emptyConversationIdsRef.current = conversations
+      .filter((conv) => !conv.lastMessage)
+      .map((conv) => conv._id);
+  }, [conversations]);
+
+  useEffect(() => {
+    // Only run cleanup on component unmount
+    return () => {
+      // Delete all empty conversations when leaving Messages tab
+      if (emptyConversationIdsRef.current.length > 0) {
+        console.log('ChatLayout: Cleaning up empty conversations on unmount:', emptyConversationIdsRef.current);
+        emptyConversationIdsRef.current.forEach((convId) => {
+          deleteConversation(convId).catch((err) => {
+            console.error('ChatLayout: Failed to delete empty conversation:', err);
+          });
+        });
+      }
+    };
+  }, [deleteConversation]);
 
   // Detect mobile view
   useEffect(() => {
@@ -119,6 +144,7 @@ export default function ChatLayout({ initialUserId = null }) {
       setShowConversationOnMobile(true);
     }
   }, [activeConversationId, isMobileView]);
+
 
   // Handle conversation selection
   const handleSelectConversation = (conversationId) => {
