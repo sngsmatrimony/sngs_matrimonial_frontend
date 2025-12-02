@@ -6,16 +6,37 @@ import { useAuthStore } from '@/store/authStore';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import EditProfileForm from './EditProfileForm';
-import { Pencil } from 'lucide-react';
+import { Pencil, Briefcase, Users } from 'lucide-react';
 
-// Section heading component (matching register flow)
-const SectionHeading = ({ children }) => (
-  <h3 className="font-viga text-lg text-secondary mb-4 mt-6 first:mt-0">
+// Info Card Component
+const InfoCard = ({ icon: Icon, title, children, className = '' }) => (
+  <div className={`bg-white border-2 border-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow ${className}`}>
+    <div className="flex items-center gap-2 mb-4">
+      {Icon && <Icon size={24} className="text-primary" />}
+      <h3 className="font-viga text-xl text-secondary">{title}</h3>
+    </div>
     {children}
-  </h3>
+  </div>
 );
+
+// Info Field Component
+const InfoField = ({ label, value }) => (
+  <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+    <span className="font-telex text-secondary/70 text-sm">{label}</span>
+    <span className="font-maven text-secondary font-medium">{value || '—'}</span>
+  </div>
+);
+
+// Convert 24-hour format (HH:mm) to 12-hour format with AM/PM
+const formatTimeToAMPM = (time24) => {
+  if (!time24) return null;
+  const [hours, minutes] = time24.split(':');
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${minutes} ${ampm}`;
+};
 
 export default function UserProfileView() {
   const { userProfile, setUserProfile, isLoading, setIsLoading } =
@@ -94,13 +115,12 @@ export default function UserProfileView() {
   console.log('Using profile image URL:', profileImageUrl);
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-4 py-8">
-      {/* Profile Banner */}
+    <div className="px-4 md:px-8 py-8">
+      {/* Profile Banner with Edit Button */}
       <div
-        className="w-full h-48 bg-cover bg-center rounded-t-lg shadow-lg relative"
+        className="w-full h-64 bg-cover bg-center rounded-t-2xl relative mb-8 shadow-lg"
         style={bannerStyle}
       >
-        {/* Edit Button */}
         <Button
           onClick={() => setIsEditMode(true)}
           className="absolute top-4 right-4 bg-primary hover:bg-accent text-black font-maven text-base gap-2"
@@ -110,288 +130,287 @@ export default function UserProfileView() {
         </Button>
       </div>
 
-      {/* Main Card Container */}
-      <Card className="border-0 shadow-lg bg-white rounded-b-lg rounded-t-none">
-        <CardHeader className="pb-6 border-b border-gray-100">
-          <div className="flex items-center gap-6 mt-0">
-            {/* Profile Picture */}
-            <div className="relative w-32 h-32 rounded-xl border-4 border-white overflow-hidden bg-gray-100 shadow-md -mt-24 flex items-center justify-center">
-              {profileImageUrl ? (
-                <img
-                  src={profileImageUrl}
-                  alt={user?.fullName}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    console.error('Image failed to load:', profileImageUrl);
-                    e.target.style.display = 'none';
-                    e.target.parentElement.innerHTML = '<div style="color: #999; font-size: 12px; text-align: center;">No Image</div>';
-                  }}
-                  onLoad={() => {
-                    console.log('Profile image loaded successfully:', profileImageUrl);
-                  }}
-                />
-              ) : (
-                <div className="text-center text-gray-400 font-maven text-sm">
-                  No Photo
-                </div>
-              )}
-            </div>
-
-            {/* Profile Info */}
-            <div className="flex-1">
-              <CardTitle className="font-viga text-3xl text-secondary mb-2">
-                {user?.fullName}
-              </CardTitle>
-              <p className="font-telex text-secondary mb-2">
-                {user?.age || 'Age'} • {user?.gender}
-              </p>
-              <p className="font-telex text-sm text-secondary/70">
-                Seeking: {user?.seekingGender} | Age: {user?.ageFrom}-{user?.ageTo}
-              </p>
-            </div>
+      {/* Profile Header - Overlapped */}
+      <div className="max-w-4xl mx-auto -mt-16 relative z-10 mb-8">
+        <div className="flex flex-col md:flex-row gap-6 items-start">
+          {/* Profile Picture */}
+          <div className="relative w-40 h-40 rounded-2xl border-4 border-white overflow-hidden shadow-lg bg-gray-100 flex items-center justify-center">
+            {profileImageUrl ? (
+              <img
+                src={profileImageUrl}
+                alt={user?.fullName}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  console.error('Image failed to load:', profileImageUrl);
+                  e.target.style.display = 'none';
+                  e.target.parentElement.style.display = 'flex';
+                  e.target.parentElement.style.alignItems = 'center';
+                  e.target.parentElement.style.justifyContent = 'center';
+                  e.target.parentElement.innerHTML += '<div style="color: #999; font-size: 12px; text-align: center;">No Image</div>';
+                }}
+                onLoad={() => {
+                  console.log('Profile image loaded successfully:', profileImageUrl);
+                }}
+              />
+            ) : (
+              <div className="text-center text-gray-400 font-maven text-sm">
+                No Photo
+              </div>
+            )}
           </div>
-        </CardHeader>
 
-        <CardContent className="pt-6">
-          <div className="space-y-5">
-            {/* Personal Details */}
-            {(user?.caste || user?.religion || user?.isDivorcee || user?.nakshatra || user?.raasi) && (
-              <>
-                <SectionHeading>Personal Details</SectionHeading>
-                <div className="space-y-2">
-                  {user?.caste && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Caste:</span> {user.caste}
-                    </p>
-                  )}
-                  {user?.religion && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Religion:</span> {user.religion}
-                    </p>
-                  )}
-                  {user?.nakshatra && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Star Details:</span> {user.nakshatra}
-                    </p>
-                  )}
-                  {user?.raasi && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Raasi:</span> {user.raasi}
-                    </p>
-                  )}
-                  {user?.isDivorcee && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Marital Status:</span> Divorced
-                    </p>
-                  )}
-                </div>
-              </>
-            )}
+          {/* Profile Info */}
+          <div className="flex-1 pt-4">
+            <h1 className="font-viga text-4xl text-secondary mb-2">
+              {user?.fullName}
+            </h1>
+            <p className="font-telex text-secondary mb-4">
+              {user?.age || 'Age'} • {user?.gender}
+            </p>
 
-            {/* Physical & Health Details */}
-            {(user?.height || user?.physicalStatus || user?.weight || user?.bloodGroup) && (
-              <>
-                <SectionHeading>Physical & Health Information</SectionHeading>
-                <div className="space-y-2">
-                  {user?.height && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Height:</span> {user.height}
-                    </p>
-                  )}
-                  {user?.physicalStatus && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Physical Status:</span> {user.physicalStatus}
-                    </p>
-                  )}
-                  {user?.weight && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Weight:</span> {user.weight} kg
-                    </p>
-                  )}
-                  {user?.bloodGroup && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Blood Group:</span> {user.bloodGroup}
-                    </p>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Family Information */}
-            {(user?.fatherName || user?.motherName || user?.familyStatus || user?.residentialStatus) && (
-              <>
-                <SectionHeading>Family Information</SectionHeading>
-                <div className="space-y-2">
-                  {user?.fatherName && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Father's Name:</span> {user.fatherName}
-                      {user?.fatherOccupation && ` (${user.fatherOccupation})`}
-                    </p>
-                  )}
-                  {user?.motherName && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Mother's Name:</span> {user.motherName}
-                      {user?.motherOccupation && ` (${user.motherOccupation})`}
-                    </p>
-                  )}
-                  {user?.familyStatus && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Family Status:</span> {user.familyStatus}
-                    </p>
-                  )}
-                  {user?.residentialStatus && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Residential Status:</span> {user.residentialStatus}
-                    </p>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* About */}
+            {/* About Myself */}
             {user?.about && (
-              <>
-                <SectionHeading>About</SectionHeading>
-                <p className="font-maven text-base text-secondary">{user.about}</p>
-              </>
+              <div className="mb-6">
+                <h3 className="font-viga text-lg text-secondary mb-2">
+                  About
+                </h3>
+                <p className="font-maven text-gray-700 leading-relaxed">{user.about}</p>
+              </div>
             )}
 
-            {/* Professional Details */}
-            {(user?.education || user?.employmentType || user?.occupation || user?.annualIncome) && (
-              <>
-                <SectionHeading>Professional Details</SectionHeading>
-                <div className="space-y-2">
-                  {user?.education && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Education:</span> {user.education}
-                    </p>
-                  )}
-                  {user?.employmentType && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Employment Type:</span> {user.employmentType}
-                    </p>
-                  )}
-                  {user?.occupation && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Occupation:</span> {user.occupation}
-                    </p>
-                  )}
-                  {user?.annualIncome && (
-                    <p className="font-maven text-base text-secondary">
-                      <span className="font-semibold">Annual Income:</span> {user.annualIncome.currency} {user.annualIncome.amount}
-                    </p>
-                  )}
-                </div>
-              </>
+            {/* Seeking Preferences */}
+            {(user?.seekingGender || user?.ageFrom || user?.ageTo) && (
+              <p className="font-telex text-sm text-secondary/70">
+                Seeking: <span className="font-maven text-secondary">{user?.seekingGender}</span> |
+                Age: <span className="font-maven text-secondary">{user?.ageFrom}-{user?.ageTo}</span>
+              </p>
             )}
+          </div>
+        </div>
+      </div>
 
-            {/* Address Information */}
-            {((userProfile?.presentResidentialAddress && Object.values(userProfile.presentResidentialAddress).some(v => v)) ||
-              (userProfile?.nativePlaceAddress && Object.values(userProfile.nativePlaceAddress).some(v => v))) && (
-              <>
-                <SectionHeading>Address Information</SectionHeading>
-                {userProfile?.presentResidentialAddress && Object.values(userProfile.presentResidentialAddress).some(v => v) && (
-                  <div className="mb-4">
-                    <p className="font-maven font-semibold text-secondary mb-2">Present Residential Address</p>
-                    <p className="font-maven text-base text-secondary">
-                      {[
-                        userProfile.presentResidentialAddress.street,
-                        userProfile.presentResidentialAddress.area,
-                        userProfile.presentResidentialAddress.landmark,
-                        userProfile.presentResidentialAddress.city,
-                        userProfile.presentResidentialAddress.state,
-                        userProfile.presentResidentialAddress.pincode,
-                      ].filter(Boolean).join(', ') || '—'}
-                    </p>
-                  </div>
-                )}
-                {userProfile?.nativePlaceAddress && Object.values(userProfile.nativePlaceAddress).some(v => v) && (
-                  <div>
-                    <p className="font-maven font-semibold text-secondary mb-2">Native Place Address</p>
-                    <p className="font-maven text-base text-secondary">
-                      {[
-                        userProfile.nativePlaceAddress.street,
-                        userProfile.nativePlaceAddress.area,
-                        userProfile.nativePlaceAddress.landmark,
-                        userProfile.nativePlaceAddress.city,
-                        userProfile.nativePlaceAddress.state,
-                        userProfile.nativePlaceAddress.pincode,
-                      ].filter(Boolean).join(', ') || '—'}
-                    </p>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Interests Section */}
-            {userProfile?.interests && userProfile.interests.length > 0 && (
-              <>
-                <SectionHeading>Interests</SectionHeading>
+      {/* Profile Information Cards */}
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Personal Details Card */}
+        {(user?.religion || user?.caste || user?.motherTongue || user?.maritalStatus || user?.shuddhaJathakam || user?.doshamTypes || user?.nakshatra || user?.raasi || user?.isDivorcee || user?.height || user?.physicalStatus) && (
+          <InfoCard
+            title="💑 Personal Details"
+            className="mb-6"
+          >
+            <InfoField label="Religion" value={user?.religion} />
+            {user?.motherTongue && <InfoField label="Mother Tongue" value={user.motherTongue} />}
+            {user?.caste && <InfoField label="Caste" value={user.caste} />}
+            {user?.maritalStatus && <InfoField label="Marital Status" value={user.maritalStatus} />}
+            {user?.shuddhaJathakam && <InfoField label="Shuddha Jathakam" value={user.shuddhaJathakam} />}
+            {user?.doshamTypes && user.doshamTypes.length > 0 && (
+              <div className="py-2 border-b border-gray-100">
+                <span className="font-telex text-secondary/70 text-sm block mb-2">Dosham Types</span>
                 <div className="flex flex-wrap gap-2">
-                  {userProfile.interests.map((interest, idx) => (
-                    <span
-                      key={idx}
-                      className="bg-primary text-black font-telex px-4 py-2 rounded-full text-sm"
-                    >
-                      {interest}
+                  {user.doshamTypes.map((dosham, idx) => (
+                    <span key={idx} className="text-xs bg-secondary/10 text-secondary px-2 py-1 rounded">
+                      {dosham}
                     </span>
                   ))}
                 </div>
-              </>
+              </div>
             )}
+            {user?.nakshatra && <InfoField label="Star Details" value={user.nakshatra} />}
+            {user?.raasi && <InfoField label="Raasi" value={user.raasi} />}
+            {user?.isDivorcee && <InfoField label="Marital Status" value="Divorced" />}
+            {user?.height && <InfoField label="Height" value={user.height} />}
+            {user?.physicalStatus && <InfoField label="Physical Status" value={user.physicalStatus} />}
+          </InfoCard>
+        )}
 
-            {/* Hobbies Section */}
-            {userProfile?.hobbies && (
-              <>
-                <SectionHeading>Hobbies</SectionHeading>
-                <p className="font-maven text-base text-secondary">{userProfile.hobbies}</p>
-              </>
+        {/* Birth Details Card */}
+        {(user?.dateOfBirth || user?.timeOfBirth) && (
+          <InfoCard
+            title="💫 Birth Details"
+            className="mb-6"
+          >
+            {user?.dateOfBirth && (
+              <InfoField
+                label="Date of Birth"
+                value={new Date(user.dateOfBirth).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric'
+                })}
+              />
             )}
+            {user?.timeOfBirth && (
+              <InfoField
+                label="Time of Birth"
+                value={formatTimeToAMPM(user.timeOfBirth)}
+              />
+            )}
+          </InfoCard>
+        )}
 
-            {/* Photos Gallery */}
-            {userProfile?.gallery?.photos && userProfile.gallery.photos.length > 0 && (
-              <>
-                <SectionHeading>Photos</SectionHeading>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {userProfile.gallery.photos.map((photo, idx) => (
-                    <div
-                      key={idx}
-                      className="relative aspect-square rounded-lg overflow-hidden shadow-sm"
-                    >
-                      <img
-                        src={photo.url}
-                        alt={`Photo ${idx + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ))}
+        {/* Physical & Health Details Card */}
+        {(user?.weight || user?.bloodGroup) && (
+          <InfoCard
+            title="💪 Physical & Health Details"
+            className="mb-6"
+          >
+            {user?.weight && <InfoField label="Weight" value={`${user.weight} kg`} />}
+            {user?.bloodGroup && <InfoField label="Blood Group" value={user.bloodGroup} />}
+          </InfoCard>
+        )}
+
+        {/* Professional Information Card */}
+        {(user?.education || user?.employmentType || user?.occupation || user?.annualIncome) && (
+          <InfoCard
+            title="💼 Professional"
+            icon={Briefcase}
+            className="mb-6"
+          >
+            <InfoField label="Education" value={user?.education} />
+            <InfoField label="Employment Type" value={user?.employmentType} />
+            <InfoField label="Occupation" value={user?.occupation} />
+            {user?.annualIncome && (
+              <InfoField
+                label="Annual Income"
+                value={`${user.annualIncome.currency} ${user.annualIncome.amount}`}
+              />
+            )}
+          </InfoCard>
+        )}
+
+        {/* Family Information Card */}
+        {(user?.fatherName || user?.motherName || user?.familyStatus || user?.residentialStatus) && (
+          <InfoCard
+            title="👨‍👩‍👧‍👦 Family Information"
+            icon={Users}
+            className="mb-6"
+          >
+            {user?.fatherName && <InfoField label="Father's Name" value={user.fatherName} />}
+            {user?.fatherOccupation && <InfoField label="Father's Occupation" value={user.fatherOccupation} />}
+            {user?.motherName && <InfoField label="Mother's Name" value={user.motherName} />}
+            {user?.motherOccupation && <InfoField label="Mother's Occupation" value={user.motherOccupation} />}
+            <InfoField label="Family Status" value={user?.familyStatus} />
+            <InfoField label="Residential Status" value={user?.residentialStatus} />
+          </InfoCard>
+        )}
+
+        {/* Address Information Card */}
+        {((userProfile?.presentResidentialAddress && Object.values(userProfile.presentResidentialAddress).some(v => v)) ||
+          (userProfile?.nativePlaceAddress && Object.values(userProfile.nativePlaceAddress).some(v => v))) && (
+          <InfoCard
+            title="📍 Address Information"
+            className="mb-6"
+          >
+            {userProfile?.presentResidentialAddress && Object.values(userProfile.presentResidentialAddress).some(v => v) && (
+              <div className="py-3 border-b border-gray-100">
+                <span className="font-telex text-secondary/70 text-sm block mb-2">Present Residential Address</span>
+                <span className="font-maven text-secondary">
+                  {[
+                    userProfile.presentResidentialAddress.street,
+                    userProfile.presentResidentialAddress.area,
+                    userProfile.presentResidentialAddress.landmark,
+                    userProfile.presentResidentialAddress.city,
+                    userProfile.presentResidentialAddress.state,
+                    userProfile.presentResidentialAddress.pincode,
+                  ].filter(Boolean).join(', ') || '—'}
+                </span>
+              </div>
+            )}
+            {userProfile?.nativePlaceAddress && Object.values(userProfile.nativePlaceAddress).some(v => v) && (
+              <div className="py-3">
+                <span className="font-telex text-secondary/70 text-sm block mb-2">Native Place Address</span>
+                <span className="font-maven text-secondary">
+                  {[
+                    userProfile.nativePlaceAddress.street,
+                    userProfile.nativePlaceAddress.area,
+                    userProfile.nativePlaceAddress.landmark,
+                    userProfile.nativePlaceAddress.city,
+                    userProfile.nativePlaceAddress.state,
+                    userProfile.nativePlaceAddress.pincode,
+                  ].filter(Boolean).join(', ') || '—'}
+                </span>
+              </div>
+            )}
+          </InfoCard>
+        )}
+
+        {/* Interests Section */}
+        {userProfile?.interests && userProfile.interests.length > 0 && (
+          <InfoCard
+            title="⭐ Interests"
+            className="mb-6"
+          >
+            <div className="flex flex-wrap gap-2">
+              {userProfile.interests.map((interest, idx) => (
+                <span
+                  key={idx}
+                  className="bg-primary text-black font-telex text-sm px-4 py-2 rounded-full hover:bg-accent transition-colors"
+                >
+                  {interest}
+                </span>
+              ))}
+            </div>
+          </InfoCard>
+        )}
+
+        {/* Hobbies Section */}
+        {userProfile?.hobbies && (
+          <InfoCard
+            title="🎨 Hobbies"
+            className="mb-6"
+          >
+            <p className="font-maven text-gray-700 leading-relaxed">{userProfile.hobbies}</p>
+          </InfoCard>
+        )}
+
+        {/* Photos Gallery */}
+        {userProfile?.gallery?.photos && userProfile.gallery.photos.length > 0 && (
+          <div className="mb-8">
+            <h3 className="font-viga text-2xl text-secondary flex items-center gap-2 mb-4">
+              📸 Photos ({userProfile.gallery.photos.length})
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {userProfile.gallery.photos.map((photo, idx) => (
+                <div
+                  key={idx}
+                  className="relative aspect-square rounded-xl overflow-hidden border-2 border-gray-100 hover:shadow-lg transition-shadow"
+                >
+                  <img
+                    src={photo.url}
+                    alt={`Photo ${idx + 1}`}
+                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  />
                 </div>
-              </>
-            )}
-
-            {/* Videos Section */}
-            {userProfile?.gallery?.videos && userProfile.gallery.videos.length > 0 && (
-              <>
-                <SectionHeading>Videos</SectionHeading>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {userProfile.gallery.videos.map((video, idx) => (
-                    <div
-                      key={idx}
-                      className="relative aspect-video rounded-lg overflow-hidden bg-gray-200 shadow-sm"
-                    >
-                      <video
-                        src={video.url}
-                        controls
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+              ))}
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        )}
+
+        {/* Videos Section */}
+        {userProfile?.gallery?.videos && userProfile.gallery.videos.length > 0 && (
+          <div className="mb-8">
+            <h3 className="font-viga text-2xl text-secondary flex items-center gap-2 mb-4">
+              🎬 Videos ({userProfile.gallery.videos.length})
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {userProfile.gallery.videos.map((video, idx) => (
+                <div
+                  key={idx}
+                  className="relative aspect-video rounded-xl overflow-hidden bg-gray-200 border-2 border-gray-100 hover:shadow-lg transition-shadow"
+                >
+                  <video
+                    src={video.url}
+                    controls
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer spacing */}
+      <div className="h-16" />
     </div>
   );
 }

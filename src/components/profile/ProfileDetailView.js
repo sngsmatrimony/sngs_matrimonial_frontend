@@ -31,6 +31,16 @@ const InfoField = ({ label, value, icon: Icon }) => (
   </div>
 );
 
+// Convert 24-hour format (HH:mm) to 12-hour format with AM/PM
+const formatTimeToAMPM = (time24) => {
+  if (!time24) return null;
+  const [hours, minutes] = time24.split(':');
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${minutes} ${ampm}`;
+};
+
 export default function ProfileDetailView({ profileId }) {
   const router = useRouter();
   const { setActiveTab, setSelectedChatUserId } = useLandingStore();
@@ -235,6 +245,28 @@ export default function ProfileDetailView({ profileId }) {
               <InfoField label="Height" value={profile?.height} />
               <InfoField label="Physical Status" value={profile?.physicalStatus} />
               <InfoField label="Marital Status" value={profile?.maritalStatus} />
+            </InfoCard>
+          )}
+
+          {/* Birth Details Card */}
+          {(profile?.dateOfBirth || profile?.timeOfBirth) && (
+            <InfoCard title="💫 Birth Details" className="mb-6">
+              {profile?.dateOfBirth && (
+                <InfoField
+                  label="Date of Birth"
+                  value={new Date(profile.dateOfBirth).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                  })}
+                />
+              )}
+              {profile?.timeOfBirth && (
+                <InfoField
+                  label="Time of Birth"
+                  value={formatTimeToAMPM(profile.timeOfBirth)}
+                />
+              )}
             </InfoCard>
           )}
 
