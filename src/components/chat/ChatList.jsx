@@ -211,7 +211,7 @@ export default function ChatList({
 
                   {conversation.unreadCount > 0 && (
                     <Badge
-                      className="bg-primary text-black font-telex text-[10px] px-1.5 py-0 min-w-[20px] h-5 flex items-center justify-center shrink-0"
+                      className="bg-primary text-black font-telex text-[10px] px-1.5 py-0 min-w-5 h-5 flex items-center justify-center shrink-0"
                     >
                       {conversation.unreadCount > 99
                         ? "99+"

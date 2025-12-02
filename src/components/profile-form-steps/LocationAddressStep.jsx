@@ -6,17 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { COUNTRIES, INDIAN_STATES } from '@/lib/constants/formData';
 
-export function LocationAddressStep({ form }) {
-  const watchCountry = useWatch({ control: form.control, name: 'country' });
-
-  const getStates = () => {
-    if (watchCountry === 'India') {
-      return INDIAN_STATES;
-    }
-    return [];
-  };
-
-  const AddressFieldset = ({ prefix, title, isOptional = false }) => (
+function AddressFieldset({ form, prefix, title, isOptional = false }) {
+  return (
     <div className="space-y-4 p-4 border border-gray-200 rounded-lg">
       <h3 className="font-maven font-semibold text-secondary">{title}{isOptional ? ' (Optional)' : ''}</h3>
 
@@ -105,6 +96,17 @@ export function LocationAddressStep({ form }) {
       />
     </div>
   );
+}
+
+export function LocationAddressStep({ form }) {
+  const watchCountry = useWatch({ control: form.control, name: 'country' });
+
+  const getStates = () => {
+    if (watchCountry === 'India') {
+      return INDIAN_STATES;
+    }
+    return [];
+  };
 
   return (
     <div className="space-y-6">
@@ -181,6 +183,7 @@ export function LocationAddressStep({ form }) {
 
       {/* Present Residential Address */}
       <AddressFieldset
+        form={form}
         prefix="presentResidentialAddress"
         title="Present Residential Address"
         isOptional={true}
@@ -188,6 +191,7 @@ export function LocationAddressStep({ form }) {
 
       {/* Native Place Address */}
       <AddressFieldset
+        form={form}
         prefix="nativePlaceAddress"
         title="Native Place Address"
         isOptional={true}

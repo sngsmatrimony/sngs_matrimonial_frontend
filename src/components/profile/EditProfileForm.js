@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { Progress } from '@/components/ui/progress';
 import { toastSuccess, toastError } from '@/lib/toast';
+import { convertTo24Hour, buildTimeFromDropdowns, parseTimeToDropdowns } from '@/lib/time';
 import { client } from '@/lib/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { useLandingStore } from '@/store/landingStore';
@@ -25,6 +26,10 @@ import {
 // Step 1: Personal Details (DOB, Mother Tongue, Gender, Seeking, Height, Physical Status, Marital Status)
 const step1Schema = z.object({
   dateOfBirth: z.date({ message: 'Please select your date of birth' }),
+  timeOfBirth: z.string()
+    .regex(/^(0?[0-9]|1[0-2]):([0-5][0-9])\s(AM|PM)$/i, 'Invalid time format. Use HH:MM AM/PM')
+    .optional()
+    .or(z.literal('')),
   motherTongue: z.string().min(1, 'Please select your mother tongue'),
   height: z.string().min(1, 'Please select your height'),
   physicalStatus: z.string().min(1, 'Please select your physical status'),
@@ -174,9 +179,15 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
   const { uploadProfilePicture, setProfileBannerColor } = useAuthStore();
   const { setUserProfile } = useLandingStore();
 
+  // Parse existing timeOfBirth (24-hour format) to dropdown values (12-hour format)
+  const existingTimeDropdowns = user?.timeOfBirth ? parseTimeToDropdowns(user.timeOfBirth) : { hours: '', minutes: '', meridiem: '' };
+
   const [formData, setFormData] = useState({
     // Step 1: Personal Details
     dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth) : null,
+    timeOfBirth_hours: existingTimeDropdowns.hours,
+    timeOfBirth_minutes: existingTimeDropdowns.minutes,
+    timeOfBirth_meridiem: existingTimeDropdowns.meridiem,
     motherTongue: user?.motherTongue || '',
     height: user?.height || '',
     physicalStatus: user?.physicalStatus || '',
@@ -357,8 +368,17 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
 
       const parsedIncome = parseIncomeAmount(formValues.annualIncomeCurrency, formValues.annualIncomeAmount);
 
+      // Build 12-hour time from dropdown selections, then convert to 24-hour
+      const timeOfBirthString = buildTimeFromDropdowns(
+        formValues.timeOfBirth_hours,
+        formValues.timeOfBirth_minutes,
+        formValues.timeOfBirth_meridiem
+      );
+      const timeOfBirth24 = timeOfBirthString ? convertTo24Hour(timeOfBirthString) : '';
+
       const updateData = {
         dateOfBirth: formValues.dateOfBirth,
+        timeOfBirth: timeOfBirth24,
         motherTongue: formValues.motherTongue,
         height: formValues.height,
         physicalStatus: formValues.physicalStatus,

@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { useAuthStore } from '@/store/authStore';
 import { toastSuccess, toastError } from '@/lib/toast';
+import { convertTo24Hour, buildTimeFromDropdowns } from '@/lib/time';
 import { MONTHS } from '@/lib/constants/formData';
 import {
   PersonalDetailsStep,
@@ -42,6 +43,10 @@ const step1Schema = z.object({
 // Reuse schemas from EditProfileForm
 const step2Schema = z.object({
   dateOfBirth: z.date(),
+  timeOfBirth: z.string()
+    .regex(/^(0?[0-9]|1[0-2]):([0-5][0-9])\s(AM|PM)$/i, 'Invalid time format. Use HH:MM AM/PM')
+    .optional()
+    .or(z.literal('')),
   motherTongue: z.string().min(1),
   height: z.string().min(1),
   physicalStatus: z.string().min(1),
@@ -137,6 +142,9 @@ export default function RegisterPage() {
     confirmPassword: '',
     // Step 2-6 will be populated with defaults from shared component
     dateOfBirth: null,
+    timeOfBirth_hours: '',
+    timeOfBirth_minutes: '',
+    timeOfBirth_meridiem: '',
     height: '',
     physicalStatus: '',
     maritalStatus: '',
@@ -394,11 +402,20 @@ export default function RegisterPage() {
       // Parse income amount into proper format
       const parsedIncome = parseIncomeAmount(submissionData.annualIncomeCurrency, submissionData.annualIncomeAmount);
 
+      // Build 12-hour time from dropdown selections, then convert to 24-hour
+      const timeOfBirthString = buildTimeFromDropdowns(
+        submissionData.timeOfBirth_hours,
+        submissionData.timeOfBirth_minutes,
+        submissionData.timeOfBirth_meridiem
+      );
+      const timeOfBirth24 = timeOfBirthString ? convertTo24Hour(timeOfBirthString) : '';
+
       const registrationData = {
         fullName: submissionData.fullName,
         email: submissionData.email,
         password: submissionData.password,
         dateOfBirth: dob.toISOString(),
+        timeOfBirth: timeOfBirth24,
         motherTongue: submissionData.motherTongue,
         height: submissionData.height,
         physicalStatus: submissionData.physicalStatus,

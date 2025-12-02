@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useLandingStore } from '@/store/landingStore';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
@@ -16,11 +16,7 @@ export default function BrowseProfiles() {
     setIsLoading,
   } = useLandingStore();
 
-  useEffect(() => {
-    fetchProfiles();
-  }, []);
-
-  const fetchProfiles = async () => {
+  const fetchProfiles = useCallback(async () => {
     setIsLoading(true);
     try {
       const [profilesRes, likedRes] = await Promise.all([
@@ -40,7 +36,11 @@ export default function BrowseProfiles() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setIsLoading, setProfiles, setLikedProfilesIds]);
+
+  useEffect(() => {
+    fetchProfiles();
+  }, [fetchProfiles]);
 
   if (isLoading) {
     return (

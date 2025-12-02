@@ -96,6 +96,76 @@ export function PersonalDetailsStep({ form }) {
         )}
       />
 
+      {/* Time of Birth */}
+      <FormItem>
+        <FormLabel className="font-maven">Time of Birth (Optional)</FormLabel>
+        <div className="grid grid-cols-3 gap-2">
+          {/* Hours Dropdown */}
+          <FormField
+            control={form.control}
+            name="timeOfBirth_hours"
+            render={({ field }) => (
+              <Select value={field.value || ''} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="font-maven">
+                    <SelectValue placeholder="Hour" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map(hour => (
+                    <SelectItem key={hour} value={hour.toString().padStart(2, '0')}>
+                      {hour.toString().padStart(2, '0')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+
+          {/* Minutes Dropdown */}
+          <FormField
+            control={form.control}
+            name="timeOfBirth_minutes"
+            render={({ field }) => (
+              <Select value={field.value || ''} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="font-maven">
+                    <SelectValue placeholder="Min" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {Array.from({ length: 60 }, (_, i) => i).map(minute => (
+                    <SelectItem key={minute} value={minute.toString().padStart(2, '0')}>
+                      {minute.toString().padStart(2, '0')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
+
+          {/* AM/PM Dropdown */}
+          <FormField
+            control={form.control}
+            name="timeOfBirth_meridiem"
+            render={({ field }) => (
+              <Select value={field.value || ''} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="font-maven">
+                    <SelectValue placeholder="AM/PM" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="AM">AM</SelectItem>
+                  <SelectItem value="PM">PM</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+        </div>
+        <FormMessage />
+      </FormItem>
+
       {/* Mother Tongue */}
       <FormField
         control={form.control}
