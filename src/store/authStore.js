@@ -144,39 +144,10 @@ export const useAuthStore = create(
         }
       },
 
-      // Upload gallery video
-      uploadVideo: async (file, duration = 0) => {
-        const formData = new FormData();
-        formData.append('video', file);
-        formData.append('duration', duration);
-
-        try {
-          console.log('[authStore] Uploading gallery video:', file.name);
-          const response = await client.post('/api/auth/upload-video', formData);
-          console.log('[authStore] Gallery video response:', response.data);
-          set({ user: response.data.user });
-          return { success: true, videoUrl: response.data.videoUrl };
-        } catch (error) {
-          console.error('[authStore] Gallery video upload error:', error);
-          return { success: false, error: error.response?.data?.message || 'Upload failed' };
-        }
-      },
-
       // Delete gallery photo
       deletePhoto: async (index) => {
         try {
           const response = await client.delete(`/api/auth/photo/${index}`);
-          set({ user: response.data.user });
-          return { success: true };
-        } catch (error) {
-          return { success: false, error: error.response?.data?.message || 'Delete failed' };
-        }
-      },
-
-      // Delete gallery video
-      deleteVideo: async (index) => {
-        try {
-          const response = await client.delete(`/api/auth/video/${index}`);
           set({ user: response.data.user });
           return { success: true };
         } catch (error) {

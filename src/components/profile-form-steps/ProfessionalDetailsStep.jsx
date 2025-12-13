@@ -1,9 +1,10 @@
 'use client';
 
 import { useWatch } from 'react-hook-form';
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   EMPLOYMENT_TYPES,
   ANNUAL_INCOME_INR,
@@ -162,6 +163,33 @@ export function ProfessionalDetailsStep({ form }) {
           )}
         />
       </div>
+
+      {/* Additional Information */}
+      <FormField
+        control={form.control}
+        name="professionalAdditionalInfo"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="font-maven">Additional Information (Optional)</FormLabel>
+            <FormControl>
+              <Textarea
+                {...field}
+                placeholder="Any additional professional details..."
+                maxLength={500}
+                rows={4}
+                className="font-maven-pro resize-none"
+              />
+            </FormControl>
+            <FormDescription className="font-telex">
+              Optional field
+            </FormDescription>
+            <div className="text-sm text-gray-500 font-telex">
+              {field.value?.length || 0}/500
+            </div>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </div>
   );
 }

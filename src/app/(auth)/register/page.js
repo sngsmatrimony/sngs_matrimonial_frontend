@@ -35,6 +35,9 @@ const step1Schema = z.object({
     .regex(/[A-Z]/, 'Must contain uppercase letter')
     .regex(/\d/, 'Must contain number'),
   confirmPassword: z.string(),
+  mobileNumber: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number'),
+  alternateMobileNumber: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number').optional().or(z.literal('')),
+  sngsMembershipNumber: z.string().max(50, 'Maximum 50 characters').optional().or(z.literal('')),
 }).refine(data => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
   path: ['confirmPassword'],
@@ -59,6 +62,16 @@ const step2Schema = z.object({
   doshamTypes: z.array(z.string()).optional().default([]),
   nakshatra: z.string().optional().nullable(),
   raasi: z.string().optional().nullable(),
+  languagesKnown: z.array(z.string()).max(10, 'Maximum 10 languages').optional().default([]),
+  placeOfBirth: z.string().max(100, 'Maximum 100 characters').optional().or(z.literal('')),
+  complexion: z.enum(['Very Fair', 'Fair', 'Wheatish', 'Wheatish Brown', 'Dark', 'Very Dark'], {
+    errorMap: () => ({ message: 'Select a valid complexion' })
+  }).optional().or(z.literal('')),
+  weight: z.number().nullable().optional(),
+  bloodGroup: z.string().optional(),
+  diet: z.enum(['Vegetarian', 'Non-Vegetarian', 'Eggetarian'], {
+    errorMap: () => ({ message: 'Select a valid diet preference' })
+  }).optional().or(z.literal('')),
 });
 
 const step3Schema = z.object({
@@ -89,6 +102,7 @@ const step4Schema = z.object({
   occupation: z.string().min(1, 'Select occupation'),
   annualIncomeCurrency: z.string().min(1, 'Select currency'),
   annualIncomeAmount: z.string().min(1, 'Select income amount'),
+  additionalInfo: z.string().max(500, 'Maximum 500 characters').optional().or(z.literal('')),
 });
 
 const step5Schema = z.object({
@@ -96,8 +110,6 @@ const step5Schema = z.object({
   fatherOccupation: z.string().optional(),
   motherName: z.string().optional(),
   motherOccupation: z.string().optional(),
-  weight: z.number().nullable().optional(),
-  bloodGroup: z.string().optional(),
   residentialStatus: z.string().optional(),
   familyStatus: z.string().min(1, 'Select family status'),
   about: z.string().min(50, 'About must be at least 50 characters'),
@@ -140,6 +152,9 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
+    mobileNumber: '',
+    alternateMobileNumber: '',
+    sngsMembershipNumber: '',
     // Step 2-6 will be populated with defaults from shared component
     dateOfBirth: null,
     timeOfBirth_hours: '',
@@ -156,6 +171,9 @@ export default function RegisterPage() {
     doshamTypes: [],
     nakshatra: null,
     raasi: null,
+    languagesKnown: [],
+    placeOfBirth: '',
+    complexion: '',
     // Step 3
     country: '',
     state: '',
@@ -182,6 +200,7 @@ export default function RegisterPage() {
     occupation: '',
     annualIncomeCurrency: 'INR',
     annualIncomeAmount: '',
+    additionalInfo: '',
     // Step 5
     fatherName: '',
     fatherOccupation: '',
@@ -192,6 +211,7 @@ export default function RegisterPage() {
     residentialStatus: '',
     familyStatus: '',
     about: '',
+    diet: '',
     // Step 6
     ageFrom: '',
     ageTo: '',
@@ -414,9 +434,15 @@ export default function RegisterPage() {
         fullName: submissionData.fullName,
         email: submissionData.email,
         password: submissionData.password,
+        mobileNumber: submissionData.mobileNumber,
+        alternateMobileNumber: submissionData.alternateMobileNumber || '',
+        sngsMembershipNumber: submissionData.sngsMembershipNumber || '',
         dateOfBirth: dob.toISOString(),
         timeOfBirth: timeOfBirth24,
         motherTongue: submissionData.motherTongue,
+        languagesKnown: submissionData.languagesKnown || [],
+        placeOfBirth: submissionData.placeOfBirth || '',
+        complexion: submissionData.complexion || '',
         height: submissionData.height,
         physicalStatus: submissionData.physicalStatus,
         maritalStatus: submissionData.maritalStatus,
@@ -436,6 +462,7 @@ export default function RegisterPage() {
         education: submissionData.education,
         employmentType: submissionData.employmentType,
         occupation: submissionData.occupation,
+        additionalInfo: submissionData.additionalInfo || '',
         annualIncome: {
           currency: submissionData.annualIncomeCurrency,
           min: parsedIncome.min,
@@ -448,6 +475,7 @@ export default function RegisterPage() {
         motherOccupation: submissionData.motherOccupation,
         weight: submissionData.weight,
         bloodGroup: submissionData.bloodGroup,
+        diet: submissionData.diet || '',
         residentialStatus: submissionData.residentialStatus,
         familyStatus: submissionData.familyStatus,
         aboutMyself: submissionData.about,
@@ -608,6 +636,78 @@ export default function RegisterPage() {
                       <Input {...field} type="password" placeholder="••••••••" className="font-maven" />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="mobileNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-maven">Mobile Number *</FormLabel>
+                    <div className="flex gap-2">
+                      <div className="w-16 flex items-center justify-center border border-input rounded-md bg-gray-50 font-maven text-sm">
+                        +91
+                      </div>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="tel"
+                          placeholder="9876543210"
+                          maxLength={10}
+                          pattern="[0-9]*"
+                          className="font-maven flex-1"
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="font-telex text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="alternateMobileNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-maven">Alternate Mobile Number (Optional)</FormLabel>
+                    <div className="flex gap-2">
+                      <div className="w-16 flex items-center justify-center border border-input rounded-md bg-gray-50 font-maven text-sm">
+                        +91
+                      </div>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="tel"
+                          placeholder="9876543210"
+                          maxLength={10}
+                          pattern="[0-9]*"
+                          className="font-maven flex-1"
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage className="font-telex text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="sngsMembershipNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-maven">SNGS Membership Number (Optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="text"
+                        placeholder="Enter membership number"
+                        maxLength={50}
+                        className="font-maven"
+                      />
+                    </FormControl>
+                    <FormMessage className="font-telex text-xs" />
                   </FormItem>
                 )}
               />

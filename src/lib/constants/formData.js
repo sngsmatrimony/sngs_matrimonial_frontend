@@ -636,3 +636,49 @@ export const RAASIS = [
   'Kumbam',
   'Meenam',
 ];
+
+// Complexion (India-specific values)
+export const COMPLEXION_OPTIONS = [
+  'Very Fair',
+  'Fair',
+  'Wheatish',
+  'Wheatish Brown',
+  'Dark',
+  'Very Dark',
+];
+
+// Languages Known
+export const LANGUAGES_OPTIONS = [
+  // Frequently Selected
+  'English',
+  'Hindi',
+  'Tamil',
+  'Telugu',
+  'Kannada',
+  'Malayalam',
+  'Marathi',
+  'Bengali',
+  'Gujarati',
+  'Punjabi',
+  // More Options
+  'Assamese',
+  'Odia',
+  'Urdu',
+  'Sanskrit',
+  'Konkani',
+  'Manipuri',
+  'Nepali',
+  'Bodo',
+  'Dogri',
+  'Kashmiri',
+  'Maithili',
+  'Santali',
+  'Sindhi',
+];
+
+// Diet Preferences
+export const DIET_OPTIONS = [
+  'Vegetarian',
+  'Non-Vegetarian',
+  'Eggetarian',
+];

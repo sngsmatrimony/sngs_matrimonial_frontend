@@ -88,13 +88,23 @@ export default function ProfileCard({ profile, isLiked = false }) {
 
       {/* Profile Info - Always visible when not hovered */}
       {!isHovered && (
-        <div className="absolute bottom-0 left-0 right-0 p-6 z-10 text-white">
+        <div className="absolute bottom-0 left-0 right-0 p-6 z-10 text-white space-y-1">
           <h3 className="font-viga text-3xl font-bold mb-1">
             {profile.fullName}
           </h3>
           <p className="font-telex text-sm text-gray-200">
-            {profile.age || 'Age'} • {profile.gender}
+            {profile.age || 'Age'} • {profile.city || profile.state || profile.country}
           </p>
+          {profile.occupation && (
+            <p className="font-telex text-sm text-gray-300">
+              {profile.occupation}
+            </p>
+          )}
+          {profile.motherTongue && (
+            <p className="font-telex text-xs text-gray-400">
+              {profile.motherTongue}
+            </p>
+          )}
         </div>
       )}
 

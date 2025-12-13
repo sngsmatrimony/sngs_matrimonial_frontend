@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   FAMILY_STATUS,
-  BLOOD_GROUPS,
   RESIDENTIAL_STATUS,
 } from '@/lib/constants/formData';
 import { getAllOccupationOptions } from '@/lib/constants/formData';
@@ -18,16 +17,38 @@ export function FamilyDetailsStep({ form }) {
     <div className="space-y-6">
       <h2 className="font-viga text-xl text-secondary">Family & Additional Details</h2>
 
+      {/* SNGS Membership Number */}
+      <FormField
+        control={form.control}
+        name="sngsMembershipNumber"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="font-maven">SNGS Membership Number (Optional)</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                value={field.value ?? ''}
+                type="text"
+                placeholder="Enter SNGS membership number"
+                className="font-maven"
+                maxLength={50}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       {/* Father Details */}
       <div className="space-y-4 p-4 border border-gray-200 rounded-lg">
-        <h3 className="font-maven font-semibold text-secondary">Father's Information</h3>
+        <h3 className="font-maven font-semibold text-secondary">Father&apos;s Information</h3>
 
         <FormField
           control={form.control}
           name="fatherName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Father's Name (Optional)</FormLabel>
+              <FormLabel className="font-maven">Father&apos;s Name (Optional)</FormLabel>
               <FormControl>
                 <Input {...field} value={field.value ?? ''} placeholder="Enter father's name" className="font-maven" />
               </FormControl>
@@ -41,7 +62,7 @@ export function FamilyDetailsStep({ form }) {
           name="fatherOccupation"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Father's Occupation (Optional)</FormLabel>
+              <FormLabel className="font-maven">Father&apos;s Occupation (Optional)</FormLabel>
               <Select value={field.value || ''} onValueChange={(val) => field.onChange(val || undefined)}>
                 <FormControl>
                   <SelectTrigger className="font-maven">
@@ -64,14 +85,14 @@ export function FamilyDetailsStep({ form }) {
 
       {/* Mother Details */}
       <div className="space-y-4 p-4 border border-gray-200 rounded-lg">
-        <h3 className="font-maven font-semibold text-secondary">Mother's Information</h3>
+        <h3 className="font-maven font-semibold text-secondary">Mother&apos;s Information</h3>
 
         <FormField
           control={form.control}
           name="motherName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Mother's Name (Optional)</FormLabel>
+              <FormLabel className="font-maven">Mother&apos;s Name (Optional)</FormLabel>
               <FormControl>
                 <Input {...field} value={field.value ?? ''} placeholder="Enter mother's name" className="font-maven" />
               </FormControl>
@@ -85,7 +106,7 @@ export function FamilyDetailsStep({ form }) {
           name="motherOccupation"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Mother's Occupation (Optional)</FormLabel>
+              <FormLabel className="font-maven">Mother&apos;s Occupation (Optional)</FormLabel>
               <Select value={field.value || ''} onValueChange={(val) => field.onChange(val || undefined)}>
                 <FormControl>
                   <SelectTrigger className="font-maven">
@@ -96,55 +117,6 @@ export function FamilyDetailsStep({ form }) {
                   {occupationOptions.map((option, idx) => (
                     <SelectItem key={`${option}-${idx}`} value={option}>
                       {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      {/* Weight and Blood Group */}
-      <div className="grid grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name="weight"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-maven">Weight (kg, Optional)</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ''}
-                  type="number"
-                  placeholder="Enter weight"
-                  className="font-maven"
-                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="bloodGroup"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-maven">Blood Group (Optional)</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="font-maven">
-                    <SelectValue placeholder="Select blood group" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {BLOOD_GROUPS.map(group => (
-                    <SelectItem key={group} value={group}>
-                      {group}
                     </SelectItem>
                   ))}
                 </SelectContent>

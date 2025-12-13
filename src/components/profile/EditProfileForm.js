@@ -36,6 +36,11 @@ const step1Schema = z.object({
   maritalStatus: z.string().min(1, 'Please select your marital status'),
   gender: z.string().min(1, 'Please select your gender'),
   seekingGender: z.string().min(1, 'Please select who you are seeking'),
+  weight: z.number().min(30, 'Weight must be at least 30 kg').max(200, 'Weight must be at most 200 kg').nullable().optional(),
+  bloodGroup: z.string().optional(),
+  diet: z.enum(['Vegetarian', 'Non-Vegetarian', 'Eggetarian'], {
+    errorMap: () => ({ message: 'Select a valid diet preference' })
+  }).optional().or(z.literal('')),
 }).refine((data) => {
   if (!data.dateOfBirth) return false;
   const today = new Date();
@@ -149,8 +154,6 @@ const step5Schema = z.object({
   fatherOccupation: z.string().optional(),
   motherName: z.string().optional(),
   motherOccupation: z.string().optional(),
-  weight: z.number().min(30, 'Weight must be at least 30 kg').max(200, 'Weight must be at most 200 kg').nullable().optional(),
-  bloodGroup: z.string().optional(),
   residentialStatus: z.string().optional(),
   familyStatus: z.string().min(1, 'Please select your family status'),
   about: z.string().min(50, 'About must be at least 50 characters').max(1000, 'About must be at most 1000 characters'),
@@ -220,6 +223,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     motherOccupation: user?.motherOccupation || '',
     weight: user?.weight || undefined,
     bloodGroup: user?.bloodGroup || '',
+    diet: user?.diet || '',
     residentialStatus: user?.residentialStatus || '',
     familyStatus: user?.familyStatus || '',
     about: user?.about || user?.aboutMyself || '',
@@ -411,6 +415,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
         motherOccupation: formValues.motherOccupation,
         weight: formValues.weight,
         bloodGroup: formValues.bloodGroup,
+        diet: formValues.diet || '',
         residentialStatus: formValues.residentialStatus,
         familyStatus: formValues.familyStatus,
         about: formValues.about,

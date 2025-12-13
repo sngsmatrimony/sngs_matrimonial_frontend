@@ -192,7 +192,7 @@ export default function UserProfileView() {
       {/* Profile Information Cards */}
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Personal Details Card */}
-        {(user?.religion || user?.caste || user?.motherTongue || user?.maritalStatus || user?.shuddhaJathakam || user?.doshamTypes || user?.nakshatra || user?.raasi || user?.isDivorcee || user?.height || user?.physicalStatus) && (
+        {(user?.religion || user?.caste || user?.motherTongue || user?.maritalStatus || user?.height || user?.physicalStatus || user?.weight || user?.bloodGroup || user?.familyStatus) && (
           <InfoCard
             title="💑 Personal Details"
             className="mb-6"
@@ -201,29 +201,17 @@ export default function UserProfileView() {
             {user?.motherTongue && <InfoField label="Mother Tongue" value={user.motherTongue} />}
             {user?.caste && <InfoField label="Caste" value={user.caste} />}
             {user?.maritalStatus && <InfoField label="Marital Status" value={user.maritalStatus} />}
-            {user?.shuddhaJathakam && <InfoField label="Shuddha Jathakam" value={user.shuddhaJathakam} />}
-            {user?.doshamTypes && user.doshamTypes.length > 0 && (
-              <div className="py-2 border-b border-gray-100">
-                <span className="font-telex text-secondary/70 text-sm block mb-2">Dosham Types</span>
-                <div className="flex flex-wrap gap-2">
-                  {user.doshamTypes.map((dosham, idx) => (
-                    <span key={idx} className="text-xs bg-secondary/10 text-secondary px-2 py-1 rounded">
-                      {dosham}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {user?.nakshatra && <InfoField label="Star Details" value={user.nakshatra} />}
-            {user?.raasi && <InfoField label="Raasi" value={user.raasi} />}
-            {user?.isDivorcee && <InfoField label="Marital Status" value="Divorced" />}
             {user?.height && <InfoField label="Height" value={user.height} />}
+            {user?.weight && <InfoField label="Weight" value={`${user.weight} kg`} />}
             {user?.physicalStatus && <InfoField label="Physical Status" value={user.physicalStatus} />}
+            {user?.bloodGroup && <InfoField label="Blood Group" value={user.bloodGroup} />}
+            {user?.familyStatus && <InfoField label="Family Status" value={user.familyStatus} />}
+            {user?.isDivorcee && <InfoField label="Marital Status" value="Divorced" />}
           </InfoCard>
         )}
 
         {/* Birth Details Card */}
-        {(user?.dateOfBirth || user?.timeOfBirth) && (
+        {(user?.dateOfBirth || user?.timeOfBirth || user?.nakshatra || user?.raasi || user?.shuddhaJathakam || user?.doshamTypes) && (
           <InfoCard
             title="💫 Birth Details"
             className="mb-6"
@@ -244,17 +232,21 @@ export default function UserProfileView() {
                 value={formatTimeToAMPM(user.timeOfBirth)}
               />
             )}
-          </InfoCard>
-        )}
-
-        {/* Physical & Health Details Card */}
-        {(user?.weight || user?.bloodGroup) && (
-          <InfoCard
-            title="💪 Physical & Health Details"
-            className="mb-6"
-          >
-            {user?.weight && <InfoField label="Weight" value={`${user.weight} kg`} />}
-            {user?.bloodGroup && <InfoField label="Blood Group" value={user.bloodGroup} />}
+            {user?.nakshatra && <InfoField label="Star" value={user.nakshatra} />}
+            {user?.raasi && <InfoField label="Raasi" value={user.raasi} />}
+            {user?.shuddhaJathakam && <InfoField label="Shuddha Jathakam" value={user.shuddhaJathakam} />}
+            {user?.doshamTypes && user.doshamTypes.length > 0 && (
+              <div className="py-2 border-b border-gray-100">
+                <span className="font-telex text-secondary/70 text-sm block mb-2">Dosham</span>
+                <div className="flex flex-wrap gap-2">
+                  {user.doshamTypes.map((dosham, idx) => (
+                    <span key={idx} className="text-xs bg-secondary/10 text-secondary px-2 py-1 rounded">
+                      {dosham}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </InfoCard>
         )}
 
@@ -277,29 +269,14 @@ export default function UserProfileView() {
           </InfoCard>
         )}
 
-        {/* Family Information Card */}
-        {(user?.fatherName || user?.motherName || user?.familyStatus || user?.residentialStatus) && (
-          <InfoCard
-            title="👨‍👩‍👧‍👦 Family Information"
-            icon={Users}
-            className="mb-6"
-          >
-            {user?.fatherName && <InfoField label="Father's Name" value={user.fatherName} />}
-            {user?.fatherOccupation && <InfoField label="Father's Occupation" value={user.fatherOccupation} />}
-            {user?.motherName && <InfoField label="Mother's Name" value={user.motherName} />}
-            {user?.motherOccupation && <InfoField label="Mother's Occupation" value={user.motherOccupation} />}
-            <InfoField label="Family Status" value={user?.familyStatus} />
-            <InfoField label="Residential Status" value={user?.residentialStatus} />
-          </InfoCard>
-        )}
-
         {/* Address Information Card */}
-        {((userProfile?.presentResidentialAddress && Object.values(userProfile.presentResidentialAddress).some(v => v)) ||
+        {(user?.residentialStatus || (userProfile?.presentResidentialAddress && Object.values(userProfile.presentResidentialAddress).some(v => v)) ||
           (userProfile?.nativePlaceAddress && Object.values(userProfile.nativePlaceAddress).some(v => v))) && (
           <InfoCard
             title="📍 Address Information"
             className="mb-6"
           >
+            {user?.residentialStatus && <InfoField label="Residential Status" value={user.residentialStatus} />}
             {userProfile?.presentResidentialAddress && Object.values(userProfile.presentResidentialAddress).some(v => v) && (
               <div className="py-3 border-b border-gray-100">
                 <span className="font-telex text-secondary/70 text-sm block mb-2">Present Residential Address</span>

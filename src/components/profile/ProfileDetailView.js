@@ -239,17 +239,38 @@ export default function ProfileDetailView({ profileId }) {
         {/* Profile Information Cards */}
         <div className="max-w-4xl mx-auto">
           {/* Personal Details Card */}
-          {(profile?.motherTongue || profile?.height || profile?.physicalStatus || profile?.maritalStatus) && (
+          {(profile?.motherTongue || profile?.height || profile?.physicalStatus || profile?.maritalStatus || profile?.complexion || profile?.diet || profile?.weight || profile?.bloodGroup || profile?.familyStatus) && (
             <InfoCard title="💑 Personal Details" className="mb-6">
               <InfoField label="Mother Tongue" value={profile?.motherTongue} />
               <InfoField label="Height" value={profile?.height} />
+              <InfoField label="Weight" value={profile?.weight ? `${profile.weight} kg` : null} />
               <InfoField label="Physical Status" value={profile?.physicalStatus} />
+              <InfoField label="Blood Group" value={profile?.bloodGroup} />
               <InfoField label="Marital Status" value={profile?.maritalStatus} />
+              {profile?.complexion && <InfoField label="Complexion" value={profile.complexion} />}
+              {profile?.diet && <InfoField label="Diet" value={profile.diet} />}
+              {profile?.familyStatus && <InfoField label="Family Status" value={profile.familyStatus} />}
+            </InfoCard>
+          )}
+
+          {/* Languages Known Card */}
+          {profile?.languagesKnown && profile.languagesKnown.length > 0 && (
+            <InfoCard title="🗣️ Languages Known" className="mb-6">
+              <div className="flex flex-wrap gap-2">
+                {profile.languagesKnown.map((language, idx) => (
+                  <span
+                    key={idx}
+                    className="bg-gray-100 text-gray-800 font-maven text-sm px-3 py-1 rounded-full"
+                  >
+                    {language}
+                  </span>
+                ))}
+              </div>
             </InfoCard>
           )}
 
           {/* Birth Details Card */}
-          {(profile?.dateOfBirth || profile?.timeOfBirth) && (
+          {(profile?.dateOfBirth || profile?.timeOfBirth || profile?.placeOfBirth || profile?.nakshatra || profile?.raasi || profile?.shuddhaJathakam || profile?.doshamTypes) && (
             <InfoCard title="💫 Birth Details" className="mb-6">
               {profile?.dateOfBirth && (
                 <InfoField
@@ -267,20 +288,12 @@ export default function ProfileDetailView({ profileId }) {
                   value={formatTimeToAMPM(profile.timeOfBirth)}
                 />
               )}
-            </InfoCard>
-          )}
-
-          {/* Religion & Location Card */}
-          {(profile?.religion || profile?.caste || profile?.shuddhaJathakam || profile?.nakshatra || profile?.raasi || profile?.country || profile?.state || profile?.city) && (
-            <InfoCard title="🙏 Religion & Location" icon={MapPin} className="mb-6">
-              <InfoField label="Religion" value={profile?.religion} />
-              {profile?.caste && <InfoField label="Caste" value={profile.caste} />}
+              {profile?.nakshatra && <InfoField label="Star" value={profile.nakshatra} />}
+              {profile?.raasi && <InfoField label="Raasi" value={profile.raasi} />}
               {profile?.shuddhaJathakam && <InfoField label="Shuddha Jathakam" value={profile.shuddhaJathakam} />}
               {profile?.doshamTypes && profile.doshamTypes.length > 0 && (
                 <div className="py-2 border-b border-gray-100">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="font-telex text-secondary/70 text-sm">Dosham Types</span>
-                  </div>
+                  <span className="font-telex text-secondary/70 text-sm block mb-2">Dosham</span>
                   <div className="flex flex-wrap gap-2">
                     {profile.doshamTypes.map((dosham, idx) => (
                       <span key={idx} className="text-xs bg-secondary/10 text-secondary px-2 py-1 rounded">
@@ -290,8 +303,15 @@ export default function ProfileDetailView({ profileId }) {
                   </div>
                 </div>
               )}
-              {profile?.nakshatra && <InfoField label="Star Details" value={profile.nakshatra} />}
-              {profile?.raasi && <InfoField label="Raasi" value={profile.raasi} />}
+              {profile?.placeOfBirth && <InfoField label="Place of Birth" value={profile.placeOfBirth} />}
+            </InfoCard>
+          )}
+
+          {/* Religion & Location Card */}
+          {(profile?.religion || profile?.caste || profile?.country || profile?.state || profile?.city) && (
+            <InfoCard title="🙏 Religion & Location" icon={MapPin} className="mb-6">
+              <InfoField label="Religion" value={profile?.religion} />
+              {profile?.caste && <InfoField label="Caste" value={profile.caste} />}
               <InfoField label="Country" value={profile?.country} />
               {profile?.state && <InfoField label="State" value={profile.state} />}
               {profile?.city && <InfoField label="City" value={profile.city} />}
@@ -299,7 +319,7 @@ export default function ProfileDetailView({ profileId }) {
           )}
 
           {/* Professional Information Card */}
-          {(profile?.education || profile?.employmentType || profile?.occupation || profile?.annualIncome) && (
+          {(profile?.education || profile?.employmentType || profile?.occupation || profile?.annualIncome || profile?.additionalInfo) && (
             <InfoCard title="💼 Professional" icon={Briefcase} className="mb-6">
               <InfoField label="Education" value={profile?.education} />
               <InfoField label="Employment Type" value={profile?.employmentType} />
@@ -310,13 +330,20 @@ export default function ProfileDetailView({ profileId }) {
                   value={profile.annualIncome.displayText || `${profile.annualIncome.currency} ${profile.annualIncome.min?.toLocaleString()}-${profile.annualIncome.max?.toLocaleString()}`}
                 />
               )}
+              {profile?.additionalInfo && (
+                <div className="py-3 border-b border-gray-100 last:border-0">
+                  <span className="font-telex text-secondary/70 text-sm block mb-2">Additional Information</span>
+                  <p className="font-maven text-secondary whitespace-pre-line">{profile.additionalInfo}</p>
+                </div>
+              )}
             </InfoCard>
           )}
 
           {/* Address Information Card */}
-          {((profile?.presentResidentialAddress && Object.values(profile.presentResidentialAddress).some(v => v)) ||
+          {(profile?.residentialStatus || (profile?.presentResidentialAddress && Object.values(profile.presentResidentialAddress).some(v => v)) ||
             (profile?.nativePlaceAddress && Object.values(profile.nativePlaceAddress).some(v => v))) && (
             <InfoCard title="📍 Address Information" className="mb-6">
+              {profile?.residentialStatus && <InfoField label="Residential Status" value={profile.residentialStatus} />}
               {profile?.presentResidentialAddress && Object.values(profile.presentResidentialAddress).some(v => v) && (
                 <div className="py-3 border-b border-gray-100">
                   <span className="font-telex text-secondary/70 text-sm block mb-2">Present Residential Address</span>
@@ -350,26 +377,6 @@ export default function ProfileDetailView({ profileId }) {
             </InfoCard>
           )}
 
-          {/* Family Information Card */}
-          {(profile?.fatherName || profile?.motherName || profile?.familyStatus || profile?.weight || profile?.bloodGroup || profile?.residentialStatus) && (
-            <InfoCard title="👨‍👩‍👧‍👦 Family Information" icon={Users} className="mb-6">
-              {profile?.fatherName && <InfoField label="Father's Name" value={profile.fatherName} />}
-              {profile?.fatherOccupation && <InfoField label="Father's Occupation" value={profile.fatherOccupation} />}
-              {profile?.motherName && <InfoField label="Mother's Name" value={profile.motherName} />}
-              {profile?.motherOccupation && <InfoField label="Mother's Occupation" value={profile.motherOccupation} />}
-              <InfoField label="Family Status" value={profile?.familyStatus} />
-            </InfoCard>
-          )}
-
-          {/* Physical & Residential Details Card */}
-          {(profile?.weight || profile?.bloodGroup || profile?.residentialStatus) && (
-            <InfoCard title="💪 Physical & Residential Details" className="mb-6">
-              {profile?.weight && <InfoField label="Weight" value={`${profile.weight} kg`} />}
-              {profile?.bloodGroup && <InfoField label="Blood Group" value={profile.bloodGroup} />}
-              {profile?.residentialStatus && <InfoField label="Residential Status" value={profile.residentialStatus} />}
-            </InfoCard>
-          )}
-
           {/* About Section */}
           {profile?.about && (
             <InfoCard title="📝 About Me" className="mb-6">
@@ -397,6 +404,30 @@ export default function ProfileDetailView({ profileId }) {
           {profile?.hobbies && (
             <InfoCard title="🎨 Hobbies" className="mb-6">
               <p className="font-maven text-gray-700 leading-relaxed">{profile.hobbies}</p>
+            </InfoCard>
+          )}
+
+          {/* Contact Information Card */}
+          {(profile?.mobileNumber || profile?.alternateMobileNumber || profile?.sngsMembershipNumber) && (
+            <InfoCard title="📞 Contact Information" className="mb-6">
+              {profile?.mobileNumber && (
+                <InfoField
+                  label="Mobile Number"
+                  value={`+91 ${profile.mobileNumber}`}
+                />
+              )}
+              {profile?.alternateMobileNumber && (
+                <InfoField
+                  label="Alternate Mobile Number"
+                  value={`+91 ${profile.alternateMobileNumber}`}
+                />
+              )}
+              {profile?.sngsMembershipNumber && (
+                <InfoField
+                  label="SNGS Membership Number"
+                  value={profile.sngsMembershipNumber}
+                />
+              )}
             </InfoCard>
           )}
 

@@ -5,6 +5,7 @@ import { format, setMonth, setYear } from 'date-fns';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Input } from '@/components/ui/input';
 import { Check } from 'lucide-react';
 import {
   MOTHER_TONGUES,
@@ -17,7 +18,12 @@ import {
   DOSHAM_TYPES,
   NAKSHATRAS,
   RAASIS,
+  COMPLEXION_OPTIONS,
+  LANGUAGES_OPTIONS,
+  BLOOD_GROUPS,
+  DIET_OPTIONS,
 } from '@/lib/constants/formData';
+import { MultiSelect } from '@/components/ui/multi-select';
 
 export function PersonalDetailsStep({ form }) {
   const watchReligion = useWatch({ control: form.control, name: 'religion' });
@@ -166,6 +172,26 @@ export function PersonalDetailsStep({ form }) {
         <FormMessage />
       </FormItem>
 
+      {/* Place of Birth */}
+      <FormField
+        control={form.control}
+        name="placeOfBirth"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="font-maven">Place of Birth (Optional)</FormLabel>
+            <FormControl>
+              <Input
+                placeholder="Enter place of birth"
+                maxLength={100}
+                className="font-maven"
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       {/* Mother Tongue */}
       <FormField
         control={form.control}
@@ -197,6 +223,53 @@ export function PersonalDetailsStep({ form }) {
                     </SelectItem>
                   ))}
                 </SelectGroup>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Languages Known */}
+      <FormField
+        control={form.control}
+        name="languagesKnown"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="font-maven">Languages Known (Optional)</FormLabel>
+            <FormControl>
+              <MultiSelect
+                options={LANGUAGES_OPTIONS}
+                value={field.value || []}
+                onChange={field.onChange}
+                placeholder="Select languages"
+                maxSelections={10}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* Complexion */}
+      <FormField
+        control={form.control}
+        name="complexion"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="font-maven">Complexion (Optional)</FormLabel>
+            <Select value={field.value || ''} onValueChange={(val) => field.onChange(val || null)}>
+              <FormControl>
+                <SelectTrigger className="font-maven">
+                  <SelectValue placeholder="Select complexion" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {COMPLEXION_OPTIONS.map(complexion => (
+                  <SelectItem key={complexion} value={complexion}>
+                    {complexion}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <FormMessage />
@@ -251,31 +324,107 @@ export function PersonalDetailsStep({ form }) {
         />
       </div>
 
-      {/* Height */}
-      <FormField
-        control={form.control}
-        name="height"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="font-maven">Height</FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
+      {/* Height and Weight */}
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="height"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-maven">Height</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="font-maven">
+                    <SelectValue placeholder="Select height" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {HEIGHTS.map(height => (
+                    <SelectItem key={height} value={height}>
+                      {height}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="weight"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-maven">Weight (kg, Optional)</FormLabel>
               <FormControl>
-                <SelectTrigger className="font-maven">
-                  <SelectValue placeholder="Select height" />
-                </SelectTrigger>
+                <Input
+                  {...field}
+                  value={field.value ?? ''}
+                  type="number"
+                  placeholder="e.g., 70"
+                  className="font-maven w-24"
+                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                />
               </FormControl>
-              <SelectContent>
-                {HEIGHTS.map(height => (
-                  <SelectItem key={height} value={height}>
-                    {height}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      {/* Blood Group and Diet */}
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="bloodGroup"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-maven">Blood Group (Optional)</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="font-maven">
+                    <SelectValue placeholder="Select blood group" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {BLOOD_GROUPS.map(group => (
+                    <SelectItem key={group} value={group}>
+                      {group}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="diet"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-maven">Diet (Optional)</FormLabel>
+              <Select value={field.value || ''} onValueChange={(val) => field.onChange(val || undefined)}>
+                <FormControl>
+                  <SelectTrigger className="font-maven">
+                    <SelectValue placeholder="Select diet preference" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {DIET_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
 
       {/* Physical Status - Pill Buttons */}
       <FormField
