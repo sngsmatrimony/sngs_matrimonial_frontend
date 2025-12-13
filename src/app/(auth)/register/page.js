@@ -221,7 +221,6 @@ export default function RegisterPage() {
     // File uploads
     profilePicture: null,
     galleryPhotos: [],
-    galleryVideos: [],
   });
 
   const getSchemaForStep = (step) => {
@@ -270,7 +269,6 @@ export default function RegisterPage() {
       // Explicitly preserve file properties (prevent overwriting with undefined)
       profilePicture: prev.profilePicture,
       galleryPhotos: prev.galleryPhotos,
-      galleryVideos: prev.galleryVideos,
     }));
   };
 
@@ -346,7 +344,6 @@ export default function RegisterPage() {
         // Explicitly preserve file properties
         profilePicture: formData.profilePicture,
         galleryPhotos: formData.galleryPhotos,
-        galleryVideos: formData.galleryVideos,
       };
       setFormData(updatedFormData);
       setIsLoading(true);
@@ -381,7 +378,6 @@ export default function RegisterPage() {
       // Explicitly preserve file properties
       profilePicture: prev.profilePicture,
       galleryPhotos: prev.galleryPhotos,
-      galleryVideos: prev.galleryVideos,
     }));
     setCurrentStep(currentStep + 1);
   };
@@ -517,17 +513,6 @@ export default function RegisterPage() {
                 console.log('[Register] Uploading photo:', photo.file.name);
                 const photoResult = await useAuthStore.getState().uploadPhoto(photo.file);
                 console.log('[Register] Photo upload result:', photoResult);
-              }
-            }
-          }
-
-          if (submissionData.galleryVideos?.length > 0) {
-            console.log('[Register] Uploading gallery videos:', submissionData.galleryVideos.length);
-            for (const video of submissionData.galleryVideos) {
-              if (video.file && !video.existing) {
-                console.log('[Register] Uploading video:', video.file.name);
-                const vidResult = await useAuthStore.getState().uploadVideo(video.file, video.duration);
-                console.log('[Register] Video upload result:', vidResult);
               }
             }
           }
@@ -776,7 +761,6 @@ export default function RegisterPage() {
                 form={form}
                 profilePicture={formData.profilePicture}
                 galleryPhotos={formData.galleryPhotos}
-                galleryVideos={formData.galleryVideos}
                 onFileUpdate={handleFileUpdate}
               />
             )}

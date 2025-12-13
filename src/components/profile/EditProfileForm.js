@@ -236,7 +236,6 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     // File uploads
     profilePicture: null,
     galleryPhotos: [],
-    galleryVideos: [],
   });
 
   const getSchemaForStep = (step) => {
@@ -285,7 +284,6 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
       // Explicitly preserve file properties (prevent overwriting with undefined)
       profilePicture: prev.profilePicture,
       galleryPhotos: prev.galleryPhotos,
-      galleryVideos: prev.galleryVideos,
     }));
   };
 
@@ -463,17 +461,6 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
             }
           }
         }
-
-        if (formData.galleryVideos?.length > 0) {
-          console.log('[EditProfile] Uploading gallery videos:', formData.galleryVideos.length);
-          for (const video of formData.galleryVideos) {
-            if (video.file && !video.existing) {
-              console.log('[EditProfile] Uploading video:', video.file.name);
-              const vidResult = await useAuthStore.getState().uploadVideo(video.file, video.duration);
-              console.log('[EditProfile] Video upload result:', vidResult);
-            }
-          }
-        }
       } catch (mediaErr) {
         console.warn('Media upload warning:', mediaErr.message);
         // Don't fail profile update if media upload fails
@@ -554,7 +541,6 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
                 userProfile={userProfile}
                 profilePicture={formData.profilePicture}
                 galleryPhotos={formData.galleryPhotos}
-                galleryVideos={formData.galleryVideos}
                 onFileUpdate={handleFileUpdate}
               />
             )}

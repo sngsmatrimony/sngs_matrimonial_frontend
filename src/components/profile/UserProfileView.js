@@ -361,29 +361,6 @@ export default function UserProfileView() {
             </div>
           </div>
         )}
-
-        {/* Videos Section */}
-        {userProfile?.gallery?.videos && userProfile.gallery.videos.length > 0 && (
-          <div className="mb-8">
-            <h3 className="font-viga text-2xl text-secondary flex items-center gap-2 mb-4">
-              🎬 Videos ({userProfile.gallery.videos.length})
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {userProfile.gallery.videos.map((video, idx) => (
-                <div
-                  key={idx}
-                  className="relative aspect-video rounded-xl overflow-hidden bg-gray-200 border-2 border-gray-100 hover:shadow-lg transition-shadow"
-                >
-                  <video
-                    src={video.url}
-                    controls
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Footer spacing */}

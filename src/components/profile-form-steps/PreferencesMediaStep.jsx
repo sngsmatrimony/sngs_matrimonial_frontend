@@ -35,19 +35,16 @@ export function PreferencesMediaStep({
   userProfile = null,
   profilePicture = null,
   galleryPhotos = [],
-  galleryVideos = [],
   onFileUpdate = null
 }) {
   const { user: authUser } = useAuthStore();
   const hasInitialized = useRef(false);
   const profilePictureInputRef = useRef(null);
   const galleryPhotosInputRef = useRef(null);
-  const galleryVideosInputRef = useRef(null);
 
   // Fallback local state when onFileUpdate is not provided (backward compatibility)
   const [localProfilePicture, setLocalProfilePicture] = useState(null);
   const [localGalleryPhotos, setLocalGalleryPhotos] = useState([]);
-  const [localGalleryVideos, setLocalGalleryVideos] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Initialize with existing media on mount (only once)
@@ -76,16 +73,6 @@ export function PreferencesMediaStep({
       onFileUpdate('galleryPhotos', existingPhotos);
     }
 
-    // Gallery videos from userProfile
-    if (userProfile?.gallery?.videos && Array.isArray(userProfile.gallery.videos) && userProfile.gallery.videos.length > 0) {
-      const existingVideos = userProfile.gallery.videos.map(video => ({
-        preview: video.url,
-        duration: video.duration,
-        existing: true,
-      }));
-      onFileUpdate('galleryVideos', existingVideos);
-    }
-
   }, [onFileUpdate, userProfile, authUser]);
 
   const handlePhotoUpload = (e) => {
@@ -111,61 +98,6 @@ export function PreferencesMediaStep({
     } else {
       setLocalGalleryPhotos(prev => [...prev, ...newPhotos]);
     }
-
-    // Reset input to allow selecting the same file again
-    if (e.target) {
-      e.target.value = '';
-    }
-  };
-
-  const handleVideoUpload = (e) => {
-    const files = Array.from(e.target.files || []);
-
-    // Use parent state if available, otherwise use local state
-    const currentVideos = onFileUpdate
-      ? (galleryVideos || []).length
-      : localGalleryVideos.length;
-
-    if (currentVideos + files.length > 2) {
-      alert('Maximum 2 videos allowed');
-      return;
-    }
-
-    const promises = files.map(file => {
-      return new Promise((resolve) => {
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-
-        video.onloadedmetadata = function() {
-          window.URL.revokeObjectURL(video.src);
-          const duration = video.duration;
-
-          if (duration > 120) {
-            alert(`Video "${file.name}" is too long. Maximum 120 seconds allowed.`);
-            resolve(null);
-          } else {
-            resolve({
-              file,
-              preview: URL.createObjectURL(file),
-              duration
-            });
-          }
-        };
-
-        video.src = URL.createObjectURL(file);
-      });
-    });
-
-    Promise.all(promises).then(results => {
-      const validVideos = results.filter(v => v !== null);
-      if (validVideos.length > 0) {
-        if (onFileUpdate) {
-          onFileUpdate('galleryVideos', [...(galleryVideos || []), ...validVideos]);
-        } else {
-          setLocalGalleryVideos(prev => [...prev, ...validVideos]);
-        }
-      }
-    });
 
     // Reset input to allow selecting the same file again
     if (e.target) {
@@ -229,42 +161,6 @@ export function PreferencesMediaStep({
     } catch (err) {
       console.error('[PreferencesMediaStep] Error removing photo:', err);
       alert('Failed to delete photo');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const removeVideo = async (index) => {
-    const videos = onFileUpdate ? galleryVideos : localGalleryVideos;
-    const video = videos?.[index];
-
-    if (!video) return;
-
-    setIsDeleting(true);
-
-    try {
-      // If it's an existing video (already on server), delete from backend
-      if (video.existing) {
-        console.log('[PreferencesMediaStep] Deleting existing video at index:', index);
-        const result = await useAuthStore.getState().deleteVideo(index);
-        if (!result.success) {
-          console.error('[PreferencesMediaStep] Failed to delete video:', result.error);
-          alert('Failed to delete video: ' + result.error);
-          return;
-        }
-        console.log('[PreferencesMediaStep] Video deleted successfully');
-      }
-
-      // Remove from local state (works for both new and existing after API call)
-      if (onFileUpdate) {
-        const newVideos = videos.filter((_, i) => i !== index);
-        onFileUpdate('galleryVideos', newVideos);
-      } else {
-        setLocalGalleryVideos(prev => prev.filter((_, i) => i !== index));
-      }
-    } catch (err) {
-      console.error('[PreferencesMediaStep] Error removing video:', err);
-      alert('Failed to delete video');
     } finally {
       setIsDeleting(false);
     }
@@ -489,47 +385,6 @@ export function PreferencesMediaStep({
           </div>
         )}
         <p className="text-sm text-secondary font-maven">{((onFileUpdate ? galleryPhotos : localGalleryPhotos) || []).length}/10 photos added</p>
-      </div>
-
-      {/* Gallery Videos */}
-      <div className="space-y-3 p-4 border border-gray-200 rounded-lg">
-        <h3 className="font-maven font-semibold text-secondary">Gallery Videos (Max 2, 120s each)</h3>
-        <Input
-          ref={galleryVideosInputRef}
-          type="file"
-          multiple
-          accept="video/*"
-          onChange={handleVideoUpload}
-          className="font-maven"
-        />
-        {((onFileUpdate ? galleryVideos : localGalleryVideos) || []).length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {((onFileUpdate ? galleryVideos : localGalleryVideos) || []).map((video, idx) => {
-              // Ensure video has preview property
-              const previewSrc = video.preview || (video.file ? URL.createObjectURL(video.file) : null);
-              if (!previewSrc) return null;
-
-              return (
-                <div key={idx} className="relative group">
-                  <video
-                    src={previewSrc}
-                    className="w-full h-32 object-cover rounded-lg bg-gray-200"
-                    controls
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeVideo(idx)}
-                    disabled={isDeleting}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-        <p className="text-sm text-secondary font-maven">{((onFileUpdate ? galleryVideos : localGalleryVideos) || []).length}/2 videos added</p>
       </div>
     </div>
   );

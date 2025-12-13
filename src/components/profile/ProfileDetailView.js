@@ -453,29 +453,6 @@ export default function ProfileDetailView({ profileId }) {
               </div>
             </div>
           )}
-
-          {/* Videos Section */}
-          {profile?.gallery?.videos && profile.gallery.videos.length > 0 && (
-            <div className="mb-8">
-              <h3 className="font-viga text-2xl text-secondary mb-4 flex items-center gap-2">
-                🎬 Videos ({profile.gallery.videos.length})
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {profile.gallery.videos.map((video, idx) => (
-                  <div
-                    key={idx}
-                    className="relative aspect-video rounded-xl overflow-hidden bg-gray-200 border-2 border-gray-100 hover:shadow-lg transition-shadow"
-                  >
-                    <video
-                      src={video.url}
-                      controls
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
