@@ -4,11 +4,14 @@ import client from '@/lib/api/client';
 
 export const useAuthStore = create(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isLoading: false,
       error: null,
+
+      // Computed getter for admin status
+      isAdmin: () => get().user?.role === 'admin',
 
       // Login action
       login: async (email, password) => {
