@@ -4,6 +4,7 @@ import { LogOut } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
+import HelpButton from './HelpButton';
 
 export default function Header({ showLogout = false, isFixed = false }) {
   const { logout } = useAuthStore();
@@ -32,6 +33,7 @@ export default function Header({ showLogout = false, isFixed = false }) {
           <h1 className="font-viga text-2xl text-accent">SNGS Matrimonial</h1>
         </div>
 
+        <HelpButton />
         {showLogout && (
           <button
             onClick={handleLogout}

@@ -8,6 +8,7 @@ import { LogOut, User, Heart, Compass, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
 import { useLandingStore } from '@/store/landingStore';
+import HelpButton from '@/components/layout/HelpButton';
 import BrowseProfiles from '@/components/profile/BrowseProfiles';
 import LikedProfiles from '@/components/profile/LikedProfiles';
 import UserProfileView from '@/components/profile/UserProfileView';
@@ -67,11 +68,14 @@ export default function Home() {
               </h1>
             </div>
 
-            {/* Welcome Message */}
-            <div className="hidden md:flex items-center gap-2">
+            {/* Welcome Message - Center */}
+            <div className="hidden md:flex items-center gap-2 flex-1 justify-center">
               <span className="font-maven text-gray-600">Welcome,</span>
               <span className="font-viga text-secondary">{user?.fullName}</span>
             </div>
+
+            {/* Help Button - Right */}
+            <HelpButton />
 
             {/* Logout Button */}
             <button
@@ -169,6 +173,7 @@ export default function Home() {
             />
             <h1 className="font-viga text-2xl text-accent">SNGS Matrimonial</h1>
           </div>
+          <HelpButton />
         </div>
       </header>
 

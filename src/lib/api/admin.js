@@ -44,4 +44,11 @@ export const adminApi = {
    * Get user demographics
    */
   getDemographics: () => adminClient.get('/api/admin/analytics/demographics'),
+
+  // ==================== Settings ====================
+
+  /**
+   * Update contact information
+   */
+  updateContactInfo: (data) => adminClient.put('/api/admin/settings/contact-info', data),
 };

@@ -8,9 +8,11 @@ import { useAdminAuthStore } from '@/store/adminAuthStore';
 import {
   BarChart3,
   Users,
+  Settings,
   LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import HelpButton from '@/components/layout/HelpButton';
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
@@ -67,11 +69,14 @@ export default function AdminLayout({ children }) {
               </h1>
             </div>
 
-            {/* Welcome Message */}
-            <div className="hidden md:flex items-center gap-2">
+            {/* Welcome Message - Center */}
+            <div className="hidden md:flex items-center gap-2 flex-1 justify-center">
               <span className="font-maven text-gray-600">Welcome,</span>
               <span className="font-viga text-secondary">{admin?.email?.split('@')[0]}</span>
             </div>
+
+            {/* Help Button - Right */}
+            <HelpButton />
 
             {/* Logout Button */}
             <button
@@ -109,6 +114,17 @@ export default function AdminLayout({ children }) {
               >
                 <Users size={20} />
                 <span className="hidden sm:inline">Users</span>
+              </Link>
+              <Link
+                href="/admin/settings"
+                className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                  pathname.startsWith('/admin/settings')
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-white hover:text-gray-300'
+                }`}
+              >
+                <Settings size={20} />
+                <span className="hidden sm:inline">Settings</span>
               </Link>
             </div>
           </div>

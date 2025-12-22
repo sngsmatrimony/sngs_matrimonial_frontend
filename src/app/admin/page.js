@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api/admin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Users, UserCheck, UserX, Image } from 'lucide-react';
+import { Users, UserCheck, UserX, Image, Settings } from 'lucide-react';
 
 function StatsCard({ icon: Icon, label, value, subtitle, color = 'text-primary' }) {
   return (
@@ -162,8 +163,8 @@ export default function AdminDashboard() {
                 <Legend />
                 <Line
                   type="monotone"
-                  dataKey="users"
-                  stroke="#FFE100"
+                  dataKey="user"
+                  stroke="#000000FF"
                   dot={{ fill: '#FFE100', r: 4 }}
                   activeDot={{ r: 6 }}
                 />
