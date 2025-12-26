@@ -89,7 +89,12 @@ export default function LoginPage() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-telex text-secondary font-semibold">Password</FormLabel>
+                  <div className="flex items-center justify-between">
+                    <FormLabel className="font-telex text-secondary font-semibold">Password</FormLabel>
+                    <Link href="/forgot-password" className="font-maven text-sm text-black font-semibold hover:text-secondary/80 hover:underline">
+                      Forgot?
+                    </Link>
+                  </div>
                   <FormControl>
                     <Input
                       placeholder="••••••••"
@@ -114,8 +119,8 @@ export default function LoginPage() {
         </Form>
 
         <div className="font-maven mt-6 pt-6 border-t border-gray-200 text-center text-sm">
-          <span className="text-secondary/70">Don't have an account? </span>
-          <Link href="/register" className="text-primary hover:text-primary/80 font-semibold hover:underline transition-colors">
+          <span className="text-secondary/70">Don&apos;t have an account? </span>
+          <Link href="/register" className="text-black hover:text-secondary/80 font-semibold hover:underline transition-colors mx-2">
             Sign up
           </Link>
         </div>

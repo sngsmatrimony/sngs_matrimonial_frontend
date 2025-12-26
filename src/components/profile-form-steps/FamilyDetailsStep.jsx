@@ -17,28 +17,6 @@ export function FamilyDetailsStep({ form }) {
     <div className="space-y-6">
       <h2 className="font-viga text-xl text-secondary">Family & Additional Details</h2>
 
-      {/* SNGS Membership Number */}
-      <FormField
-        control={form.control}
-        name="sngsMembershipNumber"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="font-maven">SNGS Membership Number (Optional)</FormLabel>
-            <FormControl>
-              <Input
-                {...field}
-                value={field.value ?? ''}
-                type="text"
-                placeholder="Enter SNGS membership number"
-                className="font-maven"
-                maxLength={50}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
       {/* Father Details */}
       <div className="space-y-4 p-4 border border-gray-200 rounded-lg">
         <h3 className="font-maven font-semibold text-secondary">Father&apos;s Information</h3>

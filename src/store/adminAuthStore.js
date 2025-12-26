@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import client from '@/lib/api/client';
+import adminClient from '@/lib/api/adminClient';
 
 export const useAdminAuthStore = create(
   persist(
@@ -14,7 +14,7 @@ export const useAdminAuthStore = create(
       login: async (email, password) => {
         set({ isLoading: true, error: null });
         try {
-          const response = await client.post('/api/admin-auth/login', { email, password });
+          const response = await adminClient.post('/api/admin-auth/login', { email, password });
           const { token, admin } = response.data;
 
           localStorage.setItem('adminAuthToken', token);
@@ -34,7 +34,7 @@ export const useAdminAuthStore = create(
           if (storedToken) {
             set({ token: storedToken });
             try {
-              const response = await client.get('/api/admin-auth/me', {
+              const response = await adminClient.get('/api/admin-auth/me', {
                 headers: { Authorization: `Bearer ${storedToken}` }
               });
               set({ admin: response.data.admin, isLoading: false });
@@ -60,7 +60,7 @@ export const useAdminAuthStore = create(
       getCurrentAdmin: async () => {
         try {
           const token = get().token || localStorage.getItem('adminAuthToken');
-          const response = await client.get('/api/admin-auth/me', {
+          const response = await adminClient.get('/api/admin-auth/me', {
             headers: { Authorization: `Bearer ${token}` }
           });
           set({ admin: response.data.admin });

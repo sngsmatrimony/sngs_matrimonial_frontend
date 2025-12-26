@@ -51,4 +51,16 @@ export const adminApi = {
    * Update contact information
    */
   updateContactInfo: (data) => adminClient.put('/api/admin/settings/contact-info', data),
+
+  // ==================== Admin Management ====================
+
+  /**
+   * Get all admins
+   */
+  getAllAdmins: () => adminClient.get('/api/admin/admins'),
+
+  /**
+   * Create new admin
+   */
+  createAdmin: (data) => adminClient.post('/api/admin/admins', data),
 };

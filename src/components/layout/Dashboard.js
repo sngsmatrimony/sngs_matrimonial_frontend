@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { LogOut, User, Heart, Compass, MessageCircle } from 'lucide-react';
+import { LogOut, User, Heart, Compass, MessageCircle, Settings } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
@@ -20,6 +20,11 @@ export default function Dashboard() {
   const handleLogout = () => {
     logout();
     router.push('/login');
+  };
+
+  const handleSettingsClick = () => {
+    setActiveTab('settings');
+    router.push('/profiles/settings');
   };
 
   return (
@@ -111,6 +116,19 @@ export default function Dashboard() {
             >
               <User size={20} />
               <span className="hidden sm:inline">My Profile</span>
+            </button>
+
+            {/* Settings Tab */}
+            <button
+              onClick={handleSettingsClick}
+              className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                activeTab === 'settings'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-white hover:text-gray-300'
+              }`}
+            >
+              <Settings size={20} />
+              <span className="hidden sm:inline">Settings</span>
             </button>
           </div>
         </div>

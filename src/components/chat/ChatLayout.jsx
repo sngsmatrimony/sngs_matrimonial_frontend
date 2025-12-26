@@ -138,14 +138,6 @@ export default function ChatLayout({ initialUserId = null }) {
     return () => window.removeEventListener("resize", checkMobileView);
   }, []);
 
-  // Show conversation panel on mobile when a conversation is selected
-  useEffect(() => {
-    if (isMobileView && activeConversationId) {
-      setShowConversationOnMobile(true);
-    }
-  }, [activeConversationId, isMobileView]);
-
-
   // Handle conversation selection
   const handleSelectConversation = (conversationId) => {
     setActiveConversationId(conversationId);

@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import client from '@/lib/api/client';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -146,6 +147,16 @@ export default function RegisterPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // OTP Verification State
+  const [mobileVerificationStep, setMobileVerificationStep] = useState('input'); // 'input', 'otp', 'verified'
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpValue, setOtpValue] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [mobileVerified, setMobileVerified] = useState(false);
+  const [verificationToken, setVerificationToken] = useState('');
+  const [resendTimer, setResendTimer] = useState(0);
+
   const [formData, setFormData] = useState({
     // Step 1
     fullName: '',
@@ -312,6 +323,126 @@ export default function RegisterPage() {
     return { min: numAmount, max: numAmount, displayText: `${currency} ${numAmount.toLocaleString()}` };
   };
 
+  /**
+   * Check if mobile number is already registered
+   */
+  const checkMobileUniqueness = async (mobileNumber) => {
+    try {
+      const response = await client.post('/api/auth/register/check-mobile', {
+        mobileNumber
+      });
+
+      return response.data.available;
+    } catch (error) {
+      console.error('Check mobile error:', error);
+      toastError(error.response?.data?.message || 'Failed to check mobile number');
+      return false;
+    }
+  };
+
+  /**
+   * Send OTP to mobile number
+   */
+  const sendOTP = async () => {
+    const mobileNumber = formData.mobileNumber;
+
+    if (!mobileNumber || !/^[6-9]\d{9}$/.test(mobileNumber)) {
+      toastError('Please enter a valid mobile number');
+      return;
+    }
+
+    setOtpLoading(true);
+
+    try {
+      // First check if mobile is unique
+      const isUnique = await checkMobileUniqueness(mobileNumber);
+      if (!isUnique) {
+        setOtpLoading(false);
+        return;
+      }
+
+      // Send OTP
+      const response = await client.post('/api/auth/register/send-otp', {
+        mobileNumber
+      });
+
+      if (response.data.success) {
+        toastSuccess('OTP sent to your mobile number');
+        setMobileVerificationStep('otp');
+        setOtpSent(true);
+        startResendTimer();
+      } else {
+        toastError(response.data.message || 'Failed to send OTP');
+      }
+    } catch (error) {
+      console.error('Send OTP error:', error);
+      toastError(error.response?.data?.message || 'Failed to send OTP');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  /**
+   * Verify OTP
+   */
+  const verifyOTP = async () => {
+    if (!otpValue || otpValue.length !== 6) {
+      toastError('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    setOtpLoading(true);
+
+    try {
+      const response = await client.post('/api/auth/register/verify-otp', {
+        mobileNumber: formData.mobileNumber,
+        otp: otpValue
+      });
+
+      if (response.data.success) {
+        toastSuccess('Mobile number verified successfully!');
+        // Store the verification token from the response
+        setVerificationToken(response.data.verificationToken);
+        setMobileVerified(true);
+        setMobileVerificationStep('verified');
+      } else {
+        toastError(response.data.message || 'Invalid OTP');
+        setOtpValue('');
+      }
+    } catch (error) {
+      console.error('Verify OTP error:', error);
+      toastError(error.response?.data?.message || 'Failed to verify OTP');
+      setOtpValue('');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  /**
+   * Start resend timer (60 seconds)
+   */
+  const startResendTimer = () => {
+    setResendTimer(60);
+    const interval = setInterval(() => {
+      setResendTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  /**
+   * Resend OTP
+   */
+  const resendOTP = async () => {
+    setOtpValue('');
+    setVerificationToken(''); // Clear old verification token
+    await sendOTP();
+  };
+
   const validateAndProceed = async () => {
     setError('');
 
@@ -433,6 +564,7 @@ export default function RegisterPage() {
         mobileNumber: submissionData.mobileNumber,
         alternateMobileNumber: submissionData.alternateMobileNumber || '',
         sngsMembershipNumber: submissionData.sngsMembershipNumber || '',
+        verificationToken: verificationToken,
         dateOfBirth: dob.toISOString(),
         timeOfBirth: timeOfBirth24,
         motherTongue: submissionData.motherTongue,
@@ -643,8 +775,38 @@ export default function RegisterPage() {
                           maxLength={10}
                           pattern="[0-9]*"
                           className="font-maven flex-1"
+                          disabled={mobileVerified}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            setFormData(prev => ({
+                              ...prev,
+                              mobileNumber: e.target.value
+                            }));
+                            if (mobileVerified) {
+                              setMobileVerified(false);
+                              setVerificationToken('');
+                            }
+                          }}
                         />
                       </FormControl>
+                      {!mobileVerified && (
+                        <Button
+                          type="button"
+                          onClick={sendOTP}
+                          disabled={otpLoading || !formData.mobileNumber || !/^[6-9]\d{9}$/.test(formData.mobileNumber)}
+                          className="bg-primary text-primary-foreground font-telex whitespace-nowrap"
+                        >
+                          {otpLoading ? 'Sending...' : 'Verify'}
+                        </Button>
+                      )}
+                      {mobileVerified && (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-success/10 text-success rounded-md border border-success/20">
+                          <svg className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          <span className="font-maven font-semibold text-sm">Verified</span>
+                        </div>
+                      )}
                     </div>
                     <FormMessage className="font-telex text-xs" />
                   </FormItem>
@@ -696,6 +858,46 @@ export default function RegisterPage() {
                   </FormItem>
                 )}
               />
+
+              {/* OTP Input Section - shown after sending OTP */}
+              {mobileVerificationStep === 'otp' && !mobileVerified && (
+                <div className="space-y-3 p-4 bg-gray-50 rounded-lg border-2 border-primary/20">
+                  <p className="font-maven text-sm text-secondary">
+                    Enter the 6-digit OTP sent to <strong>{formData.mobileNumber}</strong>
+                  </p>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="000000"
+                    maxLength={6}
+                    value={otpValue}
+                    onChange={(e) => {
+                      const cleaned = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setOtpValue(cleaned);
+                    }}
+                    className="text-center text-2xl tracking-widest font-maven"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      onClick={verifyOTP}
+                      disabled={otpLoading || !otpValue || otpValue.length !== 6}
+                      className="flex-1 bg-primary text-primary-foreground font-telex"
+                    >
+                      {otpLoading ? 'Verifying...' : 'Verify OTP'}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={resendOTP}
+                      disabled={resendTimer > 0}
+                      variant="outline"
+                      className="font-telex"
+                    >
+                      {resendTimer > 0 ? `Resend (${resendTimer}s)` : 'Resend OTP'}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </Form>
         </CardContent>
@@ -706,11 +908,11 @@ export default function RegisterPage() {
           </Button>
           <Button
             onClick={validateAndProceed}
-            disabled={isLoading}
+            disabled={isLoading || !mobileVerified}
             className="flex-1 bg-primary text-primary-foreground font-maven"
           >
-            {isLoading ? 'Validating...' : 'Next'}
-            {!isLoading && <ChevronRight className="ml-2 w-4 h-4" />}
+            {!mobileVerified ? 'Verify Mobile to Continue' : isLoading ? 'Validating...' : 'Next'}
+            {!isLoading && mobileVerified && <ChevronRight className="ml-2 w-4 h-4" />}
           </Button>
         </div>
       </Card>

@@ -33,11 +33,22 @@ const useChatStore = create(
         set({ isLoading: true, error: null });
         try {
           const response = await axiosClient.get('/api/chat/conversations');
+          const validConversations = response.data.data.filter((conv) => {
+            if (!conv.otherParticipant || !conv.otherParticipant.fullName) {
+              console.warn(
+                'Filtering out conversation with invalid otherParticipant:',
+                conv._id
+              );
+              return false;
+            }
+            return true;
+          });
+
           set({
-            conversations: response.data.data,
+            conversations: validConversations,
             isLoading: false,
           });
-          return response.data.data;
+          return validConversations;
         } catch (error) {
           set({
             error: error.response?.data?.message || 'Failed to load conversations',
@@ -94,7 +105,7 @@ const useChatStore = create(
         set({ isSending: true, error: null });
         try {
           const response = await axiosClient.post(
-            `/api/chat/conversations/${otherUserId}/messages`,
+            `/api/chat/users/${otherUserId}/conversations/messages`,
             { content: messageContent }
           );
 

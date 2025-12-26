@@ -33,16 +33,18 @@ export default function Header({ showLogout = false, isFixed = false }) {
           <h1 className="font-viga text-2xl text-accent">SNGS Matrimonial</h1>
         </div>
 
-        <HelpButton />
-        {showLogout && (
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors font-telex"
-          >
-            <LogOut size={18} />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          <HelpButton />
+          {showLogout && (
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors font-telex"
+            >
+              <LogOut size={18} />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          )}
+        </div>
       </div>
     </header>
   );

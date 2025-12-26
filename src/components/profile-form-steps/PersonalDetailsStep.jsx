@@ -28,7 +28,7 @@ import { MultiSelect } from '@/components/ui/multi-select';
 export function PersonalDetailsStep({ form }) {
   const watchReligion = useWatch({ control: form.control, name: 'religion' });
   const watchShuddhaJathakam = useWatch({ control: form.control, name: 'shuddhaJathakam' });
-  const displayDate = form.watch('dateOfBirth') || new Date(2000, 0, 1);
+  const displayDate = form.watch('dateOfBirth');
 
   return (
     <div className="space-y-6">
@@ -42,8 +42,9 @@ export function PersonalDetailsStep({ form }) {
           <FormItem>
             <FormLabel className="font-maven">Date of Birth</FormLabel>
             <div className="grid grid-cols-3 gap-2">
-              <Select value={displayDate?.getDate().toString().padStart(2, '0')} onValueChange={(day) => {
-                const newDate = new Date(displayDate);
+              <Select value={displayDate ? displayDate.getDate().toString().padStart(2, '0') : undefined} onValueChange={(day) => {
+                const baseDate = displayDate || new Date(new Date().getFullYear() - 25, 0, 1);
+                const newDate = new Date(baseDate);
                 newDate.setDate(parseInt(day, 10));
                 field.onChange(newDate);
               }}>
@@ -61,8 +62,9 @@ export function PersonalDetailsStep({ form }) {
                 </SelectContent>
               </Select>
 
-              <Select value={(displayDate?.getMonth() + 1).toString().padStart(2, '0')} onValueChange={(month) => {
-                const newDate = setMonth(displayDate, parseInt(month, 10) - 1);
+              <Select value={displayDate ? (displayDate.getMonth() + 1).toString().padStart(2, '0') : undefined} onValueChange={(month) => {
+                const baseDate = displayDate || new Date(new Date().getFullYear() - 25, 0, 1);
+                const newDate = setMonth(baseDate, parseInt(month, 10) - 1);
                 field.onChange(newDate);
               }}>
                 <FormControl>
@@ -79,8 +81,9 @@ export function PersonalDetailsStep({ form }) {
                 </SelectContent>
               </Select>
 
-              <Select value={displayDate?.getFullYear().toString()} onValueChange={(year) => {
-                const newDate = setYear(displayDate, parseInt(year, 10));
+              <Select value={displayDate ? displayDate.getFullYear().toString() : undefined} onValueChange={(year) => {
+                const baseDate = displayDate || new Date(parseInt(year, 10), 0, 1);
+                const newDate = setYear(baseDate, parseInt(year, 10));
                 field.onChange(newDate);
               }}>
                 <FormControl>

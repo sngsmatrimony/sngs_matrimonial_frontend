@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAdminAuthStore } from '@/store/adminAuthStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,9 +66,14 @@ export default function AdminLoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <Link href="/admin/forgot-password" className="font-maven text-sm text-black font-semibold hover:text-secondary/80 hover:underline">
+                  Forgot?
+                </Link>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
                 <Input
@@ -91,7 +97,7 @@ export default function AdminLoginPage() {
           </form>
 
           <p className="text-center text-sm text-gray-600 mt-4">
-            Don't have admin access? Contact the system administrator.
+            Don&apos;t have admin access? Contact the system administrator.
           </p>
         </CardContent>
       </Card>
