@@ -8,7 +8,14 @@ import { client } from '@/lib/api/client';
 import { toastSuccess, toastError } from '@/lib/toast';
 
 export default function ProfileCard({ profile, isLiked = false }) {
-  const { setActiveTab, setSelectedChatUserId, likedProfilesIds, setLikedProfilesIds } = useLandingStore();
+  const {
+    setActiveTab,
+    setSelectedChatUserId,
+    likedProfilesIds,
+    setLikedProfilesIds,
+    likedProfiles,
+    setLikedProfiles
+  } = useLandingStore();
   const [isHovered, setIsHovered] = useState(false);
   const [liked, setLiked] = useState(isLiked);
   const [isLoading, setIsLoading] = useState(false);
@@ -23,8 +30,9 @@ export default function ProfileCard({ profile, isLiked = false }) {
         // Unlike
         await client.post(`/api/profiles/${profile._id}/unlike`);
         setLiked(false);
-        // Update global store
+        // Update global store - both arrays for instant UI sync
         setLikedProfilesIds(likedProfilesIds.filter(id => id !== profile._id));
+        setLikedProfiles(likedProfiles.filter(p => p._id !== profile._id));
         toastSuccess('Profile removed from likes');
       } else {
         // Like
@@ -36,8 +44,24 @@ export default function ProfileCard({ profile, isLiked = false }) {
       }
     } catch (error) {
       console.error('Error toggling like:', error);
-      // Revert local state on error
+      // Revert local state
       setLiked(isLiked);
+
+      // Revert store state if API call failed
+      if (isLiked && !liked) {
+        // Was unliking but failed - restore to both arrays
+        if (!likedProfilesIds.includes(profile._id)) {
+          setLikedProfilesIds([...likedProfilesIds, profile._id]);
+        }
+        if (!likedProfiles.find(p => p._id === profile._id)) {
+          setLikedProfiles([...likedProfiles, profile]);
+        }
+      } else if (!isLiked && liked) {
+        // Was liking but failed - remove from both arrays
+        setLikedProfilesIds(likedProfilesIds.filter(id => id !== profile._id));
+        setLikedProfiles(likedProfiles.filter(p => p._id !== profile._id));
+      }
+
       toastError(error.response?.data?.message || 'Error updating like');
     } finally {
       setIsLoading(false);
