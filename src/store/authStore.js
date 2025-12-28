@@ -9,6 +9,12 @@ export const useAuthStore = create(
       token: null,
       isLoading: false,
       error: null,
+      membership: {
+        isActive: false,
+        credits: 0,
+        expiryDate: null,
+        isExpired: false,
+      },
 
       // Computed getter for admin status
       isAdmin: () => get().user?.role === 'admin',
@@ -155,6 +161,24 @@ export const useAuthStore = create(
           return { success: true };
         } catch (error) {
           return { success: false, error: error.response?.data?.message || 'Delete failed' };
+        }
+      },
+
+      // Update membership state
+      updateMembership: (membershipData) => {
+        set({ membership: membershipData });
+      },
+
+      // Refresh membership from API
+      refreshMembership: async () => {
+        try {
+          const response = await client.get('/api/membership/me');
+          const membershipData = response.data.data;
+          set({ membership: membershipData });
+          return membershipData;
+        } catch (error) {
+          console.error('Error refreshing membership:', error);
+          return null;
         }
       },
     }),

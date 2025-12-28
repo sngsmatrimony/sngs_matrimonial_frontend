@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { LogOut, User, Heart, Compass, MessageCircle } from 'lucide-react';
+import { LogOut, User, Heart, Compass, MessageCircle, CreditCard, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
 import { useLandingStore } from '@/store/landingStore';
@@ -13,9 +13,10 @@ import BrowseProfiles from '@/components/profile/BrowseProfiles';
 import LikedProfiles from '@/components/profile/LikedProfiles';
 import UserProfileView from '@/components/profile/UserProfileView';
 import ChatLayout from '@/components/chat/ChatLayout';
+import UserSettings from '@/components/settings/UserSettings';
 
 export default function Home() {
-  const { token, user, initializeAuth, logout } = useAuthStore();
+  const { token, user, membership, initializeAuth, logout } = useAuthStore();
   const { activeTab, setActiveTab, selectedChatUserId } = useLandingStore();
   const router = useRouter();
   const [isInitialized, setIsInitialized] = useState(false);
@@ -73,6 +74,27 @@ export default function Home() {
               <span className="font-maven text-gray-600">Welcome,</span>
               <span className="font-viga text-secondary">{user?.fullName}</span>
             </div>
+
+            {/* Credit Badge - ALWAYS VISIBLE */}
+            {membership?.isActive && !membership?.isExpired && (
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
+                <CreditCard className="w-4 h-4 text-primary" />
+                <span className="font-telex font-semibold text-primary">
+                  {membership?.credits} credits
+                </span>
+              </div>
+            )}
+
+            {/* Get Membership Button - When inactive or expired */}
+            {(!membership?.isActive || membership?.isExpired) && (
+              <Button
+                onClick={() => router.push('/membership/purchase')}
+                size="sm"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-telex"
+              >
+                Get Membership
+              </Button>
+            )}
 
             {/* Help Button - Right */}
             <HelpButton />
@@ -143,6 +165,19 @@ export default function Home() {
                 <User size={20} />
                 <span className="hidden sm:inline">My Profile</span>
               </button>
+
+              {/* Settings Tab */}
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                  activeTab === 'settings'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-white hover:text-gray-300'
+                }`}
+              >
+                <Settings size={20} />
+                <span className="hidden sm:inline">Settings</span>
+              </button>
             </div>
           </div>
         </div>
@@ -153,6 +188,7 @@ export default function Home() {
           {activeTab === 'liked' && <LikedProfiles />}
           {activeTab === 'messages' && <ChatLayout initialUserId={selectedChatUserId} />}
           {activeTab === 'profile' && <UserProfileView />}
+          {activeTab === 'settings' && <UserSettings />}
         </div>
       </div>
     );

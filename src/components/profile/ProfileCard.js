@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Heart, MessageCircle } from 'lucide-react';
+import { Heart, MessageCircle, Lock } from 'lucide-react';
 import { useLandingStore } from '@/store/landingStore';
+import { useAuthStore } from '@/store/authStore';
 import { client } from '@/lib/api/client';
-import { toastSuccess, toastError } from '@/lib/toast';
+import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
 
 export default function ProfileCard({ profile, isLiked = false }) {
+  const { membership } = useAuthStore();
   const {
     setActiveTab,
     setSelectedChatUserId,
@@ -19,6 +21,9 @@ export default function ProfileCard({ profile, isLiked = false }) {
   const [isHovered, setIsHovered] = useState(false);
   const [liked, setLiked] = useState(isLiked);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Check if user has no membership or expired/no credits
+  const hasNoMembership = !membership?.isActive || membership?.isExpired || membership?.credits <= 0;
 
   const handleLike = async (e) => {
     e.preventDefault();
@@ -75,6 +80,15 @@ export default function ProfileCard({ profile, isLiked = false }) {
     setSelectedChatUserId(profile._id);
   };
 
+  const handleCardClick = (e) => {
+    if (hasNoMembership) {
+      e.preventDefault();
+      e.stopPropagation();
+      toastInfo('Get membership to view full profiles');
+    }
+    // If has membership, let Link handle navigation naturally
+  };
+
   // Get profile picture URL
   const profileImageUrl =
     profile?.profilePicture?.url || '/images/default-profile.png';
@@ -86,9 +100,18 @@ export default function ProfileCard({ profile, isLiked = false }) {
   };
 
   return (
-    <Link href={`/profiles/${profile._id}`}>
+    <Link
+      href={`/profiles/${profile._id}`}
+      onClick={handleCardClick}
+      aria-disabled={hasNoMembership}
+      className={hasNoMembership ? 'cursor-not-allowed' : ''}
+    >
       <div
-        className="relative h-96 rounded-2xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300"
+        className={`relative h-96 rounded-2xl overflow-hidden shadow-lg transition-all duration-300 ${
+          hasNoMembership
+            ? 'cursor-not-allowed opacity-90 hover:opacity-100 hover:shadow-lg'
+            : 'cursor-pointer hover:shadow-2xl'
+        }`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -107,7 +130,17 @@ export default function ProfileCard({ profile, isLiked = false }) {
 
       {/* Gradient overlay at bottom for text readability */}
       {!isHovered && (
-        <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black via-black/60 to-transparent z-10" />
+        <div className="absolute bottom-0 left-0 right-0 h-40 bg-linear-to-t from-black via-black/60 to-transparent z-10" />
+      )}
+
+      {/* Get Membership Badge for Non-Members */}
+      {hasNoMembership && (
+        <div className="absolute top-4 right-4 z-20">
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-telex shadow-xl whitespace-nowrap animate-pulse">
+            <Lock className="w-4 h-4" />
+            <span className="font-semibold">Get Membership</span>
+          </div>
+        </div>
       )}
 
       {/* Profile Info - Always visible when not hovered */}

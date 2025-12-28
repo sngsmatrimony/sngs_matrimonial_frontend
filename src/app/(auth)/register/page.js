@@ -653,7 +653,12 @@ export default function RegisterPage() {
           // Don't fail registration if media upload fails
         }
 
-        router.push('/');
+        // Set flag to indicate user just registered
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('justRegistered', 'true');
+        }
+
+        router.push('/membership/purchase');
       } else {
         throw new Error(result.error || 'Registration failed');
       }

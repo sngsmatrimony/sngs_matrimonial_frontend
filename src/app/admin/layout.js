@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAdminAuthStore } from "@/store/adminAuthStore";
-import { BarChart3, Users, Settings, Shield, LogOut } from "lucide-react";
+import { BarChart3, Users, Settings, Shield, LogOut, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import HelpButton from "@/components/layout/HelpButton";
 
@@ -125,6 +125,17 @@ export default function AdminLayout({ children }) {
                             >
                                 <Users size={20} />
                                 <span className="hidden sm:inline">Users</span>
+                            </Link>
+                            <Link
+                                href="/admin/membership-plans"
+                                className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                                    pathname.startsWith("/admin/membership-plans")
+                                        ? "border-primary text-primary"
+                                        : "border-transparent text-white hover:text-gray-300"
+                                }`}
+                            >
+                                <CreditCard size={20} />
+                                <span className="hidden sm:inline">Plans</span>
                             </Link>
                             <Link
                                 href="/admin/admins"

@@ -1,12 +1,18 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLandingStore } from '@/store/landingStore';
+import { useAuthStore } from '@/store/authStore';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
+import { Button } from '@/components/ui/button';
+import { CreditCard } from 'lucide-react';
 import ProfileCard from './ProfileCard';
 
 export default function BrowseProfiles() {
+  const router = useRouter();
+  const { membership } = useAuthStore();
   const {
     profiles,
     setProfiles,
@@ -32,11 +38,19 @@ export default function BrowseProfiles() {
       setLikedProfilesIds(likedIds);
     } catch (error) {
       console.error('Error fetching profiles:', error);
-      toastError('Failed to load profiles');
+      if (error.response?.data?.requiresMembership) {
+        toastError(error.response.data.message);
+        router.push('/membership/purchase');
+      } else if (error.response?.data?.requiresCredits) {
+        toastError(error.response.data.message);
+        router.push('/membership/purchase');
+      } else {
+        toastError('Failed to load profiles');
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [setIsLoading, setProfiles, setLikedProfilesIds]);
+  }, [setIsLoading, setProfiles, setLikedProfilesIds, router]);
 
   useEffect(() => {
     fetchProfiles();
@@ -71,9 +85,22 @@ export default function BrowseProfiles() {
   return (
     <div className="min-h-screen bg-white py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <h2 className="font-viga text-3xl mb-8 text-secondary">
-          Browse Profiles
-        </h2>
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="font-viga text-3xl text-secondary">
+            Browse Profiles
+          </h2>
+          {membership?.isActive && !membership?.isExpired && (
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
+              <CreditCard className="w-5 h-5 text-primary" />
+              <span className="font-viga text-xl text-primary">
+                {membership?.credits}
+              </span>
+              <span className="font-telex text-sm text-primary">
+                {membership?.credits === 1 ? 'credit' : 'credits'}
+              </span>
+            </div>
+          )}
+        </div>
 
         {/* Grid of profile cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
