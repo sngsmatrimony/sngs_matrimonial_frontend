@@ -236,6 +236,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     // File uploads
     profilePicture: null,
     galleryPhotos: [],
+    horoscope: user?.horoscopeDocument || userProfile?.horoscopeDocument || null,
   });
 
   const getSchemaForStep = (step) => {
@@ -284,6 +285,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
       // Explicitly preserve file properties (prevent overwriting with undefined)
       profilePicture: prev.profilePicture,
       galleryPhotos: prev.galleryPhotos,
+      horoscope: prev.horoscope,
     }));
   };
 
@@ -324,7 +326,14 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     }
 
     const values = form.getValues();
-    setFormData(prev => ({ ...prev, ...values }));
+    setFormData(prev => ({
+      ...prev,
+      ...values,
+      // Explicitly preserve file properties
+      profilePicture: prev.profilePicture,
+      galleryPhotos: prev.galleryPhotos,
+      horoscope: prev.horoscope,
+    }));
     setCurrentStep(currentStep + 1);
   };
 
@@ -461,6 +470,18 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
             }
           }
         }
+
+        // Upload horoscope document if provided (new upload)
+        if (formData.horoscope?.file) {
+          try {
+            console.log('[EditProfile] Uploading horoscope document:', formData.horoscope.file.name);
+            await useAuthStore.getState().uploadHoroscopeDocument(formData.horoscope.file);
+            console.log('[EditProfile] Horoscope document uploaded successfully');
+          } catch (error) {
+            console.warn('Horoscope upload warning:', error.message);
+            // Don't fail profile update if horoscope upload fails
+          }
+        }
       } catch (mediaErr) {
         console.warn('Media upload warning:', mediaErr.message);
         // Don't fail profile update if media upload fails
@@ -530,7 +551,15 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
               </div>
             )}
 
-            {currentStep === 1 && <PersonalDetailsStep form={form} />}
+            {currentStep === 1 && (
+              <PersonalDetailsStep
+                form={form}
+                user={user}
+                userProfile={userProfile}
+                horoscope={formData.horoscope}
+                onFileUpdate={handleFileUpdate}
+              />
+            )}
             {currentStep === 2 && <LocationAddressStep form={form} />}
             {currentStep === 3 && <LocationAddressStep form={form} />}
             {currentStep === 4 && <ProfessionalDetailsStep form={form} />}
@@ -538,6 +567,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
             {currentStep === 6 && (
               <PreferencesMediaStep
                 form={form}
+                user={user}
                 userProfile={userProfile}
                 profilePicture={formData.profilePicture}
                 galleryPhotos={formData.galleryPhotos}

@@ -1,12 +1,15 @@
 'use client';
 
 import { useWatch } from 'react-hook-form';
+import { useRef } from 'react';
 import { format, setMonth, setYear } from 'date-fns';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
-import { Check } from 'lucide-react';
+import { Check, FileText, X } from 'lucide-react';
+import Image from 'next/image';
+import { toastError } from '@/lib/toast';
 import {
   MOTHER_TONGUES,
   HEIGHTS,
@@ -25,10 +28,43 @@ import {
 } from '@/lib/constants/formData';
 import { MultiSelect } from '@/components/ui/multi-select';
 
-export function PersonalDetailsStep({ form }) {
+export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFileUpdate }) {
   const watchReligion = useWatch({ control: form.control, name: 'religion' });
   const watchShuddhaJathakam = useWatch({ control: form.control, name: 'shuddhaJathakam' });
   const displayDate = form.watch('dateOfBirth');
+  const horoscopeInputRef = useRef(null);
+
+  const handleHoroscopeUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size
+    if (file.size > 5 * 1024 * 1024) {
+      toastError('Horoscope file must be under 5 MB');
+      return;
+    }
+
+    const fileType = file.type === 'application/pdf' ? 'pdf' : 'image';
+    const preview = fileType === 'pdf' ? null : URL.createObjectURL(file);
+
+    onFileUpdate('horoscope', {
+      file,
+      preview,
+      fileType,
+      fileName: file.name,
+      fileSize: file.size,
+    });
+  };
+
+  const removeHoroscope = () => {
+    if (horoscope?.preview) {
+      URL.revokeObjectURL(horoscope.preview);
+    }
+    onFileUpdate('horoscope', null);
+    if (horoscopeInputRef.current) {
+      horoscopeInputRef.current.value = '';
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -660,6 +696,84 @@ export function PersonalDetailsStep({ form }) {
           </FormItem>
         )}
       />
+
+      {/* Horoscope Document - Hindu Only */}
+      {watchReligion === 'Hindu' && (
+        <div className="col-span-2 space-y-3 p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <h3 className="font-viga text-secondary text-sm">
+            Horoscope Document (Optional)
+          </h3>
+          <p className="font-maven text-xs text-gray-600">
+            Upload your horoscope as PDF or image (max 5 MB)
+          </p>
+
+          <Input
+            ref={horoscopeInputRef}
+            type="file"
+            accept=".pdf,image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleHoroscopeUpload}
+            className="font-maven cursor-pointer"
+          />
+
+          {/* Show existing horoscope if uploaded */}
+          {(user?.horoscopeDocument?.url || userProfile?.horoscopeDocument?.url) && !horoscope && (
+            <div className="relative flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              {(user?.horoscopeDocument?.fileType || userProfile?.horoscopeDocument?.fileType) === 'pdf' ? (
+                <FileText className="text-red-500" size={32} />
+              ) : (
+                <div className="relative w-16 h-16 rounded overflow-hidden">
+                  <Image
+                    src={user?.horoscopeDocument?.url || userProfile?.horoscopeDocument?.url}
+                    alt="Current horoscope"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              )}
+              <div className="flex-1">
+                <p className="font-maven text-sm font-medium">
+                  Current Horoscope Document
+                </p>
+                <p className="font-telex text-xs text-gray-500">
+                  Uploaded {new Date(user?.horoscopeDocument?.uploadedAt || userProfile?.horoscopeDocument?.uploadedAt).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {horoscope && (
+            <div className="relative flex items-center gap-3 p-3 bg-white border border-primary rounded-lg">
+              {horoscope.fileType === 'pdf' ? (
+                <FileText className="text-red-500" size={32} />
+              ) : (horoscope.preview || horoscope.url) ? (
+                <div className="relative w-16 h-16 rounded overflow-hidden">
+                  <Image
+                    src={horoscope.preview || horoscope.url}
+                    alt="Horoscope preview"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              ) : null}
+              <div className="flex-1">
+                <p className="font-maven text-sm font-medium truncate">
+                  {horoscope.fileName || 'Horoscope Document'}
+                </p>
+                <p className="font-telex text-xs text-gray-500">
+                  {horoscope.fileSize ? `${(horoscope.fileSize / 1024 / 1024).toFixed(2)} MB` : 'Existing Upload'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={removeHoroscope}
+                className="p-1.5 hover:bg-red-50 rounded-full transition"
+              >
+                <X className="text-red-500" size={20} />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

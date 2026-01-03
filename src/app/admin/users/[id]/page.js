@@ -858,6 +858,28 @@ export default function AdminUserDetailPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Raasi</label>
                     <p className="text-gray-900">{displayValue(user.raasi)}</p>
                   </div>
+                  {user?.horoscopeDocument?.url && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Horoscope Document</label>
+                      <div className="flex gap-3">
+                        <a 
+                          href={user.horoscopeDocument.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline text-sm"
+                        >
+                          View
+                        </a>
+                        <a 
+                          href={user.horoscopeDocument.url} 
+                          download
+                          className="text-primary hover:underline text-sm"
+                        >
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

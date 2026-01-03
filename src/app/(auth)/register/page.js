@@ -232,6 +232,7 @@ export default function RegisterPage() {
     // File uploads
     profilePicture: null,
     galleryPhotos: [],
+    horoscope: null,
   });
 
   const getSchemaForStep = (step) => {
@@ -280,6 +281,7 @@ export default function RegisterPage() {
       // Explicitly preserve file properties (prevent overwriting with undefined)
       profilePicture: prev.profilePicture,
       galleryPhotos: prev.galleryPhotos,
+      horoscope: prev.horoscope,
     }));
   };
 
@@ -475,6 +477,7 @@ export default function RegisterPage() {
         // Explicitly preserve file properties
         profilePicture: formData.profilePicture,
         galleryPhotos: formData.galleryPhotos,
+        horoscope: formData.horoscope,
       };
       setFormData(updatedFormData);
       setIsLoading(true);
@@ -509,6 +512,7 @@ export default function RegisterPage() {
       // Explicitly preserve file properties
       profilePicture: prev.profilePicture,
       galleryPhotos: prev.galleryPhotos,
+      horoscope: prev.horoscope,
     }));
     setCurrentStep(currentStep + 1);
   };
@@ -646,6 +650,18 @@ export default function RegisterPage() {
                 const photoResult = await useAuthStore.getState().uploadPhoto(photo.file);
                 console.log('[Register] Photo upload result:', photoResult);
               }
+            }
+          }
+
+          // Upload horoscope document if provided
+          if (submissionData.horoscope?.file) {
+            try {
+              console.log('[Register] Uploading horoscope document:', submissionData.horoscope.file.name);
+              await useAuthStore.getState().uploadHoroscopeDocument(submissionData.horoscope.file);
+              console.log('[Register] Horoscope document uploaded successfully');
+            } catch (error) {
+              console.warn('Horoscope upload warning:', error.message);
+              // Don't fail registration if horoscope upload fails
             }
           }
         } catch (mediaErr) {
@@ -959,7 +975,7 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {currentStep === 2 && <PersonalDetailsStep form={form} />}
+            {currentStep === 2 && <PersonalDetailsStep form={form} horoscope={formData.horoscope} onFileUpdate={handleFileUpdate} />}
             {currentStep === 3 && <LocationAddressStep form={form} />}
             {currentStep === 4 && <ProfessionalDetailsStep form={form} />}
             {currentStep === 5 && <FamilyDetailsStep form={form} />}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Heart, MessageCircle, MapPin, Briefcase, Book, Users } from 'lucide-react';
+import { Heart, MessageCircle, MapPin, Briefcase, Book, Users, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLandingStore } from '@/store/landingStore';
@@ -30,6 +30,71 @@ const InfoField = ({ label, value, icon: Icon }) => (
     <span className="font-maven text-secondary font-medium">{value || '—'}</span>
   </div>
 );
+
+// Download handler for horoscope with authentication
+const handleDownloadHoroscope = async (userId) => {
+  try {
+    // Get token from localStorage
+    const token = localStorage.getItem('authToken');
+
+    if (!token) {
+      toastError('Authentication required. Please log in.');
+      return;
+    }
+
+    // Fetch file with authentication header
+    const response = await fetch(
+      `http://localhost:4000/api/profiles/${userId}/horoscope/download`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      toastError(error.message || 'Failed to download horoscope');
+      return;
+    }
+
+    // Get filename from Content-Disposition header or extract from URL
+    const contentDisposition = response.headers.get('Content-Disposition');
+    const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
+
+    let filename;
+    if (filenameMatch) {
+      // Use filename from Content-Disposition header
+      filename = filenameMatch[1];
+    } else {
+      // Fallback: Extract extension from URL
+      const url = response.url;
+      const urlExtension = url.substring(url.lastIndexOf('.') + 1).toLowerCase();
+      const safeExtension = urlExtension || 'pdf';
+      filename = `horoscope.${safeExtension}`;
+    }
+
+    // Convert response to blob
+    const blob = await response.blob();
+
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+  } catch (error) {
+    console.error('Download error:', error);
+    toastError('Failed to download horoscope document');
+  }
+};
 
 // Convert 24-hour format (HH:mm) to 12-hour format with AM/PM
 const formatTimeToAMPM = (time24) => {
@@ -312,6 +377,27 @@ export default function ProfileDetailView({ profileId }) {
                 </div>
               )}
               {profile?.placeOfBirth && <InfoField label="Place of Birth" value={profile.placeOfBirth} />}
+              {profile?.horoscopeDocument?.url && (
+                <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
+                  <span className="font-telex text-secondary/70 text-sm">Horoscope Document</span>
+                  <div className="flex gap-3">
+                    <a
+                      href={profile.horoscopeDocument.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-secondary font-maven text-sm underline"
+                    >
+                      View
+                    </a>
+                    <button
+                      onClick={() => handleDownloadHoroscope(profileId)}
+                      className="text-secondary font-maven text-sm underline cursor-pointer bg-transparent border-0 p-0 hover:text-secondary/80"
+                    >
+                      Download
+                    </button>
+                  </div>
+                </div>
+              )}
             </InfoCard>
           )}
 
@@ -461,6 +547,7 @@ export default function ProfileDetailView({ profileId }) {
               </div>
             </div>
           )}
+
         </div>
       </div>
 

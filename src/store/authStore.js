@@ -164,6 +164,45 @@ export const useAuthStore = create(
         }
       },
 
+      // Upload horoscope document
+      uploadHoroscopeDocument: async (file) => {
+        const formData = new FormData();
+        formData.append('document', file);
+
+        try {
+          console.log('[authStore] Uploading horoscope document:', file.name);
+          const response = await client.post('/api/auth/upload-horoscope-document', formData);
+          console.log('[authStore] Horoscope document response:', response.data);
+          set((state) => ({
+            user: {
+              ...state.user,
+              horoscopeDocument: response.data.horoscopeDocument
+            }
+          }));
+          return { success: true, horoscopeDocument: response.data.horoscopeDocument };
+        } catch (error) {
+          console.error('[authStore] Horoscope upload error:', error);
+          return { success: false, error: error.response?.data?.message || 'Upload failed' };
+        }
+      },
+
+      // Delete horoscope document
+      deleteHoroscopeDocument: async () => {
+        try {
+          const response = await client.delete('/api/auth/horoscope-document');
+          set((state) => ({
+            user: {
+              ...state.user,
+              horoscopeDocument: undefined
+            }
+          }));
+          return { success: true };
+        } catch (error) {
+          console.error('[authStore] Horoscope delete error:', error);
+          return { success: false, error: error.response?.data?.message || 'Delete failed' };
+        }
+      },
+
       // Update membership state
       updateMembership: (membershipData) => {
         set({ membership: membershipData });

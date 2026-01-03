@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { X, FileText, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/authStore';
+import { toastSuccess, toastError } from '@/lib/toast';
 
 const INTERESTS = [
   'Painting', 'Coding', 'Poetry', 'Reading', 'Writing', 'Photography',
@@ -35,7 +36,8 @@ export function PreferencesMediaStep({
   userProfile = null,
   profilePicture = null,
   galleryPhotos = [],
-  onFileUpdate = null
+  onFileUpdate = null,
+  user = null
 }) {
   const { user: authUser } = useAuthStore();
   const hasInitialized = useRef(false);
@@ -173,6 +175,7 @@ export function PreferencesMediaStep({
       setLocalProfilePicture(null);
     }
   };
+
 
   return (
     <div className="space-y-6">
@@ -386,6 +389,7 @@ export function PreferencesMediaStep({
         )}
         <p className="text-sm text-secondary font-maven">{((onFileUpdate ? galleryPhotos : localGalleryPhotos) || []).length}/10 photos added</p>
       </div>
+
     </div>
   );
 }

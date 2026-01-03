@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Heart, MessageCircle, Lock } from 'lucide-react';
+import { Heart, MessageCircle, Lock, FileText } from 'lucide-react';
 import { useLandingStore } from '@/store/landingStore';
 import { useAuthStore } from '@/store/authStore';
 import { client } from '@/lib/api/client';
@@ -140,15 +140,22 @@ export default function ProfileCard({ profile, isLiked = false }) {
         <div className="absolute bottom-0 left-0 right-0 h-40 bg-linear-to-t from-black via-black/60 to-transparent z-10" />
       )}
 
-      {/* Get Membership Badge for Non-Members */}
-      {hasNoMembership && (
-        <div className="absolute top-4 right-4 z-20">
+      {/* Status Badges */}
+      <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
+        {hasNoMembership && (
           <div className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-telex shadow-xl whitespace-nowrap animate-pulse">
             <Lock className="w-4 h-4" />
             <span className="font-semibold">Get Membership</span>
           </div>
-        </div>
-      )}
+        )}
+        
+        {profile?.horoscopeDocument?.url && (
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/90 text-secondary text-xs font-telex shadow-md backdrop-blur-sm" title="Horoscope available">
+            <FileText className="w-4 h-4 text-primary" />
+            <span className="font-semibold">Horoscope</span>
+          </div>
+        )}
+      </div>
 
       {/* Profile Info - Always visible when not hovered */}
       {!isHovered && (
