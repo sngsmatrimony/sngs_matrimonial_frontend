@@ -20,7 +20,7 @@ export function ProfessionalDetailsStep({ form }) {
 
   return (
     <div className="space-y-6">
-      <h2 className="font-viga text-xl text-secondary">Professional Details</h2>
+      {/* <h2 className="font-viga text-xl text-secondary">Professional Details</h2> */}
 
       {/* Education */}
       <FormField

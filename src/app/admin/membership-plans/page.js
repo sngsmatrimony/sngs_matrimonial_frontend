@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { client } from '@/lib/api/client';
+import adminClient from '@/lib/api/adminClient';
 import { toastSuccess, toastError } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -47,6 +47,7 @@ export default function AdminMembershipPlansPage() {
     price: '',
     validityDays: '',
     isDefault: false,
+    isUnlimited: false,
   });
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export default function AdminMembershipPlansPage() {
   const fetchPlans = async () => {
     try {
       setLoading(true);
-      const response = await client.get('/api/admin/membership-plans');
+      const response = await adminClient.get('/api/admin/membership-plans');
       setPlans(response.data.data || []);
     } catch (error) {
       console.error('Error fetching plans:', error);
@@ -74,8 +75,9 @@ export default function AdminMembershipPlansPage() {
         description: plan.description || '',
         credits: String(plan.credits),
         price: String(plan.price.amount),
-        validityDays: String(plan.validityDays),
+        validityDays: plan.validityDays === null ? '' : String(plan.validityDays),
         isDefault: plan.isDefault || false,
+        isUnlimited: plan.validityDays === null,
       });
     } else {
       setEditingPlan(null);
@@ -86,6 +88,7 @@ export default function AdminMembershipPlansPage() {
         price: '',
         validityDays: '',
         isDefault: false,
+        isUnlimited: false,
       });
     }
     setIsDialogOpen(true);
@@ -105,8 +108,8 @@ export default function AdminMembershipPlansPage() {
       toastError('Price must be greater than 0');
       return;
     }
-    if (!formData.validityDays || parseInt(formData.validityDays) <= 0) {
-      toastError('Validity days must be greater than 0');
+    if (!formData.isUnlimited && (!formData.validityDays || parseInt(formData.validityDays) <= 0)) {
+      toastError('Validity days must be greater than 0 or set as unlimited');
       return;
     }
 
@@ -120,17 +123,17 @@ export default function AdminMembershipPlansPage() {
           amount: parseInt(formData.price),
           currency: 'INR',
         },
-        validityDays: parseInt(formData.validityDays),
+        validityDays: formData.isUnlimited ? null : parseInt(formData.validityDays),
         isDefault: formData.isDefault,
       };
 
       if (editingPlan) {
         // Update existing plan
-        await client.put(`/api/admin/membership-plans/${editingPlan._id}`, payload);
+        await adminClient.put(`/api/admin/membership-plans/${editingPlan._id}`, payload);
         toastSuccess('Plan updated successfully');
       } else {
         // Create new plan
-        await client.post('/api/admin/membership-plans', payload);
+        await adminClient.post('/api/admin/membership-plans', payload);
         toastSuccess('Plan created successfully');
       }
 
@@ -147,7 +150,7 @@ export default function AdminMembershipPlansPage() {
   const handleDeletePlan = async () => {
     try {
       setIsSaving(true);
-      await client.delete(`/api/admin/membership-plans/${planToDelete._id}`);
+      await adminClient.delete(`/api/admin/membership-plans/${planToDelete._id}`);
       toastSuccess('Plan deleted successfully');
       setIsDeleteDialogOpen(false);
       setPlanToDelete(null);
@@ -163,7 +166,7 @@ export default function AdminMembershipPlansPage() {
 
   const handleToggleActive = async (plan) => {
     try {
-      await client.put(`/api/admin/membership-plans/${plan._id}`, {
+      await adminClient.put(`/api/admin/membership-plans/${plan._id}`, {
         ...plan,
         isActive: !plan.isActive,
       });
@@ -230,12 +233,12 @@ export default function AdminMembershipPlansPage() {
           {plans.map((plan) => (
             <Card
               key={plan._id}
-              className={`relative transition-all ${
+              className={`relative transition-all pt-10 ${
                 !plan.isActive ? 'opacity-60' : ''
               }`}
             >
               {plan.isDefault && (
-                <div className="absolute top-4 right-4">
+                <div className="absolute top-2 right-4">
                   <Badge className="bg-accent text-accent-foreground flex items-center gap-1 font-telex">
                     <Star className="w-3 h-3" />
                     Default
@@ -258,7 +261,7 @@ export default function AdminMembershipPlansPage() {
                   <Badge
                     className={`ml-2 font-telex ${
                       plan.isActive
-                        ? 'bg-success text-white'
+                        ? 'bg-success text-black'
                         : 'bg-gray-300 text-gray-700'
                     }`}
                   >
@@ -274,7 +277,7 @@ export default function AdminMembershipPlansPage() {
                     <p className="font-telex text-xs text-gray-600 mb-1">
                       Credits
                     </p>
-                    <p className="font-viga text-2xl text-primary">
+                    <p className="font-viga text-2xl text-secondary">
                       {plan.credits}
                     </p>
                   </div>
@@ -291,7 +294,9 @@ export default function AdminMembershipPlansPage() {
                       Validity
                     </p>
                     <p className="font-maven">
-                      {plan.validityDays} day{plan.validityDays !== 1 ? 's' : ''}
+                      {plan.validityDays === null || plan.validityDays === undefined
+                        ? 'Unlimited'
+                        : `${plan.validityDays} day${plan.validityDays !== 1 ? 's' : ''}`}
                     </p>
                   </div>
                   <div>
@@ -424,8 +429,23 @@ export default function AdminMembershipPlansPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, validityDays: e.target.value })
                 }
+                disabled={formData.isUnlimited}
                 className="font-maven mt-1"
               />
+            </div>
+
+            {/* Unlimited Validity */}
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="isUnlimited"
+                checked={formData.isUnlimited}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, isUnlimited: checked, validityDays: checked ? '' : formData.validityDays })
+                }
+              />
+              <Label htmlFor="isUnlimited" className="font-telex text-sm cursor-pointer">
+                Unlimited validity (no expiry)
+              </Label>
             </div>
 
             {/* Set as Default */}

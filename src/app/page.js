@@ -56,18 +56,18 @@ export default function Home() {
         {/* Header */}
         <header className="border-b border-gray-100 fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
               <Image
                 src="/logo.jpeg"
                 alt="SNGS Matrimonial Logo"
                 width={48}
-                height={48}
+                height={64}
                 className="w-auto h-12"
               />
               <h1 className="font-viga text-2xl text-accent hidden sm:block">
                 SNGS Matrimonial
               </h1>
-            </div>
+            </Link>
 
             {/* Welcome Message - Center */}
             <div className="hidden md:flex items-center gap-2 flex-1 justify-center">
@@ -77,9 +77,8 @@ export default function Home() {
 
             {/* Credit Badge - ALWAYS VISIBLE */}
             {membership?.isActive && !membership?.isExpired && (
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
-                <CreditCard className="w-4 h-4 text-primary" />
-                <span className="font-telex font-semibold text-primary">
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/80 border border-primary/20">
+                <span className="font-telex font-semibold text-secondary">
                   {membership?.credits} credits
                 </span>
               </div>
@@ -199,7 +198,7 @@ export default function Home() {
       {/* Header Navigation */}
       <header className="border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
             <Image
               src="/logo.jpeg"
               alt="SNGS Matrimonial Logo"
@@ -208,7 +207,7 @@ export default function Home() {
               className="w-auto h-12"
             />
             <h1 className="font-viga text-2xl text-accent">SNGS Matrimonial</h1>
-          </div>
+          </Link>
           <HelpButton />
         </div>
       </header>

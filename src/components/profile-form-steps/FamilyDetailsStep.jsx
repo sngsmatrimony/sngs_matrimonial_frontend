@@ -15,7 +15,7 @@ export function FamilyDetailsStep({ form }) {
 
   return (
     <div className="space-y-6">
-      <h2 className="font-viga text-xl text-secondary">Family & Additional Details</h2>
+      {/* <h2 className="font-viga text-xl text-secondary">Family & Additional Details</h2> */}
 
       {/* Father Details */}
       <div className="space-y-4 p-4 border border-gray-200 rounded-lg">

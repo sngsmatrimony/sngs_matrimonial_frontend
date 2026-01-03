@@ -28,17 +28,17 @@ export default function MembershipSection() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 border rounded-lg">
                 <p className="font-telex text-sm text-gray-600 mb-1">Credits Remaining</p>
-                <p className="font-viga text-3xl text-primary">{membership?.credits}</p>
+                <p className="font-viga text-3xl text-black">{membership?.credits}</p>
               </div>
               <div className="p-4 border rounded-lg">
                 <p className="font-telex text-sm text-gray-600 mb-1">Expiry Date</p>
-                <p className="font-maven text-lg text-secondary">
-                  {new Date(membership?.expiryDate).toLocaleDateString()}
+                <p className="font-maven text-lg text-black">
+                  {membership?.expiryDate ? new Date(membership.expiryDate).toLocaleDateString() : 'Never expires'}
                 </p>
               </div>
               <div className="p-4 border rounded-lg">
                 <p className="font-telex text-sm text-gray-600 mb-1">Status</p>
-                <Badge className="bg-success text-white font-telex">Active</Badge>
+                <Badge className="bg-success text-black font-telex">Active</Badge>
               </div>
             </div>
             <Button

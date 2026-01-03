@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Script from 'next/script';
 import { CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
@@ -18,63 +18,63 @@ export default function PaymentPage() {
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('loading'); // loading, processing, success
   const [transactionData, setTransactionData] = useState(null);
+  const checkoutOpenedRef = useRef(false);
 
   // Fetch order details on mount
   useEffect(() => {
-    fetchOrderDetails();
-  }, [params.orderId]);
-
-  // Auto-open Razorpay when script loads and order is fetched
-  useEffect(() => {
-    if (scriptLoaded && orderData && paymentStatus === 'loading') {
-      setPaymentStatus('processing');
-      openRazorpayCheckout();
+    // Guard: Only fetch if orderId is available
+    if (!params.orderId) {
+      console.warn('Order ID not available yet');
+      return;
     }
-  }, [scriptLoaded, orderData]);
 
-  const fetchOrderDetails = async () => {
-    try {
-      const res = await client.get(`/api/membership/order/${params.orderId}`);
-      setOrderData(res.data.data);
-    } catch (error) {
-      console.error('Error fetching order:', error);
-      toastError('Failed to load payment details');
-      setTimeout(() => {
-        router.push('/membership/purchase');
-      }, 1500);
-    }
-  };
-
-  const openRazorpayCheckout = () => {
-    const options = {
-      key: orderData.keyId,
-      amount: orderData.amount,
-      currency: orderData.currency,
-      name: 'SNGS Matrimonial',
-      description: orderData.planName,
-      order_id: orderData.orderId,
-      handler: handlePaymentSuccess,
-      prefill: {
-        name: user?.fullName,
-        email: user?.email,
-        contact: user?.mobileNumber,
-      },
-      theme: {
-        color: '#FF9B00',
-        backdrop_color: '#000000', // Black backdrop
-      },
-      modal: {
-        ondismiss: handlePaymentDismiss,
-        backdropclose: false, // Prevent closing by clicking backdrop
-        escape: true, // Allow ESC key
-      },
+    const fetchOrderDetails = async () => {
+      try {
+        const res = await client.get(`/api/membership/order/${params.orderId}`);
+        setOrderData(res.data.data);
+      } catch (error) {
+        console.error('Error fetching order:', error);
+        toastError('Failed to load payment details');
+        setTimeout(() => {
+          router.push('/membership/purchase');
+        }, 1500);
+      }
     };
 
-    const razorpay = new window.Razorpay(options);
-    razorpay.open();
-  };
+    fetchOrderDetails();
+  }, [params.orderId, router]);
 
-  const handlePaymentSuccess = async (response) => {
+  // Check if Razorpay script is loaded (handles cached scripts)
+  useEffect(() => {
+    // If already loaded via state, skip
+    if (scriptLoaded) return;
+
+    // Poll for Razorpay (in case onLoad doesn't fire for cached scripts)
+    const checkInterval = setInterval(() => {
+      if (window.Razorpay) {
+        console.log('[PaymentPage] Razorpay detected via polling, setting scriptLoaded=true');
+        setScriptLoaded(true);
+        clearInterval(checkInterval);
+      }
+    }, 100); // Check every 100ms
+
+    // Cleanup interval after 5 seconds
+    const timeout = setTimeout(() => {
+      clearInterval(checkInterval);
+      if (!window.Razorpay) {
+        console.error('[PaymentPage] Razorpay failed to load after 5 seconds');
+        toastError('Failed to load payment gateway');
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(checkInterval);
+      clearTimeout(timeout);
+    };
+  }, [scriptLoaded]);
+
+  // Handler: Payment Success
+  const handlePaymentSuccess = useCallback(async (response) => {
     try {
       toastInfo('Verifying payment...');
 
@@ -101,15 +101,91 @@ export default function PaymentPage() {
         router.push('/membership/purchase');
       }, 2000);
     }
-  };
+  }, [refreshMembership, router]);
 
-  const handlePaymentDismiss = () => {
+  // Handler: Payment Dismissed
+  const handlePaymentDismiss = useCallback(() => {
     toastError('Payment cancelled');
     // Redirect back to purchase page
     setTimeout(() => {
       router.push('/membership/purchase');
     }, 1500);
-  };
+  }, [router]);
+
+  // Handler: Open Razorpay Checkout
+  const openRazorpayCheckout = useCallback(() => {
+    // Set status at the start of opening checkout
+    setPaymentStatus('processing');
+
+    // Safety checks
+    if (!window.Razorpay) {
+      console.error('Razorpay script not loaded');
+      toastError('Payment gateway not loaded');
+      return;
+    }
+
+    if (!orderData) {
+      console.error('Order data not available');
+      toastError('Order details not available');
+      return;
+    }
+
+    const options = {
+      key: orderData.keyId,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: 'SNGS Matrimonial',
+      description: orderData.planName,
+      order_id: orderData.orderId,
+      handler: handlePaymentSuccess,
+      prefill: {
+        name: user?.fullName,
+        email: user?.email,
+        contact: user?.mobileNumber,
+      },
+      theme: {
+        // razorpay gateway theme
+        // color: '#FFE100',
+        backdrop_color: '#000000', // Black backdrop
+      },
+      modal: {
+        ondismiss: handlePaymentDismiss,
+        backdropclose: false, // Prevent closing by clicking backdrop
+        escape: true, // Allow ESC key
+      },
+    };
+
+    try {
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (error) {
+      console.error('Error opening Razorpay modal:', error);
+      toastError('Failed to open payment modal');
+    }
+  }, [orderData, user, handlePaymentSuccess, handlePaymentDismiss]);
+
+  // Auto-open Razorpay when script loads and order is fetched
+  useEffect(() => {
+    console.log('[PaymentPage] Auto-open effect triggered', {
+      scriptLoaded,
+      orderData: !!orderData,
+      razorpayDefined: !!window.Razorpay,
+    });
+
+    // Prevent opening checkout multiple times
+    if (checkoutOpenedRef.current) {
+      console.log('[PaymentPage] Checkout already opened, skipping...');
+      return;
+    }
+
+    if (scriptLoaded && orderData) {
+      console.log('[PaymentPage] All conditions met, opening checkout...');
+      checkoutOpenedRef.current = true;
+      // Safe: ref guard prevents duplicate opens, state update is intentional and controlled
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      openRazorpayCheckout();
+    }
+  }, [scriptLoaded, orderData, openRazorpayCheckout]);
 
   const handleGoHome = () => {
     router.push('/');
@@ -120,8 +196,12 @@ export default function PaymentPage() {
       {/* Razorpay Checkout Script */}
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
-        onLoad={() => setScriptLoaded(true)}
+        onLoad={() => {
+          console.log('[PaymentPage] Script onLoad fired');
+          setScriptLoaded(true);
+        }}
         onError={() => {
+          console.error('[PaymentPage] Script onError fired');
           toastError('Failed to load payment gateway');
           setTimeout(() => {
             router.push('/membership/purchase');

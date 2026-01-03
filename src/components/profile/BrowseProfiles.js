@@ -89,17 +89,6 @@ export default function BrowseProfiles() {
           <h2 className="font-viga text-3xl text-secondary">
             Browse Profiles
           </h2>
-          {membership?.isActive && !membership?.isExpired && (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20">
-              <CreditCard className="w-5 h-5 text-primary" />
-              <span className="font-viga text-xl text-primary">
-                {membership?.credits}
-              </span>
-              <span className="font-telex text-sm text-primary">
-                {membership?.credits === 1 ? 'credit' : 'credits'}
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Grid of profile cards */}

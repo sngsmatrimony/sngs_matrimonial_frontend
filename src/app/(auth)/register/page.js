@@ -676,7 +676,7 @@ export default function RegisterPage() {
     '💑 Personal Details',
     '📍 Location Details',
     '💼 Professional Details',
-    '👨‍👩‍👧‍👦 Family & Additional',
+    '👨‍👩‍👧‍👦 Family & Additional Details',
     '📸 Preferences & Media'
   ];
   const progressValue = (currentStep / 6) * 100;

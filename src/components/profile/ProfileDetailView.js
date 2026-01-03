@@ -54,6 +54,14 @@ export default function ProfileDetailView({ profileId }) {
   }, [profileId]);
 
   const fetchProfile = async () => {
+    // Validate profileId before making API call
+    if (!profileId || profileId === 'undefined' || profileId === 'null') {
+      console.error('Invalid profile ID:', profileId);
+      toastError('Invalid profile ID');
+      router.push('/');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await client.get(`/api/profiles/${profileId}`);

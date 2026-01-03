@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { LogOut, User, Heart, Compass, MessageCircle, Settings } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useLandingStore } from '@/store/landingStore';
@@ -32,7 +33,7 @@ export default function Dashboard() {
       {/* Header */}
       <header className="border-b border-gray-100 fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
             <Image
               src="/logo.jpeg"
               alt="SNGS Matrimonial Logo"
@@ -43,7 +44,7 @@ export default function Dashboard() {
             <h1 className="font-viga text-2xl text-accent hidden sm:block">
               SNGS Matrimonial
             </h1>
-          </div>
+          </Link>
 
           {/* Welcome Message */}
           <div className="hidden md:flex items-center gap-2">

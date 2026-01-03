@@ -61,7 +61,7 @@ export default function AdminLayout({ children }) {
                 {/* Top Header - Similar to Dashboard */}
                 <header className="border-b border-gray-100 bg-white shadow-sm">
                     <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                        <Link href="/admin" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
                             <Image
                                 src="/logo.jpeg"
                                 alt="SNGS Matrimonial Logo"
@@ -72,7 +72,7 @@ export default function AdminLayout({ children }) {
                             <h1 className="font-viga text-2xl text-accent">
                                 SNGS Admin
                             </h1>
-                        </div>
+                        </Link>
 
                         {/* Welcome Message - Center */}
                         <div className="hidden md:flex items-center gap-2 flex-1 justify-center">

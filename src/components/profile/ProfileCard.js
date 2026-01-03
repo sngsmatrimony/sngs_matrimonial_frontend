@@ -9,6 +9,7 @@ import { client } from '@/lib/api/client';
 import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
 
 export default function ProfileCard({ profile, isLiked = false }) {
+  // All hooks must be called before any early returns
   const { membership } = useAuthStore();
   const {
     setActiveTab,
@@ -21,6 +22,12 @@ export default function ProfileCard({ profile, isLiked = false }) {
   const [isHovered, setIsHovered] = useState(false);
   const [liked, setLiked] = useState(isLiked);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Validate profile data (after hooks)
+  if (!profile || !profile._id || profile._id === 'undefined' || profile._id === 'null') {
+    console.error('Invalid profile data:', profile);
+    return null;
+  }
 
   // Check if user has no membership or expired/no credits
   const hasNoMembership = !membership?.isActive || membership?.isExpired || membership?.credits <= 0;

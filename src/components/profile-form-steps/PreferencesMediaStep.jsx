@@ -176,7 +176,7 @@ export function PreferencesMediaStep({
 
   return (
     <div className="space-y-6">
-      <h2 className="font-viga text-xl text-secondary">Preferences & Media</h2>
+      {/* <h2 className="font-viga text-xl text-secondary">Preferences & Media</h2> */}
 
       {/* Age Range */}
       <div className="space-y-4">

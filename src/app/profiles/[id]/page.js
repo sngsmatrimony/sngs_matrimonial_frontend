@@ -6,7 +6,7 @@ import { client } from '@/lib/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { toastError, toastSuccess } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import ProfileDetailView from '@/components/profile/ProfileDetailView';
 
 export default function ProfileViewPage() {
@@ -104,31 +104,9 @@ export default function ProfileViewPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-secondary hover:text-primary transition-colors font-telex"
-          >
-            <ArrowLeft size={20} />
-            <span className="hidden sm:inline">Back</span>
-          </button>
-
-          {creditsDeducted && (
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-success/10 border border-success/30">
-              <CheckCircle className="w-4 h-4 text-success" />
-              <span className="font-telex text-sm text-success">
-                1 credit deducted
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Profile Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ProfileDetailView profile={profile} />
+        <ProfileDetailView profileId={params.id} />
       </div>
     </div>
   );
