@@ -52,6 +52,69 @@ export default function AdminUserDetailPage() {
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
 
+  // Download handler for horoscope with authentication
+  const handleDownloadHoroscope = async (userId) => {
+    try {
+      // Get admin token from localStorage
+      const token = localStorage.getItem('adminAuthToken');
+
+      if (!token) {
+        toastError('Authentication required. Please log in.');
+        return;
+      }
+
+      // Fetch file with authentication header
+      const response = await fetch(
+        `http://localhost:4000/api/profiles/${userId}/horoscope/download`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        toastError(error.message || 'Failed to download horoscope');
+        return;
+      }
+
+      // Get filename from Content-Disposition header or extract from URL
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
+
+      let filename;
+      if (filenameMatch) {
+        filename = filenameMatch[1];
+      } else {
+        const url = response.url;
+        const urlExtension = url.substring(url.lastIndexOf('.') + 1).toLowerCase();
+        const safeExtension = urlExtension || 'pdf';
+        filename = `horoscope.${safeExtension}`;
+      }
+
+      // Convert response to blob
+      const blob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error('Download error:', error);
+      toastError('Failed to download horoscope document');
+    }
+  };
+
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['adminUser', userId],
     queryFn: async () => {
@@ -862,21 +925,20 @@ export default function AdminUserDetailPage() {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Horoscope Document</label>
                       <div className="flex gap-3">
-                        <a 
-                          href={user.horoscopeDocument.url} 
-                          target="_blank" 
+                        <a
+                          href={user.horoscopeDocument.url}
+                          target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary hover:underline text-sm"
+                          className="text-secondary underline text-sm hover:text-secondary/80"
                         >
                           View
                         </a>
-                        <a 
-                          href={user.horoscopeDocument.url} 
-                          download
-                          className="text-primary hover:underline text-sm"
+                        <button
+                          onClick={() => handleDownloadHoroscope(userId)}
+                          className="text-secondary underline text-sm cursor-pointer bg-transparent border-0 p-0 hover:text-secondary/80"
                         >
                           Download
-                        </a>
+                        </button>
                       </div>
                     </div>
                   )}
