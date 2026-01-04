@@ -27,7 +27,17 @@ export const useAuthStore = create(
           const { token, user } = response.data;
 
           localStorage.setItem('authToken', token);
-          set({ user, token, isLoading: false });
+          set({ 
+            user, 
+            token, 
+            isLoading: false,
+            membership: user.membership || {
+              isActive: false,
+              credits: 0,
+              expiryDate: null,
+              isExpired: false,
+            }
+          });
           return { success: true };
         } catch (error) {
           const errorMessage = error.response?.data?.message || 'Login failed';
@@ -46,7 +56,17 @@ export const useAuthStore = create(
           const { token, user } = response.data;
 
           localStorage.setItem('authToken', token);
-          set({ user, token, isLoading: false });
+          set({ 
+            user, 
+            token, 
+            isLoading: false,
+            membership: user.membership || {
+              isActive: false,
+              credits: 0,
+              expiryDate: null,
+              isExpired: false,
+            }
+          });
           return { success: true };
         } catch (error) {
           console.error('[authStore] Registration error details:');
@@ -80,7 +100,16 @@ export const useAuthStore = create(
           // Try to get current user from API
           try {
             const response = await client.get('/api/auth/me');
-            set({ user: response.data.user });
+            const userData = response.data.user;
+            set({ 
+              user: userData,
+              membership: userData.membership || {
+                isActive: false,
+                credits: 0,
+                expiryDate: null,
+                isExpired: false,
+              }
+            });
           } catch (error) {
             // Token is invalid, clear it
             localStorage.removeItem('authToken');
@@ -100,8 +129,17 @@ export const useAuthStore = create(
       getCurrentUser: async () => {
         try {
           const response = await client.get('/api/auth/me');
-          set({ user: response.data.user });
-          return response.data.user;
+          const userData = response.data.user;
+          set({ 
+            user: userData,
+            membership: userData.membership || {
+              isActive: false,
+              credits: 0,
+              expiryDate: null,
+              isExpired: false,
+            }
+          });
+          return userData;
         } catch (error) {
           set({ user: null, token: null });
           return null;
