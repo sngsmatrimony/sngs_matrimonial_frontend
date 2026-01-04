@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useLandingStore } from '@/store/landingStore';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
@@ -8,30 +8,32 @@ import ProfileCard from './ProfileCard';
 
 export default function LikedProfiles() {
   const {
-    likedProfiles,
-    setLikedProfiles,
     isLoading,
     setIsLoading,
   } = useLandingStore();
 
-  const fetchLikedProfiles = useCallback(async () => {
-    setIsLoading(true);
-    try {
+  const {
+    likedProfiles,
+    setLikedProfiles,
+  } = useLandingStore();
+  const { data: likedProfilesData, isLoading: isQueryLoading, error } = useQuery({
+    queryKey: ['likedProfiles'],
+    queryFn: async () => {
       const response = await client.get('/api/profiles/liked');
-      setLikedProfiles(response.data.data || []);
-    } catch (error) {
-      console.error('Error fetching liked profiles:', error);
+      const data = response.data.data || [];
+      // Sync with store
+      setLikedProfiles(data);
+      return data;
+    },
+    onError: (err) => {
+      console.error('Error fetching liked profiles:', err);
       toastError('Failed to load liked profiles');
-    } finally {
-      setIsLoading(false);
     }
-  }, [setLikedProfiles, setIsLoading]);
+  });
 
-  useEffect(() => {
-    fetchLikedProfiles();
-  }, [fetchLikedProfiles]);
+  const displayProfiles = likedProfilesData || likedProfiles;
 
-  if (isLoading) {
+  if (isQueryLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -42,7 +44,7 @@ export default function LikedProfiles() {
     );
   }
 
-  if (!likedProfiles || likedProfiles.length === 0) {
+  if (!displayProfiles || displayProfiles.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -64,12 +66,12 @@ export default function LikedProfiles() {
           Liked Profiles
         </h2>
         <p className="font-telex text-sm text-gray-500 mb-8">
-          {likedProfiles.length} profile{likedProfiles.length !== 1 ? 's' : ''}
+          {displayProfiles.length} profile{displayProfiles.length !== 1 ? 's' : ''}
         </p>
 
         {/* Grid of liked profile cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {likedProfiles.map((profile) => (
+          {displayProfiles.map((profile) => (
             <ProfileCard
               key={profile._id}
               profile={profile}

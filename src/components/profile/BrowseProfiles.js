@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useLandingStore } from '@/store/landingStore';
 import { useAuthStore } from '@/store/authStore';
@@ -18,45 +18,45 @@ export default function BrowseProfiles() {
     setProfiles,
     likedProfilesIds,
     setLikedProfilesIds,
-    isLoading,
-    setIsLoading,
   } = useLandingStore();
-
-  const fetchProfiles = useCallback(async () => {
-    setIsLoading(true);
-    try {
+  
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['browseProfiles'],
+    queryFn: async () => {
       const [profilesRes, likedRes] = await Promise.all([
         client.get('/api/profiles/discover'),
         client.get('/api/profiles/liked'),
       ]);
-
-      setProfiles(profilesRes.data.data || []);
-
-      // Extract liked profile IDs
-      const likedIds =
-        likedRes.data.data?.map((p) => p._id) || [];
+      
+      const profiles = profilesRes.data.data || [];
+      const likedIds = likedRes.data.data?.map((p) => p._id) || [];
+      
+      // Update store for backward compatibility if needed, 
+      // but UI should prefer using 'data' from useQuery
+      setProfiles(profiles);
       setLikedProfilesIds(likedIds);
-    } catch (error) {
-      console.error('Error fetching profiles:', error);
-      if (error.response?.data?.requiresMembership) {
-        toastError(error.response.data.message);
+      
+      return { profiles, likedIds };
+    },
+    onError: (err) => {
+      console.error('Error fetching profiles:', err);
+      if (err.response?.data?.requiresMembership) {
+        toastError(err.response.data.message);
         router.push('/membership/purchase');
-      } else if (error.response?.data?.requiresCredits) {
-        toastError(error.response.data.message);
+      } else if (err.response?.data?.requiresCredits) {
+        toastError(err.response.data.message);
         router.push('/membership/purchase');
       } else {
         toastError('Failed to load profiles');
       }
-    } finally {
-      setIsLoading(false);
     }
-  }, [setIsLoading, setProfiles, setLikedProfilesIds, router]);
+  });
 
-  useEffect(() => {
-    fetchProfiles();
-  }, [fetchProfiles]);
+  const profilesData = data?.profiles || profiles;
+  const likedIdsData = data?.likedIds || likedProfilesIds;
+  const isQueryLoading = isLoading; 
 
-  if (isLoading) {
+  if (isQueryLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -67,7 +67,7 @@ export default function BrowseProfiles() {
     );
   }
 
-  if (!profiles || profiles.length === 0) {
+  if (!profilesData || profilesData.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -93,11 +93,11 @@ export default function BrowseProfiles() {
 
         {/* Grid of profile cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {profiles.map((profile) => (
+          {profilesData.map((profile) => (
             <ProfileCard
               key={profile._id}
               profile={profile}
-              isLiked={likedProfilesIds.includes(profile._id)}
+              isLiked={likedIdsData.includes(profile._id)}
             />
           ))}
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useLandingStore } from '@/store/landingStore';
 import { useAuthStore } from '@/store/authStore';
 import { client } from '@/lib/api/client';
@@ -109,26 +110,26 @@ export default function UserProfileView() {
   const { user } = useAuthStore();
   const [isEditMode, setIsEditMode] = useState(false);
 
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
-
-  const fetchUserProfile = async () => {
-    setIsLoading(true);
-    try {
+  /* Refactored to use useQuery */
+  const { data: profileData, isLoading: isQueryLoading, error, refetch } = useQuery({
+    queryKey: ['userProfile'],
+    queryFn: async () => {
       const response = await client.get('/api/profiles/me/view');
-      console.log('Profile data received:', response.data.data);
-      console.log('Profile picture:', response.data.data?.profilePicture);
-      setUserProfile(response.data.data);
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
+      // console.log('Profile data received:', response.data.data);
+      const data = response.data.data;
+      // Sync with store
+      setUserProfile(data);
+      return data;
+    },
+    onError: (err) => {
+      console.error('Error fetching user profile:', err);
       toastError('Failed to load your profile');
-    } finally {
-      setIsLoading(false);
     }
-  };
+  });
 
-  if (isLoading) {
+  const displayProfile = profileData || userProfile;  
+
+  if (isQueryLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -139,7 +140,7 @@ export default function UserProfileView() {
     );
   }
 
-  if (!userProfile) {
+  if (!displayProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -162,7 +163,7 @@ export default function UserProfileView() {
             onCancel={() => setIsEditMode(false)}
             onSuccess={() => {
               setIsEditMode(false);
-              fetchUserProfile();
+              refetch();
             }}
           />
         </div>
@@ -172,10 +173,10 @@ export default function UserProfileView() {
 
   // Get banner style
   const bannerStyle = {
-    backgroundColor: userProfile?.profileBanner?.bannerColor || '#FFB3BA'
+    backgroundColor: displayProfile?.profileBanner?.bannerColor || '#FFB3BA'
   };
 
-  const profileImageUrl = userProfile?.profilePicture?.url;
+  const profileImageUrl = displayProfile?.profilePicture?.url;
 
   console.log('Using profile image URL:', profileImageUrl);
 
@@ -276,7 +277,7 @@ export default function UserProfileView() {
         )}
 
         {/* Birth Details Card */}
-        {(user?.dateOfBirth || user?.timeOfBirth || user?.nakshatra || user?.raasi || user?.shuddhaJathakam || user?.doshamTypes || userProfile?.horoscopeDocument?.url) && (
+        {(user?.dateOfBirth || user?.timeOfBirth || user?.nakshatra || user?.raasi || user?.shuddhaJathakam || user?.doshamTypes || displayProfile?.horoscopeDocument?.url) && (
           <InfoCard
             title="💫 Birth Details"
             className="mb-6"
@@ -312,12 +313,12 @@ export default function UserProfileView() {
                 </div>
               </div>
             )}
-            {userProfile?.horoscopeDocument?.url && (
+            {displayProfile?.horoscopeDocument?.url && (
               <div className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
                 <span className="font-telex text-secondary/70 text-sm">Horoscope Document</span>
                 <div className="flex gap-3">
                   <a
-                    href={userProfile.horoscopeDocument.url}
+                    href={displayProfile.horoscopeDocument.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-secondary font-maven text-sm underline"
@@ -356,39 +357,39 @@ export default function UserProfileView() {
         )}
 
         {/* Address Information Card */}
-        {(user?.residentialStatus || (userProfile?.presentResidentialAddress && Object.values(userProfile.presentResidentialAddress).some(v => v)) ||
-          (userProfile?.nativePlaceAddress && Object.values(userProfile.nativePlaceAddress).some(v => v))) && (
+        {(user?.residentialStatus || (displayProfile?.presentResidentialAddress && Object.values(displayProfile.presentResidentialAddress).some(v => v)) ||
+          (displayProfile?.nativePlaceAddress && Object.values(displayProfile.nativePlaceAddress).some(v => v))) && (
           <InfoCard
             title="📍 Address Information"
             className="mb-6"
           >
             {user?.residentialStatus && <InfoField label="Residential Status" value={user.residentialStatus} />}
-            {userProfile?.presentResidentialAddress && Object.values(userProfile.presentResidentialAddress).some(v => v) && (
+            {displayProfile?.presentResidentialAddress && Object.values(displayProfile.presentResidentialAddress).some(v => v) && (
               <div className="py-3 border-b border-gray-100">
                 <span className="font-telex text-secondary/70 text-sm block mb-2">Present Residential Address</span>
                 <span className="font-maven text-secondary">
                   {[
-                    userProfile.presentResidentialAddress.street,
-                    userProfile.presentResidentialAddress.area,
-                    userProfile.presentResidentialAddress.landmark,
-                    userProfile.presentResidentialAddress.city,
-                    userProfile.presentResidentialAddress.state,
-                    userProfile.presentResidentialAddress.pincode,
+                    displayProfile.presentResidentialAddress.street,
+                    displayProfile.presentResidentialAddress.area,
+                    displayProfile.presentResidentialAddress.landmark,
+                    displayProfile.presentResidentialAddress.city,
+                    displayProfile.presentResidentialAddress.state,
+                    displayProfile.presentResidentialAddress.pincode,
                   ].filter(Boolean).join(', ') || '—'}
                 </span>
               </div>
             )}
-            {userProfile?.nativePlaceAddress && Object.values(userProfile.nativePlaceAddress).some(v => v) && (
+            {displayProfile?.nativePlaceAddress && Object.values(displayProfile.nativePlaceAddress).some(v => v) && (
               <div className="py-3">
                 <span className="font-telex text-secondary/70 text-sm block mb-2">Native Place Address</span>
                 <span className="font-maven text-secondary">
                   {[
-                    userProfile.nativePlaceAddress.street,
-                    userProfile.nativePlaceAddress.area,
-                    userProfile.nativePlaceAddress.landmark,
-                    userProfile.nativePlaceAddress.city,
-                    userProfile.nativePlaceAddress.state,
-                    userProfile.nativePlaceAddress.pincode,
+                    displayProfile.nativePlaceAddress.street,
+                    displayProfile.nativePlaceAddress.area,
+                    displayProfile.nativePlaceAddress.landmark,
+                    displayProfile.nativePlaceAddress.city,
+                    displayProfile.nativePlaceAddress.state,
+                    displayProfile.nativePlaceAddress.pincode,
                   ].filter(Boolean).join(', ') || '—'}
                 </span>
               </div>
@@ -397,13 +398,13 @@ export default function UserProfileView() {
         )}
 
         {/* Interests Section */}
-        {userProfile?.interests && userProfile.interests.length > 0 && (
+        {displayProfile?.interests && displayProfile.interests.length > 0 && (
           <InfoCard
             title="⭐ Interests"
             className="mb-6"
           >
             <div className="flex flex-wrap gap-2">
-              {userProfile.interests.map((interest, idx) => (
+              {displayProfile.interests.map((interest, idx) => (
                 <span
                   key={idx}
                   className="bg-primary text-black font-telex text-sm px-4 py-2 rounded-full hover:bg-accent transition-colors"
@@ -416,23 +417,23 @@ export default function UserProfileView() {
         )}
 
         {/* Hobbies Section */}
-        {userProfile?.hobbies && (
+        {displayProfile?.hobbies && (
           <InfoCard
             title="🎨 Hobbies"
             className="mb-6"
           >
-            <p className="font-maven text-gray-700 leading-relaxed">{userProfile.hobbies}</p>
+            <p className="font-maven text-gray-700 leading-relaxed">{displayProfile.hobbies}</p>
           </InfoCard>
         )}
 
         {/* Photos Gallery */}
-        {userProfile?.gallery?.photos && userProfile.gallery.photos.length > 0 && (
+        {displayProfile?.gallery?.photos && displayProfile.gallery.photos.length > 0 && (
           <div className="mb-8">
             <h3 className="font-viga text-2xl text-secondary flex items-center gap-2 mb-4">
-              📸 Photos ({userProfile.gallery.photos.length})
+              📸 Photos ({displayProfile.gallery.photos.length})
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {userProfile.gallery.photos.map((photo, idx) => (
+              {displayProfile.gallery.photos.map((photo, idx) => (
                 <div
                   key={idx}
                   className="relative aspect-square rounded-xl overflow-hidden border-2 border-gray-100 hover:shadow-lg transition-shadow"
