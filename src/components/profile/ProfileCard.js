@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import { Heart, MessageCircle, Lock, FileText } from 'lucide-react';
 import { useLandingStore } from '@/store/landingStore';
 import { useAuthStore } from '@/store/authStore';
@@ -10,6 +11,7 @@ import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
 
 export default function ProfileCard({ profile, isLiked = false }) {
   // All hooks must be called before any early returns
+  const queryClient = useQueryClient();
   const { membership } = useAuthStore();
   const {
     setActiveTab,
@@ -22,6 +24,11 @@ export default function ProfileCard({ profile, isLiked = false }) {
   const [isHovered, setIsHovered] = useState(false);
   const [liked, setLiked] = useState(isLiked);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Sync internal state when parent passes new prop (e.g. after invalidateQueries update)
+  useEffect(() => {
+    setLiked(isLiked);
+  }, [isLiked]);
 
   // Validate profile data (after hooks)
   if (!profile || !profile._id || profile._id === 'undefined' || profile._id === 'null') {
@@ -45,6 +52,11 @@ export default function ProfileCard({ profile, isLiked = false }) {
         // Update global store - both arrays for instant UI sync
         setLikedProfilesIds(likedProfilesIds.filter(id => id !== profile._id));
         setLikedProfiles(likedProfiles.filter(p => p._id !== profile._id));
+        
+        // Invalidate queries to ensure fresh data on tab switch
+        queryClient.invalidateQueries({ queryKey: ['likedProfiles'] });
+        queryClient.invalidateQueries({ queryKey: ['browseProfiles'] });
+        
         toastSuccess('Profile removed from likes');
       } else {
         // Like
@@ -52,6 +64,11 @@ export default function ProfileCard({ profile, isLiked = false }) {
         setLiked(true);
         // Update global store
         setLikedProfilesIds([...likedProfilesIds, profile._id]);
+        
+        // Invalidate queries to ensure fresh data on tab switch
+        queryClient.invalidateQueries({ queryKey: ['likedProfiles'] });
+        queryClient.invalidateQueries({ queryKey: ['browseProfiles'] });
+        
         toastSuccess('Profile liked!');
       }
     } catch (error) {
@@ -164,7 +181,7 @@ export default function ProfileCard({ profile, isLiked = false }) {
             {profile.fullName}
           </h3>
           <p className="font-telex text-sm text-gray-200">
-            {profile.age || 'Age'} • {profile.city || profile.state || profile.country}
+            {profile.age || 'Age'}
           </p>
           {profile.occupation && (
             <p className="font-telex text-sm text-gray-300">
