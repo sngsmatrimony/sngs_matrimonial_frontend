@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import client from '@/lib/api/client';
+import useChatStore from './chatStore';
+import { useLandingStore } from './landingStore';
 
 export const useAuthStore = create(
   persist(
@@ -123,6 +125,10 @@ export const useAuthStore = create(
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
         set({ user: null, token: null });
+        
+        // Clear other stores to prevent data leaks between users
+        useChatStore.getState().clearChat();
+        useLandingStore.getState().reset();
       },
 
       // Get current user
