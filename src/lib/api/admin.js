@@ -29,6 +29,21 @@ export const adminApi = {
   activateUser: (id) => adminClient.put(`/api/admin/users/${id}/activate`),
 
   /**
+   * Approve a user registration
+   */
+  approveUser: (id) => adminClient.put(`/api/admin/users/${id}/approve`),
+
+  /**
+   * Reject a user registration (requires reason)
+   */
+  rejectUser: (id, reason) => adminClient.put(`/api/admin/users/${id}/reject`, { reason }),
+
+  /**
+   * Get count of pending approvals
+   */
+  getPendingApprovalCount: () => adminClient.get('/api/admin/users/pending-count'),
+
+  /**
    * Permanently delete user (hard delete)
    */
   deleteUser: (id) => adminClient.delete(`/api/admin/users/${id}`),

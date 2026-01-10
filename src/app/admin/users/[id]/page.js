@@ -15,7 +15,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toastError, toastSuccess } from '@/lib/toast';
-import { ArrowLeft, Edit2, Trash2, Power } from 'lucide-react';
+import { ArrowLeft, Edit2, Trash2, Power, CheckCircle, XCircle, Clock } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import Image from 'next/image';
 
 const RELIGIONS = [
@@ -51,6 +59,8 @@ export default function AdminUserDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
+  const [showApprovalRejectDialog, setShowApprovalRejectDialog] = useState(false);
+  const [approvalRejectionReason, setApprovalRejectionReason] = useState('');
 
   // Download handler for horoscope with authentication
   const handleDownloadHoroscope = async (userId) => {
@@ -167,6 +177,42 @@ export default function AdminUserDetailPage() {
       toastError(error.response?.data?.message || 'Failed to delete user');
     },
   });
+
+  const approveMutation = useMutation({
+    mutationFn: () => adminApi.approveUser(userId),
+    onSuccess: () => {
+      toastSuccess('User approved successfully');
+      refetch();
+    },
+    onError: (error) => {
+      toastError(error.response?.data?.message || 'Failed to approve user');
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: (reason) => adminApi.rejectUser(userId, reason),
+    onSuccess: () => {
+      toastSuccess('User rejected successfully');
+      setShowApprovalRejectDialog(false);
+      setApprovalRejectionReason('');
+      refetch();
+    },
+    onError: (error) => {
+      toastError(error.response?.data?.message || 'Failed to reject user');
+    },
+  });
+
+  const handleApproveUser = () => {
+    approveMutation.mutate();
+  };
+
+  const handleRejectUser = () => {
+    if (!approvalRejectionReason.trim()) {
+      toastError('Please provide a rejection reason');
+      return;
+    }
+    rejectMutation.mutate(approvalRejectionReason);
+  };
 
   if (isLoading) {
     return (
@@ -294,6 +340,128 @@ export default function AdminUserDetailPage() {
                 </Button>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Approval Status Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Approval Status</span>
+              <Badge
+                variant={
+                  user.approvalStatus === 'approved'
+                    ? 'default'
+                    : user.approvalStatus === 'rejected'
+                      ? 'destructive'
+                      : 'outline'
+                }
+                className={
+                  user.approvalStatus === 'pending'
+                    ? 'bg-amber-100 text-amber-800 border-amber-300'
+                    : user.approvalStatus === 'approved'
+                      ? 'bg-green-100 text-green-800 border-green-300'
+                      : ''
+                }
+              >
+                {user.approvalStatus === 'pending' && <Clock size={12} className="mr-1" />}
+                {user.approvalStatus === 'approved' && <CheckCircle size={12} className="mr-1" />}
+                {user.approvalStatus === 'rejected' && <XCircle size={12} className="mr-1" />}
+                {user.approvalStatus?.charAt(0).toUpperCase() + user.approvalStatus?.slice(1) || 'Pending'}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Quick Actions for Pending Users */}
+            {user.approvalStatus === 'pending' && (
+              <div className="flex gap-3 mb-6 pb-6 border-b">
+                <Button
+                  className="bg-green-600 text-white hover:bg-green-700"
+                  onClick={handleApproveUser}
+                  disabled={approveMutation.isPending}
+                >
+                  <CheckCircle size={16} className="mr-2" />
+                  {approveMutation.isPending ? 'Approving...' : 'Approve User'}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => setShowApprovalRejectDialog(true)}
+                  disabled={rejectMutation.isPending}
+                >
+                  <XCircle size={16} className="mr-2" />
+                  Reject User
+                </Button>
+              </div>
+            )}
+
+            {/* Approval Timestamps */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {user.approvedAt && (
+                <div>
+                  <p className="text-sm text-gray-600">Approved On</p>
+                  <p className="font-medium text-green-600">
+                    {new Date(user.approvedAt).toLocaleString()}
+                  </p>
+                </div>
+              )}
+              {user.rejectedAt && (
+                <div>
+                  <p className="text-sm text-gray-600">Rejected On</p>
+                  <p className="font-medium text-destructive">
+                    {new Date(user.rejectedAt).toLocaleString()}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Approval History */}
+            {user.approvalHistory && user.approvalHistory.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-secondary mb-3">Approval History</h4>
+                <div className="space-y-3">
+                  {user.approvalHistory.slice().reverse().map((history, index) => (
+                    <div
+                      key={index}
+                      className={`p-3 rounded-lg border-l-4 ${
+                        history.status === 'approved'
+                          ? 'bg-green-50 border-l-green-500'
+                          : history.status === 'rejected'
+                            ? 'bg-red-50 border-l-destructive'
+                            : 'bg-amber-50 border-l-amber-500'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <Badge
+                          variant={
+                            history.status === 'approved'
+                              ? 'default'
+                              : history.status === 'rejected'
+                                ? 'destructive'
+                                : 'outline'
+                          }
+                          className={`text-xs ${
+                            history.status === 'approved'
+                              ? 'bg-green-100 text-green-800'
+                              : ''
+                          }`}
+                        >
+                          {history.status.charAt(0).toUpperCase() + history.status.slice(1)}
+                        </Badge>
+                        <span className="text-xs text-gray-500">
+                          {new Date(history.actionAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">By: {history.adminEmail}</p>
+                      {history.reason && (
+                        <p className="text-sm mt-2 text-gray-700">
+                          <span className="font-medium">Reason:</span> {history.reason}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -1226,6 +1394,47 @@ export default function AdminUserDetailPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Approval Rejection Dialog */}
+        <Dialog open={showApprovalRejectDialog} onOpenChange={setShowApprovalRejectDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="font-viga">Reject User Registration</DialogTitle>
+              <DialogDescription>
+                Please provide a reason for rejecting this user. This will be sent to the user via email.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Rejection Reason <span className="text-destructive">*</span>
+              </label>
+              <Textarea
+                value={approvalRejectionReason}
+                onChange={(e) => setApprovalRejectionReason(e.target.value)}
+                placeholder="Enter the reason for rejection..."
+                className="min-h-[120px]"
+                maxLength={500}
+              />
+              <p className="text-xs text-gray-500 mt-1">{approvalRejectionReason.length}/500 characters</p>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowApprovalRejectDialog(false)}
+                disabled={rejectMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleRejectUser}
+                disabled={rejectMutation.isPending || !approvalRejectionReason.trim()}
+              >
+                {rejectMutation.isPending ? 'Rejecting...' : 'Reject User'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

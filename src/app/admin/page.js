@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api/admin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Users, UserCheck, UserX, Image, Settings } from 'lucide-react';
+import { Users, UserCheck, UserX, Image, Settings, UserPlus, Clock } from 'lucide-react';
 
 function StatsCard({ icon: Icon, label, value, subtitle, color = 'text-primary' }) {
   return (
@@ -60,7 +60,7 @@ export default function AdminDashboard() {
     return <div>No analytics data available</div>;
   }
 
-  const { counts, newUsersToday, newUsersThisWeek, newUsersThisMonth, averageAge, genderBreakdown, maritalStatusBreakdown, topCities, topStates, growthChart } = analyticsData;
+  const { counts, newUsersToday, newUsersThisWeek, newUsersThisMonth, pendingApprovals, averageAge, genderBreakdown, maritalStatusBreakdown, topCities, topStates, growthChart } = analyticsData;
 
   const genderChartData = genderBreakdown.map((item) => ({
     name: item._id || 'Unknown',
@@ -117,8 +117,28 @@ export default function AdminDashboard() {
         />
       </div>
 
+      {/* Pending Approvals Alert Card */}
+      {pendingApprovals > 0 && (
+        <Link href="/admin/users?approvalStatus=pending">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow border-l-4 border-l-amber-500 bg-amber-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-amber-700 font-medium">Pending Approvals</p>
+                  <p className="text-4xl font-bold font-viga mt-2 text-amber-600">{pendingApprovals}</p>
+                  <p className="text-xs text-amber-600 mt-1">Users awaiting review - Click to manage</p>
+                </div>
+                <div className="p-3 rounded-lg bg-amber-100 text-amber-600">
+                  <Clock size={32} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+      )}
+
       {/* New Users Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">New Users Today</CardTitle>
@@ -145,6 +165,20 @@ export default function AdminDashboard() {
             <p className="text-4xl font-bold font-viga text-success">{newUsersThisMonth}</p>
           </CardContent>
         </Card>
+
+        <Link href="/admin/users?approvalStatus=pending">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow h-full">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Clock size={18} className="text-amber-500" />
+                Pending Approvals
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-4xl font-bold font-viga text-amber-500">{pendingApprovals || 0}</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* User Growth Chart */}

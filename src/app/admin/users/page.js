@@ -8,17 +8,33 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { toastError, toastSuccess } from '@/lib/toast';
-import { Eye, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Eye, Trash2, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 export default function AdminUsersPage() {
   const router = useRouter();
   const [page, setPage] = useState(1);
+  const [approvalFilter, setApprovalFilter] = useState('all');
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectingUserId, setRejectingUserId] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Build query params
   const queryParams = {
     page,
     limit: 20,
+    approvalStatus: approvalFilter === 'all' ? '' : approvalFilter,
   };
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -47,6 +63,48 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleApproveUser = async (userId) => {
+    try {
+      await adminApi.approveUser(userId);
+      toastSuccess('User approved successfully');
+      refetch();
+    } catch (error) {
+      toastError(error.response?.data?.message || 'Failed to approve user');
+    }
+  };
+
+  const handleOpenRejectDialog = (userId) => {
+    setRejectingUserId(userId);
+    setRejectionReason('');
+    setShowRejectDialog(true);
+  };
+
+  const handleRejectUser = async () => {
+    if (!rejectionReason.trim()) {
+      toastError('Please provide a rejection reason');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await adminApi.rejectUser(rejectingUserId, rejectionReason);
+      toastSuccess('User rejected successfully');
+      setShowRejectDialog(false);
+      setRejectingUserId(null);
+      setRejectionReason('');
+      refetch();
+    } catch (error) {
+      toastError(error.response?.data?.message || 'Failed to reject user');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleFilterChange = (value) => {
+    setApprovalFilter(value);
+    setPage(1); // Reset to first page when filter changes
+  };
+
   if (isLoading && !data) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -72,13 +130,34 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold font-viga text-secondary mb-2">User Management</h1>
-        <p className="text-gray-600">Manage user accounts and view their details</p>
+        <p className="text-gray-600">Manage user accounts and approve new registrations</p>
+      </div>
+
+      {/* Approval Filter Tabs */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <Tabs value={approvalFilter} onValueChange={handleFilterChange}>
+          <TabsList>
+            <TabsTrigger value="all">All Users</TabsTrigger>
+            <TabsTrigger value="pending" className="gap-1">
+              <Clock size={14} />
+              Pending
+            </TabsTrigger>
+            <TabsTrigger value="approved" className="gap-1">
+              <CheckCircle size={14} />
+              Approved
+            </TabsTrigger>
+            <TabsTrigger value="rejected" className="gap-1">
+              <XCircle size={14} />
+              Rejected
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Users Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Users ({pagination.total} total)</CardTitle>
+          <CardTitle>Users ({pagination.total || 0} total)</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -90,6 +169,7 @@ export default function AdminUsersPage() {
                   <TableHead>Mobile</TableHead>
                   <TableHead>Gender</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Approval</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -107,31 +187,80 @@ export default function AdminUsersPage() {
                           {user.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            user.approvalStatus === 'approved'
+                              ? 'default'
+                              : user.approvalStatus === 'rejected'
+                                ? 'destructive'
+                                : 'outline'
+                          }
+                          className={
+                            user.approvalStatus === 'pending'
+                              ? 'bg-amber-100 text-amber-800 border-amber-300'
+                              : user.approvalStatus === 'approved'
+                                ? 'bg-green-100 text-green-800 border-green-300'
+                                : ''
+                          }
+                        >
+                          {user.approvalStatus === 'pending' && <Clock size={12} className="mr-1" />}
+                          {user.approvalStatus === 'approved' && <CheckCircle size={12} className="mr-1" />}
+                          {user.approvalStatus === 'rejected' && <XCircle size={12} className="mr-1" />}
+                          {user.approvalStatus?.charAt(0).toUpperCase() + user.approvalStatus?.slice(1) || 'Pending'}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="text-sm">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleViewUser(user._id)}
-                        >
-                          <Eye size={16} />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDeleteUser(user._id)}
-                        >
-                          <Trash2 size={16} />
-                        </Button>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {user.approvalStatus === 'pending' && (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-green-600 hover:text-white hover:bg-green-600 border-green-300"
+                                onClick={() => handleApproveUser(user._id)}
+                                title="Approve"
+                              >
+                                <CheckCircle size={16} />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-destructive hover:text-white hover:bg-destructive"
+                                onClick={() => handleOpenRejectDialog(user._id)}
+                                title="Reject"
+                              >
+                                <XCircle size={16} />
+                              </Button>
+                            </>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewUser(user._id)}
+                            title="View Details"
+                          >
+                            <Eye size={16} />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteUser(user._id)}
+                            title="Delete"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan="7" className="text-center py-8 text-gray-500">
+                    <TableCell colSpan="8" className="text-center py-8 text-gray-500">
                       No users found
                     </TableCell>
                   </TableRow>
@@ -170,6 +299,43 @@ export default function AdminUsersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Rejection Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-viga">Reject User Registration</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting this user. This will be sent to the user via email.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Rejection Reason <span className="text-destructive">*</span>
+            </label>
+            <Textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Enter the reason for rejection..."
+              className="min-h-[120px]"
+              maxLength={500}
+            />
+            <p className="text-xs text-gray-500 mt-1">{rejectionReason.length}/500 characters</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRejectUser}
+              disabled={isSubmitting || !rejectionReason.trim()}
+            >
+              {isSubmitting ? 'Rejecting...' : 'Reject User'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
