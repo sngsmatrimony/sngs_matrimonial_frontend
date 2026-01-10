@@ -267,7 +267,6 @@ export default function UserProfileView() {
             {user?.motherTongue && <InfoField label="Mother Tongue" value={user.motherTongue} />}
             {user?.caste && <InfoField label="Caste" value={user.caste} />}
             {user?.maritalStatus && <InfoField label="Marital Status" value={user.maritalStatus} />}
-            {user?.height && <InfoField label="Height" value={user.height} />}
             {user?.weight && <InfoField label="Weight" value={`${user.weight} kg`} />}
             {user?.physicalStatus && <InfoField label="Physical Status" value={user.physicalStatus} />}
             {user?.bloodGroup && <InfoField label="Blood Group" value={user.bloodGroup} />}
@@ -374,6 +373,7 @@ export default function UserProfileView() {
                     displayProfile.presentResidentialAddress.landmark,
                     displayProfile.presentResidentialAddress.city,
                     displayProfile.presentResidentialAddress.state,
+                    displayProfile.presentResidentialAddress.country,
                     displayProfile.presentResidentialAddress.pincode,
                   ].filter(Boolean).join(', ') || '—'}
                 </span>
@@ -389,6 +389,7 @@ export default function UserProfileView() {
                     displayProfile.nativePlaceAddress.landmark,
                     displayProfile.nativePlaceAddress.city,
                     displayProfile.nativePlaceAddress.state,
+                    displayProfile.nativePlaceAddress.country,
                     displayProfile.nativePlaceAddress.pincode,
                   ].filter(Boolean).join(', ') || '—'}
                 </span>

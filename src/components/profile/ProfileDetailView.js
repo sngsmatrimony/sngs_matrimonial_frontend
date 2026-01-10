@@ -406,9 +406,6 @@ export default function ProfileDetailView({ profileId }) {
             <InfoCard title="🙏 Religion & Location" icon={MapPin} className="mb-6">
               <InfoField label="Religion" value={profile?.religion} />
               {profile?.caste && <InfoField label="Caste" value={profile.caste} />}
-              <InfoField label="Country" value={profile?.country} />
-              {profile?.state && <InfoField label="State" value={profile.state} />}
-              {profile?.city && <InfoField label="City" value={profile.city} />}
             </InfoCard>
           )}
 
@@ -448,6 +445,7 @@ export default function ProfileDetailView({ profileId }) {
                       profile.presentResidentialAddress.landmark,
                       profile.presentResidentialAddress.city,
                       profile.presentResidentialAddress.state,
+                      profile.presentResidentialAddress.country,
                       profile.presentResidentialAddress.pincode,
                     ].filter(Boolean).join(', ') || '—'}
                   </span>
@@ -463,6 +461,7 @@ export default function ProfileDetailView({ profileId }) {
                       profile.nativePlaceAddress.landmark,
                       profile.nativePlaceAddress.city,
                       profile.nativePlaceAddress.state,
+                      profile.nativePlaceAddress.country,
                       profile.nativePlaceAddress.pincode,
                     ].filter(Boolean).join(', ') || '—'}
                   </span>

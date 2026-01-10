@@ -39,7 +39,7 @@ const step1Schema = z.object({
   weight: z.number().min(30, 'Weight must be at least 30 kg').max(200, 'Weight must be at most 200 kg').nullable().optional(),
   bloodGroup: z.string().optional(),
   diet: z.enum(['Vegetarian', 'Non-Vegetarian', 'Eggetarian'], {
-    errorMap: () => ({ message: 'Select a valid diet preference' })
+    errorMap: () => ({ message: 'Please select your diet preference' })
   }).optional().or(z.literal('')),
 }).refine((data) => {
   if (!data.dateOfBirth) return false;
@@ -63,10 +63,9 @@ const step2Schema = z.object({
   doshamTypes: z.array(z.string()).optional().default([]),
   nakshatra: z.string().optional().nullable(),
   raasi: z.string().optional().nullable(),
-  country: z.string().min(1, 'Please select your country'),
-  state: z.string().optional(),
-  city: z.string().optional(),
+  // Removed root country/state/city validation as they are now in address blocks
   presentResidentialAddress: z.object({
+    country: z.string().min(1, 'Please select your country'),
     street: z.string().optional(),
     area: z.string().optional(),
     landmark: z.string().optional(),
@@ -75,6 +74,7 @@ const step2Schema = z.object({
     state: z.string().optional(),
   }).optional(),
   nativePlaceAddress: z.object({
+    country: z.string().optional(),
     street: z.string().optional(),
     area: z.string().optional(),
     landmark: z.string().optional(),
@@ -110,10 +110,9 @@ const step2Schema = z.object({
 
 // Step 3: Location Details (Country, State, City, Addresses)
 const step3Schema = z.object({
-  country: z.string().min(1, 'Please select your country'),
-  state: z.string().optional(),
-  city: z.string().optional(),
+  // Removed root country/state/city validation
   presentResidentialAddress: z.object({
+    country: z.string().min(1, 'Please select your country'),
     street: z.string().optional(),
     area: z.string().optional(),
     landmark: z.string().optional(),
@@ -122,6 +121,7 @@ const step3Schema = z.object({
     state: z.string().optional(),
   }).optional(),
   nativePlaceAddress: z.object({
+    country: z.string().optional(),
     street: z.string().optional(),
     area: z.string().optional(),
     landmark: z.string().optional(),
@@ -171,7 +171,7 @@ const step6Schema = z.object({
   const to = parseInt(data.ageTo);
   return from >= 18 && from <= 90 && to >= from && to <= 90;
 }, {
-  message: 'Age range must be valid (18-90) and max >= min',
+  message: 'Please enter a valid age range (minimum age must be at least 18, maximum age cannot exceed 90)',
   path: ['ageTo'],
 });
 
@@ -208,8 +208,8 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     country: user?.country || '',
     state: user?.state || '',
     city: user?.city || '',
-    presentResidentialAddress: user?.presentResidentialAddress || { street: '', area: '', landmark: '', pincode: '', city: '', state: '' },
-    nativePlaceAddress: user?.nativePlaceAddress || { street: '', area: '', landmark: '', pincode: '', city: '', state: '' },
+    presentResidentialAddress: user?.presentResidentialAddress || { country: user?.country || '', street: '', area: '', landmark: '', pincode: '', city: user?.city || '', state: user?.state || '' },
+    nativePlaceAddress: user?.nativePlaceAddress || { country: '', street: '', area: '', landmark: '', pincode: '', city: '', state: '' },
     // Step 4: Professional Details
     education: user?.education || '',
     employmentType: user?.employmentType || '',
@@ -402,9 +402,9 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
         doshamTypes: formValues.shuddhaJathakam === 'No' ? formValues.doshamTypes : [],
         nakshatra: formValues.nakshatra || null,
         raasi: formValues.raasi || null,
-        country: formValues.country,
-        state: formValues.country === 'India' ? formValues.state : '',
-        city: formValues.city,
+        country: formValues.presentResidentialAddress?.country || '',
+        state: formValues.presentResidentialAddress?.country === 'India' ? formValues.presentResidentialAddress?.state : '',
+        city: formValues.presentResidentialAddress?.city || '',
         presentResidentialAddress: formValues.presentResidentialAddress || {},
         nativePlaceAddress: formValues.nativePlaceAddress || {},
         education: formValues.education,

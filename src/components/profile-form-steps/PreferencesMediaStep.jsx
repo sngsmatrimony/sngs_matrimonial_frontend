@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { X, FileText, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/authStore';
-import { toastSuccess, toastError } from '@/lib/toast';
+import { toastSuccess, toastError, toastWarning } from '@/lib/toast';
 
 const INTERESTS = [
   'Painting', 'Coding', 'Poetry', 'Reading', 'Writing', 'Photography',
@@ -86,7 +86,7 @@ export function PreferencesMediaStep({
       : localGalleryPhotos.length;
 
     if (currentPhotos + files.length > 10) {
-      alert('Maximum 10 photos allowed');
+      toastWarning('Maximum 10 photos allowed');
       return;
     }
 
@@ -147,7 +147,7 @@ export function PreferencesMediaStep({
         const result = await useAuthStore.getState().deletePhoto(index);
         if (!result.success) {
           console.error('[PreferencesMediaStep] Failed to delete photo:', result.error);
-          alert('Failed to delete photo: ' + result.error);
+          toastError('Failed to delete photo: ' + result.error);
           return;
         }
         console.log('[PreferencesMediaStep] Photo deleted successfully');
@@ -162,7 +162,7 @@ export function PreferencesMediaStep({
       }
     } catch (err) {
       console.error('[PreferencesMediaStep] Error removing photo:', err);
-      alert('Failed to delete photo');
+      toastError('Failed to delete photo');
     } finally {
       setIsDeleting(false);
     }
@@ -293,10 +293,13 @@ export function PreferencesMediaStep({
         <Input
           ref={profilePictureInputRef}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png"
           onChange={handleProfilePictureUpload}
           className="font-maven"
         />
+        <p className="text-xs text-gray-500 font-maven">
+          Accepted formats: JPEG, PNG. Maximum size: 10 MB
+        </p>
         {(onFileUpdate ? profilePicture : localProfilePicture) && (
           <div className="relative w-32 h-32 rounded-lg overflow-hidden group">
             <Image
@@ -354,10 +357,13 @@ export function PreferencesMediaStep({
           ref={galleryPhotosInputRef}
           type="file"
           multiple
-          accept="image/*"
+          accept="image/jpeg,image/png"
           onChange={handlePhotoUpload}
           className="font-maven"
         />
+        <p className="text-xs text-gray-500 font-maven">
+          Accepted formats: JPEG, PNG. Maximum size: 10 MB per photo
+        </p>
         {((onFileUpdate ? galleryPhotos : localGalleryPhotos) || []).length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {((onFileUpdate ? galleryPhotos : localGalleryPhotos) || []).map((photo, idx) => {

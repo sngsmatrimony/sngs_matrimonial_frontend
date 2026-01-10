@@ -36,8 +36,8 @@ const step1Schema = z.object({
     .regex(/[A-Z]/, 'Must contain uppercase letter')
     .regex(/\d/, 'Must contain number'),
   confirmPassword: z.string(),
-  mobileNumber: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number'),
-  alternateMobileNumber: z.string().regex(/^[6-9]\d{9}$/, 'Invalid Indian mobile number').optional().or(z.literal('')),
+  mobileNumber: z.string().regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number (starting with 6-9)').optional().or(z.literal('')),
+  alternateMobileNumber: z.string().regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number (starting with 6-9)').optional().or(z.literal('')),
   sngsMembershipNumber: z.string().max(50, 'Maximum 50 characters').optional().or(z.literal('')),
 }).refine(data => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
@@ -66,17 +66,17 @@ const step2Schema = z.object({
   languagesKnown: z.array(z.string()).max(10, 'Maximum 10 languages').optional().default([]),
   placeOfBirth: z.string().max(100, 'Maximum 100 characters').optional().or(z.literal('')),
   complexion: z.enum(['Very Fair', 'Fair', 'Wheatish', 'Wheatish Brown', 'Dark', 'Very Dark'], {
-    errorMap: () => ({ message: 'Select a valid complexion' })
+    errorMap: () => ({ message: 'Please select your complexion' })
   }).optional().or(z.literal('')),
   weight: z.number().nullable().optional(),
   bloodGroup: z.string().optional(),
   diet: z.enum(['Vegetarian', 'Non-Vegetarian', 'Eggetarian'], {
-    errorMap: () => ({ message: 'Select a valid diet preference' })
+    errorMap: () => ({ message: 'Please select your diet preference' })
   }).optional().or(z.literal('')),
 });
 
 const step3Schema = z.object({
-  country: z.string().min(1, 'Select country'),
+  country: z.string().min(1, 'Please select your country'),
   state: z.string().optional(),
   city: z.string().optional(),
   presentResidentialAddress: z.object({
@@ -98,11 +98,11 @@ const step3Schema = z.object({
 });
 
 const step4Schema = z.object({
-  education: z.string().min(1, 'Select education'),
-  employmentType: z.string().min(1, 'Select employment type'),
-  occupation: z.string().min(1, 'Select occupation'),
-  annualIncomeCurrency: z.string().min(1, 'Select currency'),
-  annualIncomeAmount: z.string().min(1, 'Select income amount'),
+  education: z.string().min(1, 'Please select your education'),
+  employmentType: z.string().min(1, 'Please select your employment type'),
+  occupation: z.string().min(1, 'Please select your occupation'),
+  annualIncomeCurrency: z.string().min(1, 'Please select your currency'),
+  annualIncomeAmount: z.string().min(1, 'Please select your income amount'),
   additionalInfo: z.string().max(500, 'Maximum 500 characters').optional().or(z.literal('')),
 });
 
@@ -112,19 +112,19 @@ const step5Schema = z.object({
   motherName: z.string().optional(),
   motherOccupation: z.string().optional(),
   residentialStatus: z.string().optional(),
-  familyStatus: z.string().min(1, 'Select family status'),
+  familyStatus: z.string().min(1, 'Please select your family status'),
   about: z.string().min(50, 'About must be at least 50 characters'),
 });
 
 const step6Schema = z.object({
   ageFrom: z.string()
-    .min(1, 'Select minimum age')
+    .min(1, 'Please select minimum age')
     .refine(val => {
       const num = parseInt(val, 10);
       return !isNaN(num) && num >= 18 && num <= 90;
     }, 'Age from must be between 18 and 90'),
   ageTo: z.string()
-    .min(1, 'Select maximum age')
+    .min(1, 'Please select maximum age')
     .refine(val => {
       const num = parseInt(val, 10);
       return !isNaN(num) && num >= 18 && num <= 90;
@@ -148,12 +148,12 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // OTP Verification State
-  const [mobileVerificationStep, setMobileVerificationStep] = useState('input'); // 'input', 'otp', 'verified'
+  // Email OTP Verification State
+  const [emailVerificationStep, setEmailVerificationStep] = useState('input'); // 'input', 'otp', 'verified'
   const [otpSent, setOtpSent] = useState(false);
   const [otpValue, setOtpValue] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
-  const [mobileVerified, setMobileVerified] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
   const [verificationToken, setVerificationToken] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
 
@@ -326,38 +326,38 @@ export default function RegisterPage() {
   };
 
   /**
-   * Check if mobile number is already registered
+   * Check if email is already registered
    */
-  const checkMobileUniqueness = async (mobileNumber) => {
+  const checkEmailUniqueness = async (email) => {
     try {
-      const response = await client.post('/api/auth/register/check-mobile', {
-        mobileNumber
+      const response = await client.post('/api/auth/register/check-email', {
+        email
       });
 
       return response.data.available;
     } catch (error) {
-      console.error('Check mobile error:', error);
-      toastError(error.response?.data?.message || 'Failed to check mobile number');
+      console.error('Check email error:', error);
+      toastError(error.response?.data?.message || 'Failed to check email');
       return false;
     }
   };
 
   /**
-   * Send OTP to mobile number
+   * Send OTP to email
    */
   const sendOTP = async () => {
-    const mobileNumber = formData.mobileNumber;
+    const email = formData.email;
 
-    if (!mobileNumber || !/^[6-9]\d{9}$/.test(mobileNumber)) {
-      toastError('Please enter a valid mobile number');
+    if (!email || !z.string().email().safeParse(email).success) {
+      toastError('Please enter a valid email address');
       return;
     }
 
     setOtpLoading(true);
 
     try {
-      // First check if mobile is unique
-      const isUnique = await checkMobileUniqueness(mobileNumber);
+      // First check if email is unique
+      const isUnique = await checkEmailUniqueness(email);
       if (!isUnique) {
         setOtpLoading(false);
         return;
@@ -365,14 +365,19 @@ export default function RegisterPage() {
 
       // Send OTP
       const response = await client.post('/api/auth/register/send-otp', {
-        mobileNumber
+        email
       });
 
       if (response.data.success) {
-        toastSuccess('OTP sent to your mobile number');
-        setMobileVerificationStep('otp');
+        toastSuccess('OTP sent to your email');
+        setEmailVerificationStep('otp');
         setOtpSent(true);
         startResendTimer();
+
+        // Demo mode: show OTP in console
+        if (response.data.otp) {
+          console.log('[Demo Mode] OTP:', response.data.otp);
+        }
       } else {
         toastError(response.data.message || 'Failed to send OTP');
       }
@@ -397,16 +402,16 @@ export default function RegisterPage() {
 
     try {
       const response = await client.post('/api/auth/register/verify-otp', {
-        mobileNumber: formData.mobileNumber,
+        email: formData.email,
         otp: otpValue
       });
 
       if (response.data.success) {
-        toastSuccess('Mobile number verified successfully!');
+        toastSuccess('Email verified successfully!');
         // Store the verification token from the response
         setVerificationToken(response.data.verificationToken);
-        setMobileVerified(true);
-        setMobileVerificationStep('verified');
+        setEmailVerified(true);
+        setEmailVerificationStep('verified');
       } else {
         toastError(response.data.message || 'Invalid OTP');
         setOtpValue('');
@@ -565,7 +570,7 @@ export default function RegisterPage() {
         fullName: submissionData.fullName,
         email: submissionData.email,
         password: submissionData.password,
-        mobileNumber: submissionData.mobileNumber,
+        mobileNumber: submissionData.mobileNumber || '', // Mobile is now optional
         alternateMobileNumber: submissionData.alternateMobileNumber || '',
         sngsMembershipNumber: submissionData.sngsMembershipNumber || '',
         verificationToken: verificationToken,
@@ -741,14 +746,92 @@ export default function RegisterPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-maven">Email Address</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="email" placeholder="your@email.com" className="font-maven" />
-                    </FormControl>
+                    <FormLabel className="font-maven">Email Address *</FormLabel>
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="email"
+                          placeholder="your@email.com"
+                          className="font-maven flex-1"
+                          disabled={emailVerified}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            setFormData(prev => ({
+                              ...prev,
+                              email: e.target.value
+                            }));
+                            if (emailVerified) {
+                              setEmailVerified(false);
+                              setVerificationToken('');
+                              setEmailVerificationStep('input');
+                            }
+                          }}
+                        />
+                      </FormControl>
+                      {!emailVerified && (
+                        <Button
+                          type="button"
+                          onClick={sendOTP}
+                          disabled={otpLoading || !formData.email || !z.string().email().safeParse(formData.email).success}
+                          className="bg-primary text-primary-foreground font-telex whitespace-nowrap"
+                        >
+                          {otpLoading ? 'Sending...' : 'Verify Email'}
+                        </Button>
+                      )}
+                      {emailVerified && (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-success/10 text-success rounded-md border border-success/20">
+                          <svg className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          <span className="font-maven font-semibold text-sm">Verified</span>
+                        </div>
+                      )}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {/* OTP Input Section - shown after sending OTP */}
+              {emailVerificationStep === 'otp' && !emailVerified && (
+                <div className="space-y-3 p-4 bg-gray-50 rounded-lg border-2 border-primary/20">
+                  <p className="font-maven text-sm text-secondary">
+                    Enter the 6-digit OTP sent to <strong>{formData.email}</strong>
+                  </p>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="000000"
+                    maxLength={6}
+                    value={otpValue}
+                    onChange={(e) => {
+                      const cleaned = e.target.value.replace(/\D/g, '').slice(0, 6);
+                      setOtpValue(cleaned);
+                    }}
+                    className="text-center text-2xl tracking-widest font-maven"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      onClick={verifyOTP}
+                      disabled={otpLoading || !otpValue || otpValue.length !== 6}
+                      className="flex-1 bg-primary text-primary-foreground font-telex"
+                    >
+                      {otpLoading ? 'Verifying...' : 'Verify OTP'}
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={resendOTP}
+                      disabled={resendTimer > 0}
+                      variant="outline"
+                      className="font-telex"
+                    >
+                      {resendTimer > 0 ? `Resend (${resendTimer}s)` : 'Resend OTP'}
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <FormField
                 control={form.control}
@@ -783,7 +866,7 @@ export default function RegisterPage() {
                 name="mobileNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-maven">Mobile Number *</FormLabel>
+                    <FormLabel className="font-maven">Mobile Number (Optional)</FormLabel>
                     <div className="flex gap-2">
                       <div className="w-16 flex items-center justify-center border border-input rounded-md bg-gray-50 font-maven text-sm">
                         +91
@@ -796,38 +879,15 @@ export default function RegisterPage() {
                           maxLength={10}
                           pattern="[0-9]*"
                           className="font-maven flex-1"
-                          disabled={mobileVerified}
                           onChange={(e) => {
                             field.onChange(e);
                             setFormData(prev => ({
                               ...prev,
                               mobileNumber: e.target.value
                             }));
-                            if (mobileVerified) {
-                              setMobileVerified(false);
-                              setVerificationToken('');
-                            }
                           }}
                         />
                       </FormControl>
-                      {!mobileVerified && (
-                        <Button
-                          type="button"
-                          onClick={sendOTP}
-                          disabled={otpLoading || !formData.mobileNumber || !/^[6-9]\d{9}$/.test(formData.mobileNumber)}
-                          className="bg-primary text-primary-foreground font-telex whitespace-nowrap"
-                        >
-                          {otpLoading ? 'Sending...' : 'Verify'}
-                        </Button>
-                      )}
-                      {mobileVerified && (
-                        <div className="flex items-center gap-2 px-3 py-2 bg-success/10 text-success rounded-md border border-success/20">
-                          <svg className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          <span className="font-maven font-semibold text-sm">Verified</span>
-                        </div>
-                      )}
                     </div>
                     <FormMessage className="font-telex text-xs" />
                   </FormItem>
@@ -880,45 +940,6 @@ export default function RegisterPage() {
                 )}
               />
 
-              {/* OTP Input Section - shown after sending OTP */}
-              {mobileVerificationStep === 'otp' && !mobileVerified && (
-                <div className="space-y-3 p-4 bg-gray-50 rounded-lg border-2 border-primary/20">
-                  <p className="font-maven text-sm text-secondary">
-                    Enter the 6-digit OTP sent to <strong>{formData.mobileNumber}</strong>
-                  </p>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="000000"
-                    maxLength={6}
-                    value={otpValue}
-                    onChange={(e) => {
-                      const cleaned = e.target.value.replace(/\D/g, '').slice(0, 6);
-                      setOtpValue(cleaned);
-                    }}
-                    className="text-center text-2xl tracking-widest font-maven"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      onClick={verifyOTP}
-                      disabled={otpLoading || !otpValue || otpValue.length !== 6}
-                      className="flex-1 bg-primary text-primary-foreground font-telex"
-                    >
-                      {otpLoading ? 'Verifying...' : 'Verify OTP'}
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={resendOTP}
-                      disabled={resendTimer > 0}
-                      variant="outline"
-                      className="font-telex"
-                    >
-                      {resendTimer > 0 ? `Resend (${resendTimer}s)` : 'Resend OTP'}
-                    </Button>
-                  </div>
-                </div>
-              )}
             </div>
           </Form>
         </CardContent>
@@ -929,11 +950,11 @@ export default function RegisterPage() {
           </Button>
           <Button
             onClick={validateAndProceed}
-            disabled={isLoading || !mobileVerified}
+            disabled={isLoading || !emailVerified}
             className="flex-1 bg-primary text-primary-foreground font-maven"
           >
-            {!mobileVerified ? 'Verify Mobile to Continue' : isLoading ? 'Validating...' : 'Next'}
-            {!isLoading && mobileVerified && <ChevronRight className="ml-2 w-4 h-4" />}
+            {!emailVerified ? 'Verify Email to Continue' : isLoading ? 'Validating...' : 'Next'}
+            {!isLoading && emailVerified && <ChevronRight className="ml-2 w-4 h-4" />}
           </Button>
         </div>
       </Card>

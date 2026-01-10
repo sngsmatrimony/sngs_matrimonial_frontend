@@ -703,14 +703,14 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           <h3 className="font-viga text-secondary text-sm">
             Horoscope Document (Optional)
           </h3>
-          <p className="font-maven text-xs text-gray-600">
-            Upload your horoscope as PDF or image (max 5 MB)
+          <p className="font-maven text-xs text-gray-500">
+            Accepted formats: PDF, JPEG, PNG. Maximum size: 5 MB
           </p>
 
           <Input
             ref={horoscopeInputRef}
             type="file"
-            accept=".pdf,image/jpeg,image/png,image/webp,image/gif"
+            accept=".pdf,image/jpeg,image/png"
             onChange={handleHoroscopeUpload}
             className="font-maven cursor-pointer"
           />

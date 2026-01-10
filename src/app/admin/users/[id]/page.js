@@ -365,6 +365,16 @@ export default function AdminUserDetailPage() {
                   >
                     Family & Misc
                   </button>
+                  <button
+                    onClick={() => setActiveTab('location')}
+                    className={`rounded-full px-4 py-2 font-medium transition-all duration-200 ease-in-out ${
+                      activeTab === 'location'
+                        ? 'bg-primary text-black'
+                        : 'bg-white text-black border-2 border-black shadow-md'
+                    }`}
+                  >
+                    Location
+                  </button>
                 </div>
 
                 {/* Basic Information Tab */}
@@ -661,30 +671,7 @@ export default function AdminUserDetailPage() {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                      <Input
-                        value={editData?.country || ''}
-                        onChange={(e) => handleInputChange('country', e.target.value)}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
-                      <Input
-                        value={editData?.state || ''}
-                        onChange={(e) => handleInputChange('state', e.target.value)}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                      <Input
-                        value={editData?.city || ''}
-                        onChange={(e) => handleInputChange('city', e.target.value)}
-                      />
-                    </div>
-
+                    {/* Removed root Country/State/City inputs */}
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-2">Additional Info</label>
                       <Textarea
@@ -800,6 +787,105 @@ export default function AdminUserDetailPage() {
                         onChange={(e) => handleInputChange('about', e.target.value)}
                         className="min-h-20"
                       />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Location Tab */}
+                <TabsContent value="location" className="space-y-6">
+                  <div className="border p-4 rounded-md">
+                    <h3 className="font-medium mb-4 text-lg">Present Residential Address</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                        <Input
+                          value={editData?.presentResidentialAddress?.country || ''}
+                          onChange={(e) => handleNestedChange('presentResidentialAddress', 'country', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                        <Input
+                          value={editData?.presentResidentialAddress?.state || ''}
+                          onChange={(e) => handleNestedChange('presentResidentialAddress', 'state', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                        <Input
+                          value={editData?.presentResidentialAddress?.city || ''}
+                          onChange={(e) => handleNestedChange('presentResidentialAddress', 'city', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Street</label>
+                        <Input
+                          value={editData?.presentResidentialAddress?.street || ''}
+                          onChange={(e) => handleNestedChange('presentResidentialAddress', 'street', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Area</label>
+                        <Input
+                          value={editData?.presentResidentialAddress?.area || ''}
+                          onChange={(e) => handleNestedChange('presentResidentialAddress', 'area', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Pincode</label>
+                        <Input
+                          value={editData?.presentResidentialAddress?.pincode || ''}
+                          onChange={(e) => handleNestedChange('presentResidentialAddress', 'pincode', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border p-4 rounded-md">
+                    <h3 className="font-medium mb-4 text-lg">Native Place Address</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+                        <Input
+                          value={editData?.nativePlaceAddress?.country || ''}
+                          onChange={(e) => handleNestedChange('nativePlaceAddress', 'country', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                        <Input
+                          value={editData?.nativePlaceAddress?.state || ''}
+                          onChange={(e) => handleNestedChange('nativePlaceAddress', 'state', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                        <Input
+                          value={editData?.nativePlaceAddress?.city || ''}
+                          onChange={(e) => handleNestedChange('nativePlaceAddress', 'city', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Street</label>
+                        <Input
+                          value={editData?.nativePlaceAddress?.street || ''}
+                          onChange={(e) => handleNestedChange('nativePlaceAddress', 'street', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Area</label>
+                        <Input
+                          value={editData?.nativePlaceAddress?.area || ''}
+                          onChange={(e) => handleNestedChange('nativePlaceAddress', 'area', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Pincode</label>
+                        <Input
+                          value={editData?.nativePlaceAddress?.pincode || ''}
+                          onChange={(e) => handleNestedChange('nativePlaceAddress', 'pincode', e.target.value)}
+                        />
+                      </div>
                     </div>
                   </div>
                 </TabsContent>
@@ -971,18 +1057,7 @@ export default function AdminUserDetailPage() {
                       {user.annualIncome?.displayText || `${user.annualIncome?.currency || 'INR'} ${user.annualIncome?.min || 0} - ${user.annualIncome?.max || 0}` || '-'}
                     </p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                    <p className="text-gray-900">{displayValue(user.country)}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
-                    <p className="text-gray-900">{displayValue(user.state)}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                    <p className="text-gray-900">{displayValue(user.city)}</p>
-                  </div>
+                  {/* Removed root Country/State/City display */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Additional Info</label>
                     <p className="text-gray-900">{displayValue(user.additionalInfo)}</p>
@@ -1037,6 +1112,45 @@ export default function AdminUserDetailPage() {
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">About</label>
                     <p className="text-gray-900">{displayValue(user.about)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Address Details (View Mode) */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Address Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div>
+                    <h4 className="font-semibold text-secondary mb-2">Present Residential Address</h4>
+                    <p className="text-gray-900">
+                      {[
+                        user.presentResidentialAddress?.street,
+                        user.presentResidentialAddress?.area,
+                        user.presentResidentialAddress?.landmark,
+                        user.presentResidentialAddress?.city,
+                        user.presentResidentialAddress?.state,
+                        user.presentResidentialAddress?.country,
+                        user.presentResidentialAddress?.pincode,
+                      ].filter(Boolean).join(', ') || 'Not provided'}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-secondary mb-2">Native Place Address</h4>
+                    <p className="text-gray-900">
+                      {[
+                        user.nativePlaceAddress?.street,
+                        user.nativePlaceAddress?.area,
+                        user.nativePlaceAddress?.landmark,
+                        user.nativePlaceAddress?.city,
+                        user.nativePlaceAddress?.state,
+                        user.nativePlaceAddress?.country,
+                        user.nativePlaceAddress?.pincode,
+                      ].filter(Boolean).join(', ') || 'Not provided'}
+                    </p>
                   </div>
                 </div>
               </CardContent>
