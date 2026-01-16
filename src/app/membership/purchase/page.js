@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CheckCircle2, CreditCard, LogOut, Lock, User, MessageCircle, Shield } from 'lucide-react';
+import { Loader2, CheckCircle2, LogOut, Lock, Shield } from 'lucide-react';
 import { client } from '@/lib/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
@@ -99,7 +99,8 @@ export default function PurchaseMembershipPage() {
               alt="SNGS Matrimonial Logo"
               width={48}
               height={48}
-              className="w-auto h-12"
+              className="h-12 w-auto"
+              style={{ width: 'auto', height: 'auto' }}
             />
             <h1 className="font-viga text-2xl text-accent hidden sm:block">
               SNGS Matrimonial
@@ -135,12 +136,6 @@ export default function PurchaseMembershipPage() {
       {/* Main Content - Add pt-24 for fixed header spacing */}
       <div className="min-h-screen bg-gray-50 pt-24 py-12 px-4">
         <div className="max-w-6xl mx-auto">
-          {/* Page Title */}
-          <div className="text-center mb-12">
-            <h1 className="font-viga text-3xl sm:text-4xl lg:text-5xl text-secondary mb-4">
-              Get Started with SNGS Matrimonial
-            </h1>
-          </div>
           {/* Active Membership Status - Subtle */}
           {membership?.isActive && !membership?.isExpired && (
             <div className="max-w-xl mx-auto mb-8">
@@ -152,6 +147,13 @@ export default function PurchaseMembershipPage() {
               </div>
             </div>
           )}
+
+          {/* Simple Value Proposition */}
+          <div className="text-center mb-12">
+            <p className="font-maven text-gray-600">
+              1 credit = 1 profile view • Unlimited messaging • Re-view anytime free
+            </p>
+          </div>
 
           {/* Membership Plans Grid */}
           {planLoading ? (
@@ -269,48 +271,6 @@ export default function PurchaseMembershipPage() {
             </div>
           )}
 
-          {/* How It Works */}
-          <div className="mt-16 max-w-4xl mx-auto mb-16">
-            <h2 className="font-viga text-2xl text-secondary text-center mb-8">
-              How It Works
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Step 1 */}
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-                  <CreditCard className="w-8 h-8 text-primary" />
-                </div>
-                <h3 className="font-viga text-lg text-secondary mb-2">1. Purchase Credits</h3>
-                <p className="font-maven text-sm text-gray-600">
-                  Buy credits securely via Razorpay. Choose from UPI, cards, net banking, or wallets.
-                </p>
-              </div>
-
-              {/* Step 2 */}
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/10 mb-4">
-                  <User className="w-8 h-8 text-accent" />
-                </div>
-                <h3 className="font-viga text-lg text-secondary mb-2">2. View Profiles</h3>
-                <p className="font-maven text-sm text-gray-600">
-                  Browse profiles and use 1 credit to unlock detailed information. Re-view anytime for free.
-                </p>
-              </div>
-
-              {/* Step 3 */}
-              <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success/10 mb-4">
-                  <MessageCircle className="w-8 h-8 text-success" />
-                </div>
-                <h3 className="font-viga text-lg text-secondary mb-2">3. Connect & Chat</h3>
-                <p className="font-maven text-sm text-gray-600">
-                  Send unlimited messages, access contact details, and take the next step toward your match.
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* Skip for Now - Only shown after registration */}
           {showSkip && (
             <div className="max-w-4xl mx-auto text-center pb-8 md:pb-0">
@@ -321,8 +281,7 @@ export default function PurchaseMembershipPage() {
                 onClick={() => {
                   router.push('/');
                 }}
-                variant="link"
-                className="font-telex text-gray-500 text-sm underline-offset-4"
+                className="font-telex bg-black hover:bg-gray-800 text-white rounded-full px-8 py-2"
               >
                 Skip for Now
               </Button>

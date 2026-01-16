@@ -42,7 +42,7 @@ const handleDownloadHoroscope = async (userId) => {
 
     // Fetch file with authentication header
     const response = await fetch(
-      `http://localhost:4000/api/profiles/${userId}/horoscope/download`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/profiles/${userId}/horoscope/download`,
       {
         method: 'GET',
         headers: {
@@ -235,12 +235,12 @@ export default function UserProfileView() {
             </p>
 
             {/* About Myself */}
-            {user?.about && (
+            {user?.profileAbout && (
               <div className="mb-6">
                 <h3 className="font-viga text-lg text-secondary mb-2">
                   About
                 </h3>
-                <p className="font-maven text-gray-700 leading-relaxed">{user.about}</p>
+                <p className="font-maven text-gray-700 leading-relaxed">{user.profileAbout}</p>
               </div>
             )}
 
@@ -257,8 +257,26 @@ export default function UserProfileView() {
 
       {/* Profile Information Cards */}
       <div className="max-w-4xl mx-auto space-y-6">
+        {/* Contact Information Card */}
+        {(user?.mobileNumber || user?.alternateMobileNumber || user?.sngsMembershipNumber) && (
+          <InfoCard
+            title="📞 Contact Information"
+            className="mb-6"
+          >
+            {user?.mobileNumber && (
+              <InfoField label="Mobile Number" value={`+91 ${user.mobileNumber}`} />
+            )}
+            {user?.alternateMobileNumber && (
+              <InfoField label="Alternate Mobile" value={`+91 ${user.alternateMobileNumber}`} />
+            )}
+            {user?.sngsMembershipNumber && (
+              <InfoField label="SNGS Membership Number" value={user.sngsMembershipNumber} />
+            )}
+          </InfoCard>
+        )}
+
         {/* Personal Details Card */}
-        {(user?.religion || user?.caste || user?.motherTongue || user?.maritalStatus || user?.height || user?.physicalStatus || user?.weight || user?.bloodGroup || user?.familyStatus) && (
+        {(user?.religion || user?.caste || user?.motherTongue || user?.maritalStatus || user?.height || user?.physicalStatus || user?.weight || user?.bloodGroup || user?.familyStatus || user?.diet || user?.complexion || user?.placeOfBirth) && (
           <InfoCard
             title="💑 Personal Details"
             className="mb-6"
@@ -267,11 +285,31 @@ export default function UserProfileView() {
             {user?.motherTongue && <InfoField label="Mother Tongue" value={user.motherTongue} />}
             {user?.caste && <InfoField label="Caste" value={user.caste} />}
             {user?.maritalStatus && <InfoField label="Marital Status" value={user.maritalStatus} />}
+            {user?.height && <InfoField label="Height" value={user.height} />}
             {user?.weight && <InfoField label="Weight" value={`${user.weight} kg`} />}
             {user?.physicalStatus && <InfoField label="Physical Status" value={user.physicalStatus} />}
             {user?.bloodGroup && <InfoField label="Blood Group" value={user.bloodGroup} />}
+            {user?.complexion && <InfoField label="Complexion" value={user.complexion} />}
+            {user?.diet && <InfoField label="Diet" value={user.diet} />}
+            {user?.placeOfBirth && <InfoField label="Place of Birth" value={user.placeOfBirth} />}
             {user?.familyStatus && <InfoField label="Family Status" value={user.familyStatus} />}
             {user?.isDivorcee && <InfoField label="Marital Status" value="Divorced" />}
+          </InfoCard>
+        )}
+
+        {/* Languages Known Card */}
+        {user?.languagesKnown && user.languagesKnown.length > 0 && (
+          <InfoCard title="🗣️ Languages Known" className="mb-6">
+            <div className="flex flex-wrap gap-2">
+              {user.languagesKnown.map((language, idx) => (
+                <span
+                  key={idx}
+                  className="bg-gray-100 text-gray-800 font-maven text-sm px-3 py-1 rounded-full"
+                >
+                  {language}
+                </span>
+              ))}
+            </div>
           </InfoCard>
         )}
 
@@ -337,7 +375,7 @@ export default function UserProfileView() {
         )}
 
         {/* Professional Information Card */}
-        {(user?.education || user?.employmentType || user?.occupation || user?.annualIncome) && (
+        {(user?.education || user?.employmentType || user?.occupation || user?.annualIncome || user?.professionalAdditionalInfo) && (
           <InfoCard
             title="💼 Professional"
             icon={Briefcase}
@@ -349,9 +387,29 @@ export default function UserProfileView() {
             {user?.annualIncome && (
               <InfoField
                 label="Annual Income"
-                value={`${user.annualIncome.currency} ${user.annualIncome.amount}`}
+                value={user.annualIncome.displayText || `${user.annualIncome.currency} ${user.annualIncome.amount}`}
               />
             )}
+            {user?.professionalAdditionalInfo && (
+              <div className="py-3 border-b border-gray-100 last:border-0">
+                <span className="font-telex text-secondary/70 text-sm block mb-2">Additional Information</span>
+                <p className="font-maven text-secondary whitespace-pre-line">{user.professionalAdditionalInfo}</p>
+              </div>
+            )}
+          </InfoCard>
+        )}
+
+        {/* Family Details Card */}
+        {(user?.fatherName || user?.fatherOccupation || user?.motherName || user?.motherOccupation) && (
+          <InfoCard
+            title="👨‍👩‍👧‍👦 Family Details"
+            icon={Users}
+            className="mb-6"
+          >
+            {user?.fatherName && <InfoField label="Father's Name" value={user.fatherName} />}
+            {user?.fatherOccupation && <InfoField label="Father's Occupation" value={user.fatherOccupation} />}
+            {user?.motherName && <InfoField label="Mother's Name" value={user.motherName} />}
+            {user?.motherOccupation && <InfoField label="Mother's Occupation" value={user.motherOccupation} />}
           </InfoCard>
         )}
 

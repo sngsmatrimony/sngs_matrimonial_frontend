@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import Link from 'next/link';
 import { useQueryClient } from '@tanstack/react-query';
 import { Heart, MessageCircle, Lock, FileText } from 'lucide-react';
@@ -9,7 +9,7 @@ import { useAuthStore } from '@/store/authStore';
 import { client } from '@/lib/api/client';
 import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
 
-export default function ProfileCard({ profile, isLiked = false }) {
+function ProfileCard({ profile, isLiked = false }) {
   // All hooks must be called before any early returns
   const queryClient = useQueryClient();
   const { membership } = useAuthStore();
@@ -32,16 +32,18 @@ export default function ProfileCard({ profile, isLiked = false }) {
 
   // Validate profile data (after hooks)
   if (!profile || !profile._id || profile._id === 'undefined' || profile._id === 'null') {
-    console.error('Invalid profile data:', profile);
     return null;
   }
 
   // Check if user has no membership or expired/no credits
   const hasNoMembership = !membership?.isActive || membership?.isExpired || membership?.credits <= 0;
 
-  const handleLike = async (e) => {
+  const handleLike = useCallback(async (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Prevent double-clicks while loading
+    if (isLoading) return;
 
     setIsLoading(true);
     try {
@@ -52,11 +54,11 @@ export default function ProfileCard({ profile, isLiked = false }) {
         // Update global store - both arrays for instant UI sync
         setLikedProfilesIds(likedProfilesIds.filter(id => id !== profile._id));
         setLikedProfiles(likedProfiles.filter(p => p._id !== profile._id));
-        
+
         // Invalidate queries to ensure fresh data on tab switch
         queryClient.invalidateQueries({ queryKey: ['likedProfiles'] });
         queryClient.invalidateQueries({ queryKey: ['browseProfiles'] });
-        
+
         toastSuccess('Profile removed from likes');
       } else {
         // Like
@@ -64,15 +66,14 @@ export default function ProfileCard({ profile, isLiked = false }) {
         setLiked(true);
         // Update global store
         setLikedProfilesIds([...likedProfilesIds, profile._id]);
-        
+
         // Invalidate queries to ensure fresh data on tab switch
         queryClient.invalidateQueries({ queryKey: ['likedProfiles'] });
         queryClient.invalidateQueries({ queryKey: ['browseProfiles'] });
-        
+
         toastSuccess('Profile liked!');
       }
     } catch (error) {
-      console.error('Error toggling like:', error);
       // Revert local state
       setLiked(isLiked);
 
@@ -95,23 +96,23 @@ export default function ProfileCard({ profile, isLiked = false }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading, liked, profile._id, isLiked, likedProfilesIds, likedProfiles, setLikedProfilesIds, setLikedProfiles, queryClient]);
 
-  const handleChat = (e) => {
+  const handleChat = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
     setActiveTab('messages');
     setSelectedChatUserId(profile._id);
-  };
+  }, [profile._id, setActiveTab, setSelectedChatUserId]);
 
-  const handleCardClick = (e) => {
+  const handleCardClick = useCallback((e) => {
     if (hasNoMembership) {
       e.preventDefault();
       e.stopPropagation();
       toastInfo('Get membership to view full profiles');
     }
     // If has membership, let Link handle navigation naturally
-  };
+  }, [hasNoMembership]);
 
   // Get profile picture URL
   const profileImageUrl =
@@ -237,3 +238,6 @@ export default function ProfileCard({ profile, isLiked = false }) {
     </Link>
   );
 }
+
+// Memoize to prevent unnecessary re-renders when parent state changes
+export default memo(ProfileCard);

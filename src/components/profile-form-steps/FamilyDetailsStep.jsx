@@ -168,7 +168,7 @@ export function FamilyDetailsStep({ form }) {
       {/* About Myself */}
       <FormField
         control={form.control}
-        name="about"
+        name="profileAbout"
         render={({ field }) => (
           <FormItem>
             <FormLabel className="font-maven">About Myself</FormLabel>

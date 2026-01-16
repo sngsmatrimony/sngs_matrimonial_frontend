@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toastError, toastSuccess } from '@/lib/toast';
-import { ArrowLeft, Edit2, Trash2, Power, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { ArrowLeft, Edit2, Trash2, Power, CheckCircle, XCircle, Clock, Upload, X, FileText, ImageIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -62,6 +62,13 @@ export default function AdminUserDetailPage() {
   const [showApprovalRejectDialog, setShowApprovalRejectDialog] = useState(false);
   const [approvalRejectionReason, setApprovalRejectionReason] = useState('');
 
+  // Media upload state
+  const [uploadingProfilePicture, setUploadingProfilePicture] = useState(false);
+  const [uploadingGalleryPhoto, setUploadingGalleryPhoto] = useState(false);
+  const [uploadingHoroscope, setUploadingHoroscope] = useState(false);
+  const [deletingPhotoIndex, setDeletingPhotoIndex] = useState(null);
+  const [deletingHoroscope, setDeletingHoroscope] = useState(false);
+
   // Download handler for horoscope with authentication
   const handleDownloadHoroscope = async (userId) => {
     try {
@@ -75,7 +82,7 @@ export default function AdminUserDetailPage() {
 
       // Fetch file with authentication header
       const response = await fetch(
-        `http://localhost:4000/api/profiles/${userId}/horoscope/download`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/profiles/${userId}/horoscope/download`,
         {
           method: 'GET',
           headers: {
@@ -212,6 +219,128 @@ export default function AdminUserDetailPage() {
       return;
     }
     rejectMutation.mutate(approvalRejectionReason);
+  };
+
+  // ==================== Media Upload Handlers ====================
+
+  const handleProfilePictureUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toastError('Profile picture must be under 5 MB');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toastError('Please upload an image file');
+      return;
+    }
+
+    setUploadingProfilePicture(true);
+    try {
+      await adminApi.uploadUserProfilePicture(userId, file);
+      toastSuccess('Profile picture uploaded successfully');
+      refetch();
+    } catch (error) {
+      toastError(error.response?.data?.message || 'Failed to upload profile picture');
+    } finally {
+      setUploadingProfilePicture(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleGalleryPhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toastError('Photo must be under 5 MB');
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toastError('Please upload an image file');
+      return;
+    }
+
+    // Check photo limit
+    if (data?.gallery?.photos?.length >= 10) {
+      toastError('Maximum 10 photos allowed');
+      return;
+    }
+
+    setUploadingGalleryPhoto(true);
+    try {
+      await adminApi.uploadUserPhoto(userId, file);
+      toastSuccess('Photo uploaded successfully');
+      refetch();
+    } catch (error) {
+      toastError(error.response?.data?.message || 'Failed to upload photo');
+    } finally {
+      setUploadingGalleryPhoto(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleDeleteGalleryPhoto = async (photoIndex) => {
+    setDeletingPhotoIndex(photoIndex);
+    try {
+      await adminApi.deleteUserPhoto(userId, photoIndex);
+      toastSuccess('Photo deleted successfully');
+      refetch();
+    } catch (error) {
+      toastError(error.response?.data?.message || 'Failed to delete photo');
+    } finally {
+      setDeletingPhotoIndex(null);
+    }
+  };
+
+  const handleHoroscopeUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toastError('Horoscope document must be under 5 MB');
+      return;
+    }
+
+    // Validate file type (PDF or image)
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+      toastError('Please upload a PDF or image file');
+      return;
+    }
+
+    setUploadingHoroscope(true);
+    try {
+      await adminApi.uploadUserHoroscope(userId, file);
+      toastSuccess('Horoscope document uploaded successfully');
+      refetch();
+    } catch (error) {
+      toastError(error.response?.data?.message || 'Failed to upload horoscope');
+    } finally {
+      setUploadingHoroscope(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleDeleteHoroscope = async () => {
+    setDeletingHoroscope(true);
+    try {
+      await adminApi.deleteUserHoroscope(userId);
+      toastSuccess('Horoscope document deleted successfully');
+      refetch();
+    } catch (error) {
+      toastError(error.response?.data?.message || 'Failed to delete horoscope');
+    } finally {
+      setDeletingHoroscope(false);
+    }
   };
 
   if (isLoading) {
@@ -543,6 +672,16 @@ export default function AdminUserDetailPage() {
                   >
                     Location
                   </button>
+                  <button
+                    onClick={() => setActiveTab('media')}
+                    className={`rounded-full px-4 py-2 font-medium transition-all duration-200 ease-in-out ${
+                      activeTab === 'media'
+                        ? 'bg-primary text-black'
+                        : 'bg-white text-black border-2 border-black shadow-md'
+                    }`}
+                  >
+                    Media
+                  </button>
                 </div>
 
                 {/* Basic Information Tab */}
@@ -567,7 +706,11 @@ export default function AdminUserDetailPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Mobile Number</label>
-                      <Input value={user.mobileNumber} disabled />
+                      <Input
+                        value={editData?.mobileNumber || ''}
+                        onChange={(e) => handleInputChange('mobileNumber', e.target.value)}
+                        maxLength={10}
+                      />
                     </div>
 
                     <div>
@@ -592,6 +735,46 @@ export default function AdminUserDetailPage() {
                         type="date"
                         value={editData?.dateOfBirth ? new Date(editData.dateOfBirth).toISOString().split('T')[0] : ''}
                         onChange={(e) => handleInputChange('dateOfBirth', new Date(e.target.value))}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Time of Birth</label>
+                      <Input
+                        type="time"
+                        value={editData?.timeOfBirth || ''}
+                        onChange={(e) => handleInputChange('timeOfBirth', e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Place of Birth</label>
+                      <Input
+                        value={editData?.placeOfBirth || ''}
+                        onChange={(e) => handleInputChange('placeOfBirth', e.target.value)}
+                        placeholder="Enter place of birth"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Age From</label>
+                      <Input
+                        type="number"
+                        min="18"
+                        max="90"
+                        value={editData?.ageFrom || ''}
+                        onChange={(e) => handleInputChange('ageFrom', e.target.value ? parseInt(e.target.value) : null)}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Age To</label>
+                      <Input
+                        type="number"
+                        min="18"
+                        max="90"
+                        value={editData?.ageTo || ''}
+                        onChange={(e) => handleInputChange('ageTo', e.target.value ? parseInt(e.target.value) : null)}
                       />
                     </div>
 
@@ -782,6 +965,68 @@ export default function AdminUserDetailPage() {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Shuddha Jathakam</label>
+                      <Select value={editData?.shuddhaJathakam || 'none'} onValueChange={(val) => handleInputChange('shuddhaJathakam', val === 'none' ? '' : val)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          <SelectItem value="Yes">Yes</SelectItem>
+                          <SelectItem value="No">No</SelectItem>
+                          <SelectItem value="Don't Know">Don&apos;t Know</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {editData?.shuddhaJathakam === 'No' && (
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Dosham Types</label>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {['Chevvai', 'Rahu', 'Ketu', 'Naga', 'Kaal Sarpa'].map(dosham => (
+                            <label key={dosham} className="flex items-center gap-2">
+                              <Checkbox
+                                checked={(editData?.doshamTypes || []).includes(dosham)}
+                                onCheckedChange={() => handleArrayChange('doshamTypes', dosham)}
+                              />
+                              <span className="text-sm">{dosham}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Languages Known</label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {['English', 'Hindi', 'Malayalam', 'Tamil', 'Telugu', 'Kannada', 'Marathi', 'Gujarati', 'Bengali', 'Punjabi', 'Urdu', 'Sanskrit'].map(language => (
+                          <label key={language} className="flex items-center gap-2">
+                            <Checkbox
+                              checked={(editData?.languagesKnown || []).includes(language)}
+                              onCheckedChange={() => handleArrayChange('languagesKnown', language)}
+                            />
+                            <span className="text-sm">{language}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Profile Banner Color</label>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          type="color"
+                          value={editData?.profileBanner?.bannerColor || '#FFB3BA'}
+                          onChange={(e) => handleNestedChange('profileBanner', 'bannerColor', e.target.value)}
+                          className="w-16 h-10 p-1 cursor-pointer"
+                        />
+                        <span className="text-sm text-gray-600">
+                          {editData?.profileBanner?.bannerColor || '#FFB3BA'}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </TabsContent>
 
@@ -822,6 +1067,25 @@ export default function AdminUserDetailPage() {
                     </div>
 
                     <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Income Currency</label>
+                      <Select value={editData?.annualIncome?.currency || 'INR'} onValueChange={(val) => handleNestedChange('annualIncome', 'currency', val)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select currency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="INR">INR</SelectItem>
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="GBP">GBP</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="AED">AED</SelectItem>
+                          <SelectItem value="SGD">SGD</SelectItem>
+                          <SelectItem value="AUD">AUD</SelectItem>
+                          <SelectItem value="CAD">CAD</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Annual Income (Min)</label>
                       <Input
                         type="number"
@@ -841,10 +1105,10 @@ export default function AdminUserDetailPage() {
 
                     {/* Removed root Country/State/City inputs */}
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Additional Info</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Professional Additional Info</label>
                       <Textarea
-                        value={editData?.additionalInfo || ''}
-                        onChange={(e) => handleInputChange('additionalInfo', e.target.value)}
+                        value={editData?.professionalAdditionalInfo || ''}
+                        onChange={(e) => handleInputChange('professionalAdditionalInfo', e.target.value)}
                         className="min-h-20"
                       />
                     </div>
@@ -940,19 +1204,10 @@ export default function AdminUserDetailPage() {
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">About Myself</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Profile About</label>
                       <Textarea
-                        value={editData?.aboutMyself || ''}
-                        onChange={(e) => handleInputChange('aboutMyself', e.target.value)}
-                        className="min-h-20"
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">About</label>
-                      <Textarea
-                        value={editData?.about || ''}
-                        onChange={(e) => handleInputChange('about', e.target.value)}
+                        value={editData?.profileAbout || ''}
+                        onChange={(e) => handleInputChange('profileAbout', e.target.value)}
                         className="min-h-20"
                       />
                     </div>
@@ -997,6 +1252,14 @@ export default function AdminUserDetailPage() {
                         <Input
                           value={editData?.presentResidentialAddress?.area || ''}
                           onChange={(e) => handleNestedChange('presentResidentialAddress', 'area', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Landmark</label>
+                        <Input
+                          value={editData?.presentResidentialAddress?.landmark || ''}
+                          onChange={(e) => handleNestedChange('presentResidentialAddress', 'landmark', e.target.value)}
+                          placeholder="Enter nearby landmark"
                         />
                       </div>
                       <div>
@@ -1048,11 +1311,214 @@ export default function AdminUserDetailPage() {
                         />
                       </div>
                       <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Landmark</label>
+                        <Input
+                          value={editData?.nativePlaceAddress?.landmark || ''}
+                          onChange={(e) => handleNestedChange('nativePlaceAddress', 'landmark', e.target.value)}
+                          placeholder="Enter nearby landmark"
+                        />
+                      </div>
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Pincode</label>
                         <Input
                           value={editData?.nativePlaceAddress?.pincode || ''}
                           onChange={(e) => handleNestedChange('nativePlaceAddress', 'pincode', e.target.value)}
                         />
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Media Tab */}
+                <TabsContent value="media" className="space-y-6">
+                  {/* Profile Picture */}
+                  <div className="border p-4 rounded-md">
+                    <h3 className="font-medium mb-4 text-lg flex items-center gap-2">
+                      <ImageIcon className="h-5 w-5" />
+                      Profile Picture
+                    </h3>
+                    <div className="flex items-start gap-6">
+                      <div className="w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 overflow-hidden flex items-center justify-center bg-gray-50">
+                        {data?.profilePicture?.url ? (
+                          <img
+                            src={data.profilePicture.url}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-gray-400 text-sm text-center px-2">No photo</span>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-600 mb-3">
+                          Upload a profile picture for this user. Max size: 5MB. Supported formats: JPG, PNG.
+                        </p>
+                        <label className="cursor-pointer">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={uploadingProfilePicture}
+                            className="relative"
+                            asChild
+                          >
+                            <span>
+                              <Upload className="h-4 w-4 mr-2" />
+                              {uploadingProfilePicture ? 'Uploading...' : 'Upload Profile Picture'}
+                              <input
+                                type="file"
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                accept="image/*"
+                                onChange={handleProfilePictureUpload}
+                                disabled={uploadingProfilePicture}
+                              />
+                            </span>
+                          </Button>
+                        </label>
+                        {data?.profilePicture?.uploadedAt && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            Uploaded: {new Date(data.profilePicture.uploadedAt).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Gallery Photos */}
+                  <div className="border p-4 rounded-md">
+                    <h3 className="font-medium mb-4 text-lg flex items-center gap-2">
+                      <ImageIcon className="h-5 w-5" />
+                      Gallery Photos ({data?.gallery?.photos?.length || 0}/10)
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Manage gallery photos for this user. Maximum 10 photos allowed. Max size: 5MB each.
+                    </p>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4">
+                      {data?.gallery?.photos?.map((photo, index) => (
+                        <div key={index} className="relative group">
+                          <div className="w-full aspect-square rounded-lg overflow-hidden border border-gray-200">
+                            <img
+                              src={photo.url}
+                              alt={`Gallery ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <button
+                            onClick={() => handleDeleteGalleryPhoto(index)}
+                            disabled={deletingPhotoIndex === index}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                            title="Delete photo"
+                          >
+                            {deletingPhotoIndex === index ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                            ) : (
+                              <X className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      ))}
+
+                      {/* Add Photo Button */}
+                      {(data?.gallery?.photos?.length || 0) < 10 && (
+                        <label className="cursor-pointer">
+                          <div className="w-full aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors">
+                            {uploadingGalleryPhoto ? (
+                              <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+                            ) : (
+                              <>
+                                <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                                <span className="text-xs text-gray-500">Add Photo</span>
+                              </>
+                            )}
+                          </div>
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleGalleryPhotoUpload}
+                            disabled={uploadingGalleryPhoto}
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Horoscope Document */}
+                  <div className="border p-4 rounded-md">
+                    <h3 className="font-medium mb-4 text-lg flex items-center gap-2">
+                      <FileText className="h-5 w-5" />
+                      Horoscope Document
+                    </h3>
+                    <div className="flex items-start gap-6">
+                      <div className="w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 overflow-hidden flex items-center justify-center bg-gray-50">
+                        {data?.horoscopeDocument?.url ? (
+                          data.horoscopeDocument.fileType === 'pdf' ? (
+                            <div className="text-center">
+                              <FileText className="h-10 w-10 text-red-500 mx-auto" />
+                              <span className="text-xs text-gray-500 mt-1 block">PDF</span>
+                            </div>
+                          ) : (
+                            <img
+                              src={data.horoscopeDocument.url}
+                              alt="Horoscope"
+                              className="w-full h-full object-cover"
+                            />
+                          )
+                        ) : (
+                          <span className="text-gray-400 text-sm text-center px-2">No document</span>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm text-gray-600 mb-3">
+                          Upload horoscope document. Max size: 5MB. Supported formats: PDF, JPG, PNG.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          <label className="cursor-pointer">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              disabled={uploadingHoroscope}
+                              className="relative"
+                              asChild
+                            >
+                              <span>
+                                <Upload className="h-4 w-4 mr-2" />
+                                {uploadingHoroscope ? 'Uploading...' : 'Upload Horoscope'}
+                                <input
+                                  type="file"
+                                  className="absolute inset-0 opacity-0 cursor-pointer"
+                                  accept="image/*,.pdf"
+                                  onChange={handleHoroscopeUpload}
+                                  disabled={uploadingHoroscope}
+                                />
+                              </span>
+                            </Button>
+                          </label>
+                          {data?.horoscopeDocument?.url && (
+                            <>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => handleDownloadHoroscope(userId)}
+                              >
+                                Download
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                onClick={handleDeleteHoroscope}
+                                disabled={deletingHoroscope}
+                              >
+                                {deletingHoroscope ? 'Deleting...' : 'Delete'}
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                        {data?.horoscopeDocument?.uploadedAt && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            Uploaded: {new Date(data.horoscopeDocument.uploadedAt).toLocaleDateString()}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1103,9 +1569,35 @@ export default function AdminUserDetailPage() {
                     <p className="text-gray-900">{displayValue(user.alternateMobileNumber)}</p>
                   </div>
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">SNGS Membership Number</label>
+                    <p className="text-gray-900">{displayValue(user.sngsMembershipNumber)}</p>
+                  </div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
                     <p className="text-gray-900">
                       {user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Time of Birth</label>
+                    <p className="text-gray-900">
+                      {user.timeOfBirth ? (() => {
+                        const [hours, minutes] = user.timeOfBirth.split(':');
+                        const hour = parseInt(hours);
+                        const ampm = hour >= 12 ? 'PM' : 'AM';
+                        const hour12 = hour % 12 || 12;
+                        return `${hour12}:${minutes} ${ampm}`;
+                      })() : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Place of Birth</label>
+                    <p className="text-gray-900">{displayValue(user.placeOfBirth)}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Age Preference</label>
+                    <p className="text-gray-900">
+                      {user.ageFrom && user.ageTo ? `${user.ageFrom} - ${user.ageTo} years` : '-'}
                     </p>
                   </div>
                 </div>
@@ -1175,6 +1667,46 @@ export default function AdminUserDetailPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Raasi</label>
                     <p className="text-gray-900">{displayValue(user.raasi)}</p>
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Shuddha Jathakam</label>
+                    <p className="text-gray-900">{displayValue(user.shuddhaJathakam)}</p>
+                  </div>
+                  {user?.doshamTypes && user.doshamTypes.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Dosham Types</label>
+                      <div className="flex flex-wrap gap-2">
+                        {user.doshamTypes.map((dosham, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {dosham}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {user?.languagesKnown && user.languagesKnown.length > 0 && (
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Languages Known</label>
+                      <div className="flex flex-wrap gap-2">
+                        {user.languagesKnown.map((language, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {language}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {user?.profileBanner?.bannerColor && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Profile Banner Color</label>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-8 h-8 rounded-md border border-gray-300"
+                          style={{ backgroundColor: user.profileBanner.bannerColor }}
+                        />
+                        <span className="text-gray-900 text-sm">{user.profileBanner.bannerColor}</span>
+                      </div>
+                    </div>
+                  )}
                   {user?.horoscopeDocument?.url && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Horoscope Document</label>
@@ -1227,8 +1759,8 @@ export default function AdminUserDetailPage() {
                   </div>
                   {/* Removed root Country/State/City display */}
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Additional Info</label>
-                    <p className="text-gray-900">{displayValue(user.additionalInfo)}</p>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Professional Additional Info</label>
+                    <p className="text-gray-900">{displayValue(user.professionalAdditionalInfo)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -1274,12 +1806,8 @@ export default function AdminUserDetailPage() {
                     <p className="text-gray-900">{user.interests?.length > 0 ? user.interests.join(', ') : '-'}</p>
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">About Myself</label>
-                    <p className="text-gray-900">{displayValue(user.aboutMyself)}</p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">About</label>
-                    <p className="text-gray-900">{displayValue(user.about)}</p>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Profile About</label>
+                    <p className="text-gray-900">{displayValue(user.profileAbout)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -1323,6 +1851,29 @@ export default function AdminUserDetailPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Gallery Photos */}
+            {user?.gallery?.photos && user.gallery.photos.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Gallery Photos ({user.gallery.photos.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {user.gallery.photos.map((photo, idx) => (
+                      <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
+                        <Image
+                          src={photo.url}
+                          alt={`Gallery photo ${idx + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Account Activity */}
             <Card>

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api/admin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,13 +37,15 @@ export default function AdminUsersPage() {
     approvalStatus: approvalFilter === 'all' ? '' : approvalFilter,
   };
 
-  const { data, isLoading, error, refetch } = useQuery({
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, error } = useQuery({
     queryKey: ['adminUsers', queryParams],
     queryFn: async () => {
       const response = await adminApi.getAllUsers(queryParams);
       return response.data;
     },
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
     staleTime: 30 * 1000, // Cache for 30 seconds
   });
 
@@ -56,7 +58,7 @@ export default function AdminUsersPage() {
       try {
         await adminApi.deleteUser(userId);
         toastSuccess('User deleted successfully');
-        refetch();
+        queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
       } catch (error) {
         toastError(error.response?.data?.message || 'Failed to delete user');
       }
@@ -67,7 +69,7 @@ export default function AdminUsersPage() {
     try {
       await adminApi.approveUser(userId);
       toastSuccess('User approved successfully');
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
     } catch (error) {
       toastError(error.response?.data?.message || 'Failed to approve user');
     }
@@ -92,7 +94,7 @@ export default function AdminUsersPage() {
       setShowRejectDialog(false);
       setRejectingUserId(null);
       setRejectionReason('');
-      refetch();
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
     } catch (error) {
       toastError(error.response?.data?.message || 'Failed to reject user');
     } finally {

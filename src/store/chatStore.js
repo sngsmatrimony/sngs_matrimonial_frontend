@@ -34,14 +34,7 @@ const useChatStore = create(
         try {
           const response = await axiosClient.get('/api/chat/conversations');
           const validConversations = response.data.data.filter((conv) => {
-            if (!conv.otherParticipant || !conv.otherParticipant.fullName) {
-              console.warn(
-                'Filtering out conversation with invalid otherParticipant:',
-                conv._id
-              );
-              return false;
-            }
-            return true;
+            return conv.otherParticipant && conv.otherParticipant.fullName;
           });
 
           set({
@@ -111,25 +104,16 @@ const useChatStore = create(
 
           const { conversation, message } = response.data.data;
 
-          console.log('createConversationWithMessage response:', { conversation, message });
-          console.log('createConversationWithMessage conversation.otherParticipant:', conversation.otherParticipant);
-          console.log('createConversationWithMessage conversation._id:', conversation._id);
-
           // Add conversation to list and set as active
-          set((state) => {
-            const newConversations = [conversation, ...state.conversations];
-            console.log('createConversationWithMessage: Setting state with conversations:', newConversations);
-            return {
-              conversations: newConversations,
-              activeConversationId: conversation._id,
-              messages: [message],
-              isSending: false,
-            };
-          });
+          set((state) => ({
+            conversations: [conversation, ...state.conversations],
+            activeConversationId: conversation._id,
+            messages: [message],
+            isSending: false,
+          }));
 
           return { conversation, message };
         } catch (error) {
-          console.error('createConversationWithMessage error:', error);
           set({
             error: error.response?.data?.message || 'Failed to send message',
             isSending: false,
@@ -288,8 +272,8 @@ const useChatStore = create(
             );
             return { conversations };
           });
-        } catch (error) {
-          console.error('Failed to mark message as read:', error);
+        } catch {
+          // Silently fail for read receipts
         }
       },
 
@@ -326,8 +310,8 @@ const useChatStore = create(
             );
             return { conversations };
           });
-        } catch (error) {
-          console.error('Failed to mark conversation as read:', error);
+        } catch {
+          // Silently fail for read receipts
         }
       },
 
@@ -376,7 +360,6 @@ const useChatStore = create(
 
           return response.data.data;
         } catch (error) {
-          console.error('Failed to register keys:', error);
           throw error;
         }
       },
@@ -398,7 +381,6 @@ const useChatStore = create(
 
           return keys;
         } catch (error) {
-          console.error('Failed to get user keys:', error);
           throw error;
         }
       },
@@ -430,7 +412,14 @@ const useChatStore = create(
       name: 'chat-storage',
       partialize: (state) => ({
         conversations: state.conversations,
-        unreadCounts: state.unreadCounts,
+        // Convert Map to Object for serialization
+        unreadCounts: Object.fromEntries(state.unreadCounts),
+      }),
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...persistedState,
+        // Convert Object back to Map on hydration
+        unreadCounts: new Map(Object.entries(persistedState?.unreadCounts || {})),
       }),
     }
   )

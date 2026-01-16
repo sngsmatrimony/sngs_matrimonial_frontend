@@ -44,7 +44,7 @@ const handleDownloadHoroscope = async (userId) => {
 
     // Fetch file with authentication header
     const response = await fetch(
-      `http://localhost:4000/api/profiles/${userId}/horoscope/download`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/profiles/${userId}/horoscope/download`,
       {
         method: 'GET',
         headers: {
@@ -289,12 +289,12 @@ export default function ProfileDetailView({ profileId }) {
               </p>
 
               {/* About Myself */}
-              {profile?.aboutMyself && (
+              {profile?.profileAbout && (
                 <div className="mb-6">
                   <h3 className="font-viga text-lg text-secondary mb-2">
                     About
                   </h3>
-                  <p className="font-maven text-gray-700 leading-relaxed">{profile.aboutMyself}</p>
+                  <p className="font-maven text-gray-700 leading-relaxed">{profile.profileAbout}</p>
                 </div>
               )}
 
@@ -410,7 +410,7 @@ export default function ProfileDetailView({ profileId }) {
           )}
 
           {/* Professional Information Card */}
-          {(profile?.education || profile?.employmentType || profile?.occupation || profile?.annualIncome || profile?.additionalInfo) && (
+          {(profile?.education || profile?.employmentType || profile?.occupation || profile?.annualIncome || profile?.professionalAdditionalInfo) && (
             <InfoCard title="💼 Professional" icon={Briefcase} className="mb-6">
               <InfoField label="Education" value={profile?.education} />
               <InfoField label="Employment Type" value={profile?.employmentType} />
@@ -421,10 +421,10 @@ export default function ProfileDetailView({ profileId }) {
                   value={profile.annualIncome.displayText || `${profile.annualIncome.currency} ${profile.annualIncome.min?.toLocaleString()}-${profile.annualIncome.max?.toLocaleString()}`}
                 />
               )}
-              {profile?.additionalInfo && (
+              {profile?.professionalAdditionalInfo && (
                 <div className="py-3 border-b border-gray-100 last:border-0">
                   <span className="font-telex text-secondary/70 text-sm block mb-2">Additional Information</span>
-                  <p className="font-maven text-secondary whitespace-pre-line">{profile.additionalInfo}</p>
+                  <p className="font-maven text-secondary whitespace-pre-line">{profile.professionalAdditionalInfo}</p>
                 </div>
               )}
             </InfoCard>
@@ -470,10 +470,20 @@ export default function ProfileDetailView({ profileId }) {
             </InfoCard>
           )}
 
+          {/* Family Details Card */}
+          {(profile?.fatherName || profile?.fatherOccupation || profile?.motherName || profile?.motherOccupation) && (
+            <InfoCard title="👨‍👩‍👧‍👦 Family Details" icon={Users} className="mb-6">
+              {profile?.fatherName && <InfoField label="Father's Name" value={profile.fatherName} />}
+              {profile?.fatherOccupation && <InfoField label="Father's Occupation" value={profile.fatherOccupation} />}
+              {profile?.motherName && <InfoField label="Mother's Name" value={profile.motherName} />}
+              {profile?.motherOccupation && <InfoField label="Mother's Occupation" value={profile.motherOccupation} />}
+            </InfoCard>
+          )}
+
           {/* About Section */}
-          {profile?.about && (
+          {profile?.profileAbout && (
             <InfoCard title="📝 About Me" className="mb-6">
-              <p className="font-maven text-gray-700 leading-relaxed">{profile.about}</p>
+              <p className="font-maven text-gray-700 leading-relaxed">{profile.profileAbout}</p>
             </InfoCard>
           )}
 

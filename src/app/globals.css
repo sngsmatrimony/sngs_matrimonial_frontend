@@ -118,15 +118,15 @@
 /* Typography utility classes - reference Next.js font variables */
 @layer utilities {
   .font-maven {
-    font-family: var(--maven-pro);
+    font-family: var(--font-maven);
   }
 
   .font-viga {
-    font-family: var(--viga);
+    font-family: var(--font-viga);
   }
 
   .font-telex {
-    font-family: var(--telex);
+    font-family: var(--font-telex);
   }
 }
 
@@ -142,6 +142,34 @@
 
   .gradient-warm-subtle {
     @apply bg-linear-to-br from-accent/10 to-primary/5;
+  }
+}
+
+/* Accordion Animation Keyframes */
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+@layer utilities {
+  .animate-accordion-down {
+    animation: accordion-down 0.2s ease-out;
+  }
+  .animate-accordion-up {
+    animation: accordion-up 0.2s ease-out;
   }
 }
 

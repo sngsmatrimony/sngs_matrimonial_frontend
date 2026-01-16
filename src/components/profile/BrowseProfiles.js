@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useLandingStore } from '@/store/landingStore';
@@ -54,7 +55,10 @@ export default function BrowseProfiles() {
 
   const profilesData = data?.profiles || profiles;
   const likedIdsData = data?.likedIds || likedProfilesIds;
-  const isQueryLoading = isLoading; 
+  const isQueryLoading = isLoading;
+
+  // Use Set for O(1) lookup instead of O(n) array.includes()
+  const likedIdsSet = useMemo(() => new Set(likedIdsData), [likedIdsData]); 
 
   if (isQueryLoading) {
     return (
@@ -97,7 +101,7 @@ export default function BrowseProfiles() {
             <ProfileCard
               key={profile._id}
               profile={profile}
-              isLiked={likedIdsData.includes(profile._id)}
+              isLiked={likedIdsSet.has(profile._id)}
             />
           ))}
         </div>

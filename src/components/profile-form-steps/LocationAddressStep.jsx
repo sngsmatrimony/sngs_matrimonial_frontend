@@ -19,7 +19,7 @@ function AddressFieldset({ form, prefix, title, isOptional = false }) {
         render={({ field }) => (
           <FormItem>
             <FormLabel className="font-maven">Country</FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select value={field.value || ''} onValueChange={field.onChange}>
               <FormControl>
                 <SelectTrigger className="font-maven">
                   <SelectValue placeholder="Select country" />
@@ -45,7 +45,7 @@ function AddressFieldset({ form, prefix, title, isOptional = false }) {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-maven">State</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="font-maven">
                     <SelectValue placeholder="Select state" />

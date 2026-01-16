@@ -4,6 +4,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 const client = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15000, // 15 second timeout to prevent hung requests
 });
 
 // Add token to requests if available

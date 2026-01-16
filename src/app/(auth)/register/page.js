@@ -76,24 +76,23 @@ const step2Schema = z.object({
 });
 
 const step3Schema = z.object({
-  country: z.string().min(1, 'Please select your country'),
-  state: z.string().optional(),
-  city: z.string().optional(),
   presentResidentialAddress: z.object({
+    country: z.string().min(1, 'Please select your country'),
+    state: z.string().optional(),
+    city: z.string().optional(),
     street: z.string().optional(),
     area: z.string().optional(),
     landmark: z.string().optional(),
     pincode: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-  }).optional(),
+  }),
   nativePlaceAddress: z.object({
+    country: z.string().optional(),
+    state: z.string().optional(),
+    city: z.string().optional(),
     street: z.string().optional(),
     area: z.string().optional(),
     landmark: z.string().optional(),
     pincode: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
   }).optional(),
 });
 
@@ -103,7 +102,7 @@ const step4Schema = z.object({
   occupation: z.string().min(1, 'Please select your occupation'),
   annualIncomeCurrency: z.string().min(1, 'Please select your currency'),
   annualIncomeAmount: z.string().min(1, 'Please select your income amount'),
-  additionalInfo: z.string().max(500, 'Maximum 500 characters').optional().or(z.literal('')),
+  professionalAdditionalInfo: z.string().max(500, 'Maximum 500 characters').optional().or(z.literal('')),
 });
 
 const step5Schema = z.object({
@@ -113,7 +112,7 @@ const step5Schema = z.object({
   motherOccupation: z.string().optional(),
   residentialStatus: z.string().optional(),
   familyStatus: z.string().min(1, 'Please select your family status'),
-  about: z.string().min(50, 'About must be at least 50 characters'),
+  profileAbout: z.string().min(50, 'About must be at least 50 characters'),
 });
 
 const step6Schema = z.object({
@@ -186,24 +185,23 @@ export default function RegisterPage() {
     placeOfBirth: '',
     complexion: '',
     // Step 3
-    country: '',
-    state: '',
-    city: '',
     presentResidentialAddress: {
+      country: '',
+      state: '',
+      city: '',
       street: '',
       area: '',
       landmark: '',
       pincode: '',
-      city: '',
-      state: '',
     },
     nativePlaceAddress: {
+      country: '',
+      state: '',
+      city: '',
       street: '',
       area: '',
       landmark: '',
       pincode: '',
-      city: '',
-      state: '',
     },
     // Step 4
     education: '',
@@ -211,7 +209,7 @@ export default function RegisterPage() {
     occupation: '',
     annualIncomeCurrency: 'INR',
     annualIncomeAmount: '',
-    additionalInfo: '',
+    professionalAdditionalInfo: '',
     // Step 5
     fatherName: '',
     fatherOccupation: '',
@@ -221,7 +219,7 @@ export default function RegisterPage() {
     bloodGroup: '',
     residentialStatus: '',
     familyStatus: '',
-    about: '',
+    profileAbout: '',
     diet: '',
     // Step 6
     ageFrom: '',
@@ -373,16 +371,10 @@ export default function RegisterPage() {
         setEmailVerificationStep('otp');
         setOtpSent(true);
         startResendTimer();
-
-        // Demo mode: show OTP in console
-        if (response.data.otp) {
-          console.log('[Demo Mode] OTP:', response.data.otp);
-        }
       } else {
         toastError(response.data.message || 'Failed to send OTP');
       }
     } catch (error) {
-      console.error('Send OTP error:', error);
       toastError(error.response?.data?.message || 'Failed to send OTP');
     } finally {
       setOtpLoading(false);
@@ -416,9 +408,8 @@ export default function RegisterPage() {
         toastError(response.data.message || 'Invalid OTP');
         setOtpValue('');
       }
-    } catch (error) {
-      console.error('Verify OTP error:', error);
-      toastError(error.response?.data?.message || 'Failed to verify OTP');
+    } catch {
+      toastError('Failed to verify OTP');
       setOtpValue('');
     } finally {
       setOtpLoading(false);
@@ -591,15 +582,17 @@ export default function RegisterPage() {
         doshamTypes: submissionData.shuddhaJathakam === 'No' ? submissionData.doshamTypes : [],
         nakshatra: submissionData.nakshatra || null,
         raasi: submissionData.raasi || null,
-        country: submissionData.country,
-        state: submissionData.country === 'India' ? submissionData.state : '',
-        city: submissionData.city,
+        country: submissionData.presentResidentialAddress?.country || '',
+        state: submissionData.presentResidentialAddress?.country === 'India'
+          ? submissionData.presentResidentialAddress?.state || ''
+          : '',
+        city: submissionData.presentResidentialAddress?.city || '',
         presentResidentialAddress: submissionData.presentResidentialAddress || {},
         nativePlaceAddress: submissionData.nativePlaceAddress || {},
         education: submissionData.education,
         employmentType: submissionData.employmentType,
         occupation: submissionData.occupation,
-        additionalInfo: submissionData.additionalInfo || '',
+        professionalAdditionalInfo: submissionData.professionalAdditionalInfo || '',
         annualIncome: {
           currency: submissionData.annualIncomeCurrency,
           min: parsedIncome.min,
@@ -615,7 +608,7 @@ export default function RegisterPage() {
         diet: submissionData.diet || '',
         residentialStatus: submissionData.residentialStatus,
         familyStatus: submissionData.familyStatus,
-        aboutMyself: submissionData.about,
+        profileAbout: submissionData.profileAbout,
         ageFrom: ageFromValue,
         ageTo: ageToValue,
         interests: submissionData.interests,

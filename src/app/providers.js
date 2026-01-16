@@ -15,6 +15,11 @@ export function Providers({ children }) {
             // Keep unused data in cache for 10 minutes
             gcTime: 10 * 60 * 1000,
             refetchOnWindowFocus: false,
+            // Don't refetch on mount if data is fresh
+            refetchOnMount: false,
+            // Retry failed requests up to 2 times with exponential backoff
+            retry: 2,
+            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
           },
         },
       })

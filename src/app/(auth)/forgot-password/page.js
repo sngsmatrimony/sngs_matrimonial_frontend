@@ -14,9 +14,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { toastError, toastSuccess } from '@/lib/toast';
 import client from '@/lib/api/client';
 
-const mobileSchema = z.object({
-  mobileNumber: z.string()
-    .regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number'),
+const emailSchema = z.object({
+  email: z.string()
+    .email('Please enter a valid email address'),
 });
 
 export default function ForgotPasswordPage() {
@@ -24,8 +24,8 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm({
-    resolver: zodResolver(mobileSchema),
-    defaultValues: { mobileNumber: '' },
+    resolver: zodResolver(emailSchema),
+    defaultValues: { email: '' },
   });
 
   async function onSubmit(values) {
@@ -35,9 +35,9 @@ export default function ForgotPasswordPage() {
       const response = await client.post('/api/auth/forgot-password/send-otp', values);
 
       if (response.data.success) {
-        toastSuccess('OTP sent to your mobile number');
-        // Store mobile number in sessionStorage for next step
-        sessionStorage.setItem('resetMobile', values.mobileNumber);
+        toastSuccess('OTP sent to your email address');
+        // Store email in sessionStorage for next step
+        sessionStorage.setItem('resetEmail', values.email);
         router.push('/forgot-password/verify-otp');
       }
     } catch (error) {
@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
             Forgot Password
           </CardTitle>
           <CardDescription className="font-maven text-center text-secondary">
-            Enter your registered mobile number to receive an OTP
+            Enter your registered email to receive an OTP
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -63,17 +63,16 @@ export default function ForgotPasswordPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               <FormField
                 control={form.control}
-                name="mobileNumber"
+                name="email"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="font-telex text-secondary font-semibold">
-                      Mobile Number
+                      Email Address
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="9876543210"
-                        type="tel"
-                        maxLength={10}
+                        placeholder="you@example.com"
+                        type="email"
                         className="border-2 border-gray-200 focus:border-primary font-maven"
                         {...field}
                       />

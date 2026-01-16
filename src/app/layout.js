@@ -6,21 +6,21 @@ const maven = Maven_Pro({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
-  variable: "--maven-pro",
+  variable: "--font-maven",
 });
 
 const viga = Viga({
   subsets: ["latin"],
   weight: ["400"],
   display: "swap",
-  variable: "--viga",
+  variable: "--font-viga",
 });
 
 const telex = Telex({
   subsets: ["latin"],
   weight: ["400"],
   display: "swap",
-  variable: "--telex",
+  variable: "--font-telex",
 });
 
 export const metadata = {
@@ -30,12 +30,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={`antialiased ${maven.className} ${viga.className} ${telex.className}`} style={{
-        "--maven-pro": maven.style?.fontFamily || "system-ui",
-        "--viga": viga.style?.fontFamily || "system-ui",
-        "--telex": telex.style?.fontFamily || "system-ui",
-      }}>
+    <html lang="en" className={`${maven.variable} ${viga.variable} ${telex.variable}`}>
+      <body className="antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

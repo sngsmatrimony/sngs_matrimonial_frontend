@@ -39,7 +39,8 @@ export default function Dashboard() {
               alt="SNGS Matrimonial Logo"
               width={48}
               height={48}
-              className="w-auto h-12"
+              className="h-12 w-auto"
+              style={{ width: 'auto', height: 'auto' }}
             />
             <h1 className="font-viga text-2xl text-accent hidden sm:block">
               SNGS Matrimonial
@@ -64,7 +65,7 @@ export default function Dashboard() {
       </header>
 
       {/* Tab Navigation */}
-      <div className="bg-black border-b border-gray-900 pt-2 mt-4 fixed top-16 left-0 right-0 z-40">
+      <div className="bg-black border-b border-gray-900 pt-2 fixed top-16 left-0 right-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-8 overflow-x-auto">
             {/* Browse Tab */}
@@ -136,7 +137,7 @@ export default function Dashboard() {
       </div>
 
       {/* Tab Content */}
-      <div className="bg-white pt-32 mt-4">
+      <div className="bg-white pt-32">
         {activeTab === 'browse' && <BrowseProfiles />}
         {activeTab === 'liked' && <LikedProfiles />}
         {activeTab === 'messages' && <ChatLayout initialUserId={selectedChatUserId} />}

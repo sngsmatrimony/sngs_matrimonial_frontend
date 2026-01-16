@@ -27,16 +27,16 @@ const resetSchema = z.object({
 export default function VerifyOTPPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [mobileNumber, setMobileNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    const mobile = sessionStorage.getItem('resetMobile');
-    if (!mobile) {
+    const storedEmail = sessionStorage.getItem('resetEmail');
+    if (!storedEmail) {
       setIsRedirecting(true);
       router.push('/forgot-password');
     } else {
-      setMobileNumber(mobile);
+      setEmail(storedEmail);
     }
   }, [router]);
 
@@ -50,14 +50,14 @@ export default function VerifyOTPPage() {
 
     try {
       const response = await client.post('/api/auth/forgot-password/reset', {
-        mobileNumber,
+        email,
         otp: values.otp,
         newPassword: values.newPassword
       });
 
       if (response.data.success) {
         toastSuccess('Password reset successful!');
-        sessionStorage.removeItem('resetMobile');
+        sessionStorage.removeItem('resetEmail');
         router.push('/login');
       }
     } catch (error) {
@@ -79,7 +79,7 @@ export default function VerifyOTPPage() {
             Reset Password
           </CardTitle>
           <CardDescription className="font-maven text-center text-secondary">
-            {mobileNumber && `Enter the OTP sent to ${mobileNumber}`}
+            {email && `Enter the OTP sent to ${email}`}
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -67,7 +67,8 @@ export default function AdminLayout({ children }) {
                                 alt="SNGS Matrimonial Logo"
                                 width={48}
                                 height={48}
-                                className="w-auto h-12"
+                                className="h-12 w-auto"
+                                style={{ width: 'auto', height: 'auto' }}
                             />
                             <h1 className="font-viga text-2xl text-accent">
                                 SNGS Admin

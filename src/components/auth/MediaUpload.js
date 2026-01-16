@@ -173,7 +173,7 @@ export function MediaUpload({
           <div className={`grid gap-3 ${isPhoto ? 'grid-cols-3' : 'grid-cols-2'}`}>
             {files.map((fileObj, index) => (
               <div
-                key={index}
+                key={fileObj.preview || `file-${index}`}
                 className="relative group rounded-lg overflow-hidden bg-gradient-warm-subtle border-2 border-primary/20"
               >
                 {isPhoto ? (

@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils";
 import useChatStore from "@/store/chatStore";
 import { useAuthStore } from "@/store/authStore";
 import { useLandingStore } from "@/store/landingStore";
-import { toastError } from "@/lib/toast";
 
 /**
  * ChatLayout Component
@@ -30,6 +29,7 @@ export default function ChatLayout({ initialUserId = null }) {
     conversations,
     activeConversationId,
     messages,
+    onlineUsers,
     setActiveConversationId,
     loadConversations,
     getOrCreateConversation,
@@ -55,36 +55,14 @@ export default function ChatLayout({ initialUserId = null }) {
 
   // Load conversations on mount
   useEffect(() => {
-    const load = async () => {
-      try {
-        console.log('ChatLayout: Loading conversations...');
-        const convs = await loadConversations();
-        console.log('ChatLayout: Conversations loaded successfully:', convs);
-      } catch (err) {
-        console.error('ChatLayout: Failed to load conversations:', err);
-      }
-    };
-    load();
+    loadConversations();
   }, [loadConversations]);
 
   // Handle initialUserId - create conversation immediately when chat button is clicked
   useEffect(() => {
     if (initialUserId && user) {
-      console.log('ChatLayout: Chat button clicked for user:', initialUserId);
-
       // Create or get conversation immediately
-      const createConv = async () => {
-        try {
-          const conversation = await getOrCreateConversation(initialUserId);
-          console.log('ChatLayout: Conversation created/retrieved:', conversation);
-          // getOrCreateConversation already sets activeConversationId in the store
-        } catch (error) {
-          console.error('ChatLayout: Failed to create conversation:', error);
-        }
-      };
-
-      createConv();
-
+      getOrCreateConversation(initialUserId);
       // Clear from landing store to prevent persistence
       clearSelectedChatUserId();
     }
@@ -93,7 +71,6 @@ export default function ChatLayout({ initialUserId = null }) {
   // Load messages when conversation is selected
   useEffect(() => {
     if (activeConversationId) {
-      console.log('ChatLayout: Loading messages for conversation:', activeConversationId);
       loadMessages(activeConversationId, 50, 0);
       // Mark all messages in conversation as read
       markConversationAsRead(activeConversationId);
@@ -116,11 +93,8 @@ export default function ChatLayout({ initialUserId = null }) {
     return () => {
       // Delete all empty conversations when leaving Messages tab
       if (emptyConversationIdsRef.current.length > 0) {
-        console.log('ChatLayout: Cleaning up empty conversations on unmount:', emptyConversationIdsRef.current);
         emptyConversationIdsRef.current.forEach((convId) => {
-          deleteConversation(convId).catch((err) => {
-            console.error('ChatLayout: Failed to delete empty conversation:', err);
-          });
+          deleteConversation(convId).catch(() => {});
         });
       }
     };
@@ -164,12 +138,7 @@ export default function ChatLayout({ initialUserId = null }) {
   // Handle sending a message
   const handleSendMessage = async (messageContent) => {
     if (!activeConversationId || !messageContent.trim()) return;
-
-    try {
-      await sendMessage(activeConversationId, messageContent);
-    } catch (error) {
-      console.error('Failed to send message:', error);
-    }
+    await sendMessage(activeConversationId, messageContent);
   };
 
   // Handle marking message as read
@@ -238,7 +207,11 @@ export default function ChatLayout({ initialUserId = null }) {
                   {activeConversation.otherParticipant?.fullName || 'Unknown'}
                 </h3>
                 <p className="text-xs font-telex text-gray-500">
-                  Online
+                  {onlineUsers.has(activeConversation.otherParticipant?._id?.toString()) ? (
+                    <span className="text-success">Online</span>
+                  ) : (
+                    'Offline'
+                  )}
                 </p>
               </div>
             </div>

@@ -52,15 +52,13 @@ export const useAuthStore = create(
       register: async (userData) => {
         set({ isLoading: true, error: null });
         try {
-          console.log('[authStore] Sending registration request with data:', userData);
           const response = await client.post('/api/auth/register', userData);
-          console.log('[authStore] Registration successful:', response.data);
           const { token, user } = response.data;
 
           localStorage.setItem('authToken', token);
-          set({ 
-            user, 
-            token, 
+          set({
+            user,
+            token,
             isLoading: false,
             membership: user.membership || {
               isActive: false,
@@ -71,12 +69,6 @@ export const useAuthStore = create(
           });
           return { success: true };
         } catch (error) {
-          console.error('[authStore] Registration error details:');
-          console.error('Status:', error.response?.status);
-          console.error('Error message:', error.response?.data?.message);
-          console.error('Error data:', error.response?.data);
-          console.error('Full error:', error);
-
           // Extract validation errors from the errors array
           let errorMessage = error.response?.data?.message || 'Registration failed';
 
@@ -85,7 +77,6 @@ export const useAuthStore = create(
               .map(err => `${err.path}: ${err.msg}`)
               .join('\n');
             errorMessage = fieldErrors || errorMessage;
-            console.error('[authStore] Validation errors:', fieldErrors);
           }
 
           set({ error: errorMessage, isLoading: false });
@@ -158,13 +149,10 @@ export const useAuthStore = create(
         formData.append('photo', file);
 
         try {
-          console.log('[authStore] Uploading profile picture:', file.name, formData);
           const response = await client.post('/api/auth/upload-profile-picture', formData);
-          console.log('[authStore] Profile picture response:', response.data);
           set({ user: response.data.user });
           return { success: true, profilePictureUrl: response.data.profilePictureUrl };
         } catch (error) {
-          console.error('[authStore] Profile picture upload error:', error);
           return { success: false, error: error.response?.data?.message || 'Upload failed' };
         }
       },
@@ -186,13 +174,10 @@ export const useAuthStore = create(
         formData.append('photo', file);
 
         try {
-          console.log('[authStore] Uploading gallery photo:', file.name);
           const response = await client.post('/api/auth/upload-photo', formData);
-          console.log('[authStore] Gallery photo response:', response.data);
           set({ user: response.data.user });
           return { success: true, photoUrl: response.data.photoUrl };
         } catch (error) {
-          console.error('[authStore] Gallery photo upload error:', error);
           return { success: false, error: error.response?.data?.message || 'Upload failed' };
         }
       },
@@ -214,9 +199,7 @@ export const useAuthStore = create(
         formData.append('document', file);
 
         try {
-          console.log('[authStore] Uploading horoscope document:', file.name);
           const response = await client.post('/api/auth/upload-horoscope-document', formData);
-          console.log('[authStore] Horoscope document response:', response.data);
           set((state) => ({
             user: {
               ...state.user,
@@ -225,7 +208,6 @@ export const useAuthStore = create(
           }));
           return { success: true, horoscopeDocument: response.data.horoscopeDocument };
         } catch (error) {
-          console.error('[authStore] Horoscope upload error:', error);
           return { success: false, error: error.response?.data?.message || 'Upload failed' };
         }
       },
@@ -241,9 +223,8 @@ export const useAuthStore = create(
             }
           }));
           return { success: true };
-        } catch (error) {
-          console.error('[authStore] Horoscope delete error:', error);
-          return { success: false, error: error.response?.data?.message || 'Delete failed' };
+        } catch {
+          return { success: false, error: 'Delete failed' };
         }
       },
 
@@ -259,8 +240,7 @@ export const useAuthStore = create(
           const membershipData = response.data.data;
           set({ membership: membershipData });
           return membershipData;
-        } catch (error) {
-          console.error('Error refreshing membership:', error);
+        } catch {
           return null;
         }
       },

@@ -28,11 +28,19 @@ import {
 } from '@/lib/constants/formData';
 import { MultiSelect } from '@/components/ui/multi-select';
 
-export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFileUpdate }) {
+export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFileUpdate, onDeleteHoroscope }) {
   const watchReligion = useWatch({ control: form.control, name: 'religion' });
   const watchShuddhaJathakam = useWatch({ control: form.control, name: 'shuddhaJathakam' });
   const displayDate = form.watch('dateOfBirth');
   const horoscopeInputRef = useRef(null);
+
+  // Helper function to check if horoscope document has a valid URL
+  const hasValidHoroscopeUrl = (doc) => doc?.url && doc.url.trim() !== '';
+  const existingHoroscopeDoc = hasValidHoroscopeUrl(user?.horoscopeDocument)
+    ? user.horoscopeDocument
+    : hasValidHoroscopeUrl(userProfile?.horoscopeDocument)
+      ? userProfile.horoscopeDocument
+      : null;
 
   const handleHoroscopeUpload = (e) => {
     const file = e.target.files?.[0];
@@ -70,6 +78,79 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
     <div className="space-y-6">
       <h2 className="font-viga text-xl text-secondary">Personal & Religious Details</h2>
 
+      {/* Mobile Numbers */}
+      <div className="grid grid-cols-2 gap-4">
+        <FormField
+          control={form.control}
+          name="mobileNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-maven">Mobile Number</FormLabel>
+              <FormControl>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm font-maven">
+                    +91
+                  </span>
+                  <Input
+                    {...field}
+                    type="tel"
+                    placeholder="Enter mobile number"
+                    maxLength={10}
+                    className="font-maven rounded-l-none"
+                  />
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="alternateMobileNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-maven">Alternate Mobile (Optional)</FormLabel>
+              <FormControl>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm font-maven">
+                    +91
+                  </span>
+                  <Input
+                    {...field}
+                    type="tel"
+                    placeholder="Enter alternate number"
+                    maxLength={10}
+                    className="font-maven rounded-l-none"
+                  />
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      {/* SNGS Membership Number */}
+      <FormField
+        control={form.control}
+        name="sngsMembershipNumber"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="font-maven">SNGS Membership Number (Optional)</FormLabel>
+            <FormControl>
+              <Input
+                {...field}
+                placeholder="Enter membership number"
+                maxLength={50}
+                className="font-maven"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       {/* Date of Birth */}
       <FormField
         control={form.control}
@@ -78,7 +159,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           <FormItem>
             <FormLabel className="font-maven">Date of Birth</FormLabel>
             <div className="grid grid-cols-3 gap-2">
-              <Select value={displayDate ? displayDate.getDate().toString().padStart(2, '0') : undefined} onValueChange={(day) => {
+              <Select value={displayDate ? displayDate.getDate().toString().padStart(2, '0') : ''} onValueChange={(day) => {
                 const baseDate = displayDate || new Date(new Date().getFullYear() - 25, 0, 1);
                 const newDate = new Date(baseDate);
                 newDate.setDate(parseInt(day, 10));
@@ -98,7 +179,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 </SelectContent>
               </Select>
 
-              <Select value={displayDate ? (displayDate.getMonth() + 1).toString().padStart(2, '0') : undefined} onValueChange={(month) => {
+              <Select value={displayDate ? (displayDate.getMonth() + 1).toString().padStart(2, '0') : ''} onValueChange={(month) => {
                 const baseDate = displayDate || new Date(new Date().getFullYear() - 25, 0, 1);
                 const newDate = setMonth(baseDate, parseInt(month, 10) - 1);
                 field.onChange(newDate);
@@ -117,7 +198,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 </SelectContent>
               </Select>
 
-              <Select value={displayDate ? displayDate.getFullYear().toString() : undefined} onValueChange={(year) => {
+              <Select value={displayDate ? displayDate.getFullYear().toString() : ''} onValueChange={(year) => {
                 const baseDate = displayDate || new Date(parseInt(year, 10), 0, 1);
                 const newDate = setYear(baseDate, parseInt(year, 10));
                 field.onChange(newDate);
@@ -238,7 +319,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
         render={({ field }) => (
           <FormItem>
             <FormLabel className="font-maven">Mother Tongue</FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select value={field.value || ''} onValueChange={field.onChange}>
               <FormControl>
                 <SelectTrigger className="font-maven">
                   <SelectValue placeholder="Select mother tongue" />
@@ -324,7 +405,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-maven">Gender</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="font-maven">
                     <SelectValue placeholder="Select gender" />
@@ -346,7 +427,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-maven">Seeking</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="font-maven">
                     <SelectValue placeholder="Select preference" />
@@ -371,7 +452,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-maven">Height</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="font-maven">
                     <SelectValue placeholder="Select height" />
@@ -420,7 +501,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-maven">Blood Group (Optional)</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="font-maven">
                     <SelectValue placeholder="Select blood group" />
@@ -532,7 +613,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
         render={({ field }) => (
           <FormItem>
             <FormLabel className="font-maven">Religion</FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select value={field.value || ''} onValueChange={field.onChange}>
               <FormControl>
                 <SelectTrigger className="font-maven">
                   <SelectValue placeholder="Select religion" />
@@ -559,7 +640,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-maven">Caste</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="font-maven">
                     <SelectValue placeholder="Select caste" />
@@ -587,7 +668,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-maven">Shuddha Jathakam</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="font-maven">
                     <SelectValue placeholder="Select shuddha jathakam option" />
@@ -716,14 +797,14 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           />
 
           {/* Show existing horoscope if uploaded */}
-          {(user?.horoscopeDocument?.url || userProfile?.horoscopeDocument?.url) && !horoscope && (
+          {existingHoroscopeDoc && !horoscope && (
             <div className="relative flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-              {(user?.horoscopeDocument?.fileType || userProfile?.horoscopeDocument?.fileType) === 'pdf' ? (
+              {existingHoroscopeDoc.fileType === 'pdf' ? (
                 <FileText className="text-red-500" size={32} />
               ) : (
-                <div className="relative w-16 h-16 rounded overflow-hidden">
+                <div className="relative w-32 h-32 rounded overflow-hidden">
                   <Image
-                    src={user?.horoscopeDocument?.url || userProfile?.horoscopeDocument?.url}
+                    src={existingHoroscopeDoc.url}
                     alt="Current horoscope"
                     fill
                     className="object-cover"
@@ -735,9 +816,19 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                   Current Horoscope Document
                 </p>
                 <p className="font-telex text-xs text-gray-500">
-                  Uploaded {new Date(user?.horoscopeDocument?.uploadedAt || userProfile?.horoscopeDocument?.uploadedAt).toLocaleDateString()}
+                  Uploaded {existingHoroscopeDoc.uploadedAt ? new Date(existingHoroscopeDoc.uploadedAt).toLocaleDateString() : 'Previously'}
                 </p>
               </div>
+              {onDeleteHoroscope && (
+                <button
+                  type="button"
+                  onClick={onDeleteHoroscope}
+                  className="p-1.5 hover:bg-red-50 rounded-full transition"
+                  title="Delete horoscope document"
+                >
+                  <X className="text-red-500" size={20} />
+                </button>
+              )}
             </div>
           )}
 
@@ -746,7 +837,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
               {horoscope.fileType === 'pdf' ? (
                 <FileText className="text-red-500" size={32} />
               ) : (horoscope.preview || horoscope.url) ? (
-                <div className="relative w-16 h-16 rounded overflow-hidden">
+                <div className="relative w-32 h-32 rounded overflow-hidden">
                   <Image
                     src={horoscope.preview || horoscope.url}
                     alt="Horoscope preview"

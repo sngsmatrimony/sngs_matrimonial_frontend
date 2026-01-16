@@ -41,18 +41,12 @@ export default function ChatList({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Log conversations for debugging
-  console.log('ChatList: Received conversations:', conversations);
-  console.log('ChatList: activeConversationId:', activeConversationId);
-
   // Filter conversations based on search query
   const filteredConversations = conversations.filter((conversation) => {
     const otherParticipant = conversation.otherParticipant || {};
     const userName = otherParticipant.fullName || otherParticipant.name || '';
     return userName.toLowerCase().includes(searchQuery.toLowerCase());
   });
-
-  console.log('ChatList: Filtered conversations:', filteredConversations);
 
   // Format timestamp (e.g., "2h ago", "Yesterday")
   const formatTimestamp = (timestamp) => {

@@ -67,6 +67,26 @@ export const adminApi = {
    */
   updateContactInfo: (data) => adminClient.put('/api/admin/settings/contact-info', data),
 
+  /**
+   * Get How It Works section content
+   */
+  getHowItWorksContent: () => adminClient.get('/api/admin/how-it-works'),
+
+  /**
+   * Update How It Works section content
+   */
+  updateHowItWorksContent: (data) => adminClient.put('/api/admin/how-it-works', data),
+
+  /**
+   * Get Hero section content
+   */
+  getHeroContent: () => adminClient.get('/api/admin/hero-content'),
+
+  /**
+   * Update Hero section content
+   */
+  updateHeroContent: (data) => adminClient.put('/api/admin/hero-content', data),
+
   // ==================== Admin Management ====================
 
   /**
@@ -78,4 +98,49 @@ export const adminApi = {
    * Create new admin
    */
   createAdmin: (data) => adminClient.post('/api/admin/admins', data),
+
+  // ==================== Media Upload for Users ====================
+
+  /**
+   * Upload profile picture for a specific user
+   */
+  uploadUserProfilePicture: (userId, file) => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    return adminClient.post(`/api/admin/users/${userId}/upload-profile-picture`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  /**
+   * Upload gallery photo for a specific user
+   */
+  uploadUserPhoto: (userId, file) => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    return adminClient.post(`/api/admin/users/${userId}/upload-photo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  /**
+   * Delete gallery photo for a specific user
+   */
+  deleteUserPhoto: (userId, photoIndex) => adminClient.delete(`/api/admin/users/${userId}/photos/${photoIndex}`),
+
+  /**
+   * Upload horoscope document for a specific user
+   */
+  uploadUserHoroscope: (userId, file) => {
+    const formData = new FormData();
+    formData.append('document', file);
+    return adminClient.post(`/api/admin/users/${userId}/upload-horoscope`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  /**
+   * Delete horoscope document for a specific user
+   */
+  deleteUserHoroscope: (userId) => adminClient.delete(`/api/admin/users/${userId}/horoscope`),
 };

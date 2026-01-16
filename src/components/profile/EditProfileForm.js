@@ -146,6 +146,7 @@ const step4Schema = z.object({
   occupation: z.string().min(1, 'Please select your occupation'),
   annualIncomeCurrency: z.string().min(1, 'Please select currency'),
   annualIncomeAmount: z.string().min(1, 'Please select/enter income amount'),
+  professionalAdditionalInfo: z.string().max(500, 'Maximum 500 characters').optional().or(z.literal('')),
 });
 
 // Step 5: Family & Additional Details
@@ -156,7 +157,7 @@ const step5Schema = z.object({
   motherOccupation: z.string().optional(),
   residentialStatus: z.string().optional(),
   familyStatus: z.string().min(1, 'Please select your family status'),
-  about: z.string().min(50, 'About must be at least 50 characters').max(1000, 'About must be at most 1000 characters'),
+  profileAbout: z.string().min(50, 'About must be at least 50 characters').max(1000, 'About must be at most 1000 characters'),
 });
 
 // Step 6: Preferences & Media
@@ -179,7 +180,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const { uploadProfilePicture, setProfileBannerColor } = useAuthStore();
+  const { uploadProfilePicture, setProfileBannerColor, deleteHoroscopeDocument } = useAuthStore();
   const { setUserProfile } = useLandingStore();
 
   // Parse existing timeOfBirth (24-hour format) to dropdown values (12-hour format)
@@ -187,6 +188,9 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
 
   const [formData, setFormData] = useState({
     // Step 1: Personal Details
+    mobileNumber: user?.mobileNumber || '',
+    alternateMobileNumber: user?.alternateMobileNumber || '',
+    sngsMembershipNumber: user?.sngsMembershipNumber || '',
     dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth) : null,
     timeOfBirth_hours: existingTimeDropdowns.hours,
     timeOfBirth_minutes: existingTimeDropdowns.minutes,
@@ -216,6 +220,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     occupation: user?.occupation || '',
     annualIncomeCurrency: user?.annualIncome?.currency || 'INR',
     annualIncomeAmount: user?.annualIncome?.displayText || '',
+    professionalAdditionalInfo: user?.professionalAdditionalInfo || '',
     // Step 5: Family & Additional Details
     fatherName: user?.fatherName || '',
     fatherOccupation: user?.fatherOccupation || '',
@@ -226,7 +231,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     diet: user?.diet || '',
     residentialStatus: user?.residentialStatus || '',
     familyStatus: user?.familyStatus || '',
-    about: user?.about || user?.aboutMyself || '',
+    profileAbout: user?.profileAbout || '',
     // Step 6: Preferences & Media
     ageFrom: user?.ageFrom?.toString() || '',
     ageTo: user?.ageTo?.toString() || '',
@@ -236,7 +241,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     // File uploads
     profilePicture: null,
     galleryPhotos: [],
-    horoscope: user?.horoscopeDocument || userProfile?.horoscopeDocument || null,
+    horoscope: null, // Only set when user uploads a NEW file; existing doc is shown via existingHoroscopeDoc
   });
 
   const getSchemaForStep = (step) => {
@@ -274,6 +279,24 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
       [fileType]: fileData
     }));
   }, []);
+
+  const handleDeleteHoroscope = useCallback(async () => {
+    try {
+      const result = await deleteHoroscopeDocument();
+      if (result.success) {
+        // Clear horoscope from local state
+        setFormData(prev => ({
+          ...prev,
+          horoscope: null
+        }));
+        toastSuccess('Horoscope document deleted successfully');
+      } else {
+        toastError(result.error || 'Failed to delete horoscope document');
+      }
+    } catch (err) {
+      toastError('Failed to delete horoscope document');
+    }
+  }, [deleteHoroscopeDocument]);
 
   const saveCurrentStepData = () => {
     const currentValues = form.getValues();
@@ -388,6 +411,9 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
       const timeOfBirth24 = timeOfBirthString ? convertTo24Hour(timeOfBirthString) : '';
 
       const updateData = {
+        mobileNumber: formValues.mobileNumber,
+        alternateMobileNumber: formValues.alternateMobileNumber,
+        sngsMembershipNumber: formValues.sngsMembershipNumber,
         dateOfBirth: formValues.dateOfBirth,
         timeOfBirth: timeOfBirth24,
         motherTongue: formValues.motherTongue,
@@ -416,6 +442,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
           max: parsedIncome.max,
           displayText: parsedIncome.displayText,
         },
+        professionalAdditionalInfo: formValues.professionalAdditionalInfo || '',
         fatherName: formValues.fatherName,
         fatherOccupation: formValues.fatherOccupation,
         motherName: formValues.motherName,
@@ -425,7 +452,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
         diet: formValues.diet || '',
         residentialStatus: formValues.residentialStatus,
         familyStatus: formValues.familyStatus,
-        about: formValues.about,
+        profileAbout: formValues.profileAbout,
         ageFrom: parseInt(formValues.ageFrom),
         ageTo: parseInt(formValues.ageTo),
         interests: formValues.interests,
@@ -558,6 +585,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
                 userProfile={userProfile}
                 horoscope={formData.horoscope}
                 onFileUpdate={handleFileUpdate}
+                onDeleteHoroscope={handleDeleteHoroscope}
               />
             )}
             {currentStep === 2 && <LocationAddressStep form={form} />}

@@ -29,7 +29,7 @@ export function ProfessionalDetailsStep({ form }) {
         render={({ field }) => (
           <FormItem>
             <FormLabel className="font-maven">Education</FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select value={field.value || ''} onValueChange={field.onChange}>
               <FormControl>
                 <SelectTrigger className="font-maven">
                   <SelectValue placeholder="Select education level" />
@@ -55,7 +55,7 @@ export function ProfessionalDetailsStep({ form }) {
         render={({ field }) => (
           <FormItem>
             <FormLabel className="font-maven">Employment Type</FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select value={field.value || ''} onValueChange={field.onChange}>
               <FormControl>
                 <SelectTrigger className="font-maven">
                   <SelectValue placeholder="Select employment type" />
@@ -81,7 +81,7 @@ export function ProfessionalDetailsStep({ form }) {
         render={({ field }) => (
           <FormItem>
             <FormLabel className="font-maven">Occupation</FormLabel>
-            <Select value={field.value} onValueChange={field.onChange}>
+            <Select value={field.value || ''} onValueChange={field.onChange}>
               <FormControl>
                 <SelectTrigger className="font-maven">
                   <SelectValue placeholder="Select occupation" />
@@ -108,7 +108,7 @@ export function ProfessionalDetailsStep({ form }) {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="font-maven">Income Currency</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="font-maven">
                     <SelectValue placeholder="Select currency" />
@@ -134,7 +134,7 @@ export function ProfessionalDetailsStep({ form }) {
             <FormItem>
               <FormLabel className="font-maven">Annual Income Amount</FormLabel>
               {watchCurrency === 'INR' ? (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select value={field.value || ''} onValueChange={field.onChange}>
                   <FormControl>
                     <SelectTrigger className="font-maven">
                       <SelectValue placeholder="Select income range" />
@@ -164,7 +164,7 @@ export function ProfessionalDetailsStep({ form }) {
         />
       </div>
 
-      {/* Additional Information */}
+      {/* Professional Additional Information */}
       <FormField
         control={form.control}
         name="professionalAdditionalInfo"
