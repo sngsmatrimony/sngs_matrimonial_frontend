@@ -165,28 +165,6 @@ export function FamilyDetailsStep({ form }) {
         )}
       />
 
-      {/* About Myself */}
-      <FormField
-        control={form.control}
-        name="profileAbout"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="font-maven">About Myself</FormLabel>
-            <FormControl>
-              <Textarea
-                {...field}
-                placeholder="Tell us about yourself (minimum 50 characters)"
-                className="font-maven min-h-32"
-                maxLength={1000}
-              />
-            </FormControl>
-            <div className="text-sm mt-2 text-muted-foreground">
-              {field.value?.length || 0}/1000 characters (minimum 50 required)
-            </div>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
     </div>
   );
 }

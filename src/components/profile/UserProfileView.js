@@ -231,7 +231,7 @@ export default function UserProfileView() {
               {user?.fullName}
             </h1>
             <p className="font-telex text-secondary mb-4">
-              {user?.age || 'Age'} • {user?.gender}
+              Age: {user?.age} • Gender: {user?.gender[0].toUpperCase() + user?.gender.slice(1)}
             </p>
 
             {/* About Myself */}
@@ -263,14 +263,14 @@ export default function UserProfileView() {
             title="📞 Contact Information"
             className="mb-6"
           >
+            {user?.sngsMembershipNumber && (
+              <InfoField label="SNGS Membership Number" value={user.sngsMembershipNumber} />
+            )}
             {user?.mobileNumber && (
               <InfoField label="Mobile Number" value={`+91 ${user.mobileNumber}`} />
             )}
             {user?.alternateMobileNumber && (
               <InfoField label="Alternate Mobile" value={`+91 ${user.alternateMobileNumber}`} />
-            )}
-            {user?.sngsMembershipNumber && (
-              <InfoField label="SNGS Membership Number" value={user.sngsMembershipNumber} />
             )}
           </InfoCard>
         )}
@@ -472,16 +472,6 @@ export default function UserProfileView() {
                 </span>
               ))}
             </div>
-          </InfoCard>
-        )}
-
-        {/* Hobbies Section */}
-        {displayProfile?.hobbies && (
-          <InfoCard
-            title="🎨 Hobbies"
-            className="mb-6"
-          >
-            <p className="font-maven text-gray-700 leading-relaxed">{displayProfile.hobbies}</p>
           </InfoCard>
         )}
 

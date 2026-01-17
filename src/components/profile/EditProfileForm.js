@@ -108,39 +108,8 @@ const step2Schema = z.object({
   path: ['doshamTypes'],
 });
 
-// Step 3: Location Details (Country, State, City, Addresses)
+// Step 3: Professional Details
 const step3Schema = z.object({
-  // Removed root country/state/city validation
-  presentResidentialAddress: z.object({
-    country: z.string().min(1, 'Please select your country'),
-    street: z.string().optional(),
-    area: z.string().optional(),
-    landmark: z.string().optional(),
-    pincode: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-  }).optional(),
-  nativePlaceAddress: z.object({
-    country: z.string().optional(),
-    street: z.string().optional(),
-    area: z.string().optional(),
-    landmark: z.string().optional(),
-    pincode: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-  }).optional(),
-}).refine((data) => {
-  if (data.country === 'India' && !data.state) {
-    return false;
-  }
-  return true;
-}, {
-  message: 'State is required for India',
-  path: ['state'],
-});
-
-// Step 4: Professional Details
-const step4Schema = z.object({
   education: z.string().min(1, 'Please select your education'),
   employmentType: z.string().min(1, 'Please select your employment type'),
   occupation: z.string().min(1, 'Please select your occupation'),
@@ -149,23 +118,22 @@ const step4Schema = z.object({
   professionalAdditionalInfo: z.string().max(500, 'Maximum 500 characters').optional().or(z.literal('')),
 });
 
-// Step 5: Family & Additional Details
-const step5Schema = z.object({
+// Step 4: Family & Additional Details
+const step4Schema = z.object({
   fatherName: z.string().optional(),
   fatherOccupation: z.string().optional(),
   motherName: z.string().optional(),
   motherOccupation: z.string().optional(),
   residentialStatus: z.string().optional(),
   familyStatus: z.string().min(1, 'Please select your family status'),
-  profileAbout: z.string().min(50, 'About must be at least 50 characters').max(1000, 'About must be at most 1000 characters'),
 });
 
-// Step 6: Preferences & Media
-const step6Schema = z.object({
+// Step 5: Preferences & Media
+const step5Schema = z.object({
   ageFrom: z.string().min(1, 'Please select minimum age'),
   ageTo: z.string().min(1, 'Please select maximum age'),
   interests: z.array(z.string()).optional().default([]),
-  hobbies: z.string().optional(),
+  profileAbout: z.string().min(50, 'About must be at least 50 characters').max(1000, 'About must be at most 1000 characters'),
   profileBannerColor: z.string().optional(),
 }).refine(data => {
   const from = parseInt(data.ageFrom);
@@ -231,12 +199,11 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     diet: user?.diet || '',
     residentialStatus: user?.residentialStatus || '',
     familyStatus: user?.familyStatus || '',
-    profileAbout: user?.profileAbout || '',
-    // Step 6: Preferences & Media
+    // Step 5: Preferences & Media
     ageFrom: user?.ageFrom?.toString() || '',
     ageTo: user?.ageTo?.toString() || '',
     interests: user?.interests || [],
-    hobbies: user?.hobbies || '',
+    profileAbout: user?.profileAbout || '',
     profileBannerColor: user?.profileBanner?.bannerColor || userProfile?.profileBanner?.bannerColor || '#FFB3BA',
     // File uploads
     profilePicture: null,
@@ -251,7 +218,6 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
       case 3: return step3Schema;
       case 4: return step4Schema;
       case 5: return step5Schema;
-      case 6: return step6Schema;
       default: return step1Schema;
     }
   };
@@ -323,7 +289,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
   const validateAndProceed = async () => {
     setError('');
 
-    if (currentStep === 6) {
+    if (currentStep === 5) {
       await submitUpdate();
       return;
     }
@@ -452,11 +418,10 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
         diet: formValues.diet || '',
         residentialStatus: formValues.residentialStatus,
         familyStatus: formValues.familyStatus,
-        profileAbout: formValues.profileAbout,
         ageFrom: parseInt(formValues.ageFrom),
         ageTo: parseInt(formValues.ageTo),
         interests: formValues.interests,
-        hobbies: formValues.hobbies,
+        profileAbout: formValues.profileAbout,
       };
 
       const response = await client.put('/api/profiles/update', updateData);
@@ -531,12 +496,11 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
   const stepTitles = [
     '💑 Personal Details',
     '🙏 Religion & Addresses',
-    '📍 Location Details',
     '💼 Professional Details',
     '👨‍👩‍👧‍👦 Family & Additional',
     '📸 Preferences & Media'
   ];
-  const progressValue = (currentStep / 6) * 100;
+  const progressValue = (currentStep / 5) * 100;
 
   return (
     <Card className="border-0 shadow-lg bg-white w-full max-w-3xl mx-auto">
@@ -562,7 +526,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
           </CardTitle>
 
           <div className="font-telex text-sm text-secondary/70 whitespace-nowrap">
-            Step {currentStep}/6
+            Step {currentStep}/5
           </div>
         </div>
 
@@ -589,10 +553,9 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
               />
             )}
             {currentStep === 2 && <LocationAddressStep form={form} />}
-            {currentStep === 3 && <LocationAddressStep form={form} />}
-            {currentStep === 4 && <ProfessionalDetailsStep form={form} />}
-            {currentStep === 5 && <FamilyDetailsStep form={form} />}
-            {currentStep === 6 && (
+            {currentStep === 3 && <ProfessionalDetailsStep form={form} />}
+            {currentStep === 4 && <FamilyDetailsStep form={form} />}
+            {currentStep === 5 && (
               <PreferencesMediaStep
                 form={form}
                 user={user}
@@ -627,8 +590,8 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
           disabled={isLoading}
           className="flex-1 bg-primary text-primary-foreground font-maven"
         >
-          {isLoading ? 'Saving...' : currentStep === 6 ? 'Save Profile' : 'Next'}
-          {!isLoading && currentStep < 6 && <ChevronRight className="ml-2 w-4 h-4" />}
+          {isLoading ? 'Saving...' : currentStep === 5 ? 'Save Profile' : 'Next'}
+          {!isLoading && currentStep < 5 && <ChevronRight className="ml-2 w-4 h-4" />}
         </Button>
       </div>
     </Card>

@@ -267,21 +267,24 @@ export function PreferencesMediaStep({
         )}
       />
 
-      {/* Hobbies */}
+      {/* About Myself */}
       <FormField
         control={form.control}
-        name="hobbies"
+        name="profileAbout"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Hobbies (Optional)</FormLabel>
+            <FormLabel className="font-maven">About Myself</FormLabel>
             <FormControl>
               <Textarea
                 {...field}
-                value={field.value ?? ''}
-                placeholder="Describe your hobbies and interests..."
-                className="font-maven min-h-24"
+                placeholder="Tell us about yourself (minimum 50 characters)"
+                className="font-maven min-h-32"
+                maxLength={1000}
               />
             </FormControl>
+            <div className="text-sm mt-2 text-muted-foreground">
+              {field.value?.length || 0}/1000 characters (minimum 50 required)
+            </div>
             <FormMessage />
           </FormItem>
         )}

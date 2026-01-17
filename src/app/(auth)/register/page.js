@@ -112,7 +112,6 @@ const step5Schema = z.object({
   motherOccupation: z.string().optional(),
   residentialStatus: z.string().optional(),
   familyStatus: z.string().min(1, 'Please select your family status'),
-  profileAbout: z.string().min(50, 'About must be at least 50 characters'),
 });
 
 const step6Schema = z.object({
@@ -129,7 +128,7 @@ const step6Schema = z.object({
       return !isNaN(num) && num >= 18 && num <= 90;
     }, 'Age to must be between 18 and 90'),
   interests: z.array(z.string()).optional().default([]),
-  hobbies: z.string().optional(),
+  profileAbout: z.string().min(50, 'About must be at least 50 characters'),
   profileBannerColor: z.string().optional(),
 }).refine(data => {
   const from = parseInt(data.ageFrom, 10);
@@ -219,13 +218,12 @@ export default function RegisterPage() {
     bloodGroup: '',
     residentialStatus: '',
     familyStatus: '',
-    profileAbout: '',
     diet: '',
     // Step 6
     ageFrom: '',
     ageTo: '',
     interests: [],
-    hobbies: '',
+    profileAbout: '',
     profileBannerColor: '#FFB3BA',
     // File uploads
     profilePicture: null,
@@ -608,11 +606,10 @@ export default function RegisterPage() {
         diet: submissionData.diet || '',
         residentialStatus: submissionData.residentialStatus,
         familyStatus: submissionData.familyStatus,
-        profileAbout: submissionData.profileAbout,
         ageFrom: ageFromValue,
         ageTo: ageToValue,
         interests: submissionData.interests,
-        hobbies: submissionData.hobbies,
+        profileAbout: submissionData.profileAbout,
         profileBanner: {
           bannerType: 'color',
           bannerColor: submissionData.profileBannerColor,

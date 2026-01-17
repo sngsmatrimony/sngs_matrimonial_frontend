@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api/admin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Users, UserCheck, UserX, Image, Settings, UserPlus } from 'lucide-react';
+import { Users, User } from 'lucide-react';
 
 function StatsCard({ icon: Icon, label, value, subtitle, color = 'text-primary' }) {
   return (
@@ -66,6 +66,10 @@ export default function AdminDashboard() {
     value: item.count,
   }));
 
+  // Extract male and female counts from genderBreakdown
+  const maleCount = genderBreakdown.find(g => g._id === 'male')?.count || 0;
+  const femaleCount = genderBreakdown.find(g => g._id === 'female')?.count || 0;
+
   const maritalStatusData = maritalStatusBreakdown.map((item) => ({
     name: item._id || 'Unknown',
     value: item.count,
@@ -94,17 +98,17 @@ export default function AdminDashboard() {
           color="text-primary"
         />
         <StatsCard
-          icon={UserCheck}
-          label="Active Users"
-          value={counts?.active || 0}
-          subtitle={`${counts?.inactive || 0} inactive`}
-          color="text-success"
+          icon={User}
+          label="Male Users"
+          value={maleCount}
+          subtitle={`${((maleCount / (counts?.total || 1)) * 100).toFixed(1)}%`}
+          color="text-secondary"
         />
         <StatsCard
-          icon={Image}
-          label="With Profile Picture"
-          value={counts?.withPhoto || 0}
-          subtitle={`${((counts?.withPhoto || 0) / (counts?.total || 1) * 100).toFixed(1)}%`}
+          icon={User}
+          label="Female Users"
+          value={femaleCount}
+          subtitle={`${((femaleCount / (counts?.total || 1)) * 100).toFixed(1)}%`}
           color="text-accent"
         />
         <StatsCard

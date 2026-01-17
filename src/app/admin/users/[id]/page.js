@@ -1180,15 +1180,6 @@ export default function AdminUserDetailPage() {
                     </div>
 
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Hobbies</label>
-                      <Textarea
-                        value={editData?.hobbies || ''}
-                        onChange={(e) => handleInputChange('hobbies', e.target.value)}
-                        className="min-h-20"
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-2">Interests</label>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         {INTERESTS.map(interest => (
@@ -1796,10 +1787,6 @@ export default function AdminUserDetailPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Mother Occupation</label>
                     <p className="text-gray-900">{displayValue(user.motherOccupation)}</p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Hobbies</label>
-                    <p className="text-gray-900">{displayValue(user.hobbies)}</p>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Interests</label>

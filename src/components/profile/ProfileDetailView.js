@@ -285,7 +285,7 @@ export default function ProfileDetailView({ profileId }) {
                 {profile?.fullName}
               </h1>
               <p className="font-telex text-secondary mb-4">
-                {profile?.age || 'Age'} • {profile?.gender}
+                Age: {profile?.age} • Gender: {profile?.gender[0].toUpperCase() + profile?.gender.slice(1)}
               </p>
 
               {/* About Myself */}
@@ -480,13 +480,6 @@ export default function ProfileDetailView({ profileId }) {
             </InfoCard>
           )}
 
-          {/* About Section */}
-          {profile?.profileAbout && (
-            <InfoCard title="📝 About Me" className="mb-6">
-              <p className="font-maven text-gray-700 leading-relaxed">{profile.profileAbout}</p>
-            </InfoCard>
-          )}
-
           {/* Interests Section */}
           {profile?.interests && profile.interests.length > 0 && (
             <InfoCard title="⭐ Interests" className="mb-6">
@@ -503,16 +496,15 @@ export default function ProfileDetailView({ profileId }) {
             </InfoCard>
           )}
 
-          {/* Hobbies Section */}
-          {profile?.hobbies && (
-            <InfoCard title="🎨 Hobbies" className="mb-6">
-              <p className="font-maven text-gray-700 leading-relaxed">{profile.hobbies}</p>
-            </InfoCard>
-          )}
-
           {/* Contact Information Card */}
           {(profile?.mobileNumber || profile?.alternateMobileNumber || profile?.sngsMembershipNumber) && (
             <InfoCard title="📞 Contact Information" className="mb-6">
+              {profile?.sngsMembershipNumber && (
+                <InfoField
+                  label="SNGS Membership Number"
+                  value={profile.sngsMembershipNumber}
+                />
+              )}
               {profile?.mobileNumber && (
                 <InfoField
                   label="Mobile Number"
@@ -523,12 +515,6 @@ export default function ProfileDetailView({ profileId }) {
                 <InfoField
                   label="Alternate Mobile Number"
                   value={`+91 ${profile.alternateMobileNumber}`}
-                />
-              )}
-              {profile?.sngsMembershipNumber && (
-                <InfoField
-                  label="SNGS Membership Number"
-                  value={profile.sngsMembershipNumber}
                 />
               )}
             </InfoCard>
