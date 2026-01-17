@@ -26,6 +26,10 @@ const telex = Telex({
 export const metadata = {
   title: "SNGS Matrimonial",
   description: "Find your perfect match on SNGS Matrimonial",
+  icons: {
+    icon: '/icon.png',
+    apple: '/apple-icon.png',
+  },
 };
 
 export default function RootLayout({ children }) {

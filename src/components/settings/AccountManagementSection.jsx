@@ -117,10 +117,12 @@ export default function AccountManagementSection() {
                   </Label>
                   <Input
                     id="delete-password"
+                    name="password"
                     type="password"
                     placeholder="Your password"
                     value={deletePassword}
                     onChange={(e) => setDeletePassword(e.target.value)}
+                    autoComplete="current-password"
                     className="font-maven mt-1"
                   />
                 </div>

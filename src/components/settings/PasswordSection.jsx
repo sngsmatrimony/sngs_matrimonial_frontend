@@ -88,6 +88,7 @@ export default function PasswordSection() {
                       <Input
                         type={showCurrentPassword ? 'text' : 'password'}
                         placeholder="Enter current password"
+                        autoComplete="current-password"
                         className="font-maven pr-10"
                         {...field}
                       />
@@ -117,6 +118,7 @@ export default function PasswordSection() {
                       <Input
                         type={showNewPassword ? 'text' : 'password'}
                         placeholder="Enter new password"
+                        autoComplete="new-password"
                         className="font-maven pr-10"
                         {...field}
                       />
@@ -149,6 +151,7 @@ export default function PasswordSection() {
                       <Input
                         type={showConfirmPassword ? 'text' : 'password'}
                         placeholder="Confirm new password"
+                        autoComplete="new-password"
                         className="font-maven pr-10"
                         {...field}
                       />

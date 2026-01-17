@@ -119,6 +119,7 @@ export default function VerifyOTPPage() {
                       <Input
                         placeholder="••••••••"
                         type="password"
+                        autoComplete="new-password"
                         className="border-2 border-gray-200 focus:border-primary font-maven"
                         {...field}
                       />
@@ -140,6 +141,7 @@ export default function VerifyOTPPage() {
                       <Input
                         placeholder="••••••••"
                         type="password"
+                        autoComplete="new-password"
                         className="border-2 border-gray-200 focus:border-primary font-maven"
                         {...field}
                       />

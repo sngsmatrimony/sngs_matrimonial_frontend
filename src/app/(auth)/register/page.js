@@ -830,7 +830,7 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel className="font-maven">Password</FormLabel>
                     <FormControl>
-                      <Input {...field} type="password" placeholder="••••••••" className="font-maven" />
+                      <Input {...field} type="password" autoComplete="new-password" placeholder="••••••••" className="font-maven" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -844,7 +844,7 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel className="font-maven">Confirm Password</FormLabel>
                     <FormControl>
-                      <Input {...field} type="password" placeholder="••••••••" className="font-maven" />
+                      <Input {...field} type="password" autoComplete="new-password" placeholder="••••••••" className="font-maven" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

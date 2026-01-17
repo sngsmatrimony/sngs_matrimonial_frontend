@@ -416,6 +416,7 @@ export default function AdminSettingsPage() {
                     type={showCurrentPassword ? 'text' : 'password'}
                     value={passwordData.currentPassword}
                     onChange={handlePasswordChange}
+                    autoComplete="current-password"
                     className="font-maven pr-10"
                   />
                   <button
@@ -445,6 +446,7 @@ export default function AdminSettingsPage() {
                     type={showNewPassword ? 'text' : 'password'}
                     value={passwordData.newPassword}
                     onChange={handlePasswordChange}
+                    autoComplete="new-password"
                     className="font-maven pr-10"
                   />
                   <button
@@ -477,6 +479,7 @@ export default function AdminSettingsPage() {
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={passwordData.confirmPassword}
                     onChange={handlePasswordChange}
+                    autoComplete="new-password"
                     className="font-maven pr-10"
                   />
                   <button

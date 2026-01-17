@@ -56,9 +56,11 @@ export default function AdminLoginPage() {
                 <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
                 <Input
                   type="email"
+                  name="email"
                   placeholder="admin@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="username"
                   className="pl-10"
                   required
                 />
@@ -78,9 +80,11 @@ export default function AdminLoginPage() {
                 <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
                 <Input
                   type="password"
+                  name="password"
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
                   className="pl-10"
                   required
                 />

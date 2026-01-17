@@ -123,6 +123,7 @@ export default function AdminManagementPage() {
                         <Input
                           placeholder="admin@example.com"
                           type="email"
+                          autoComplete="email"
                           className="border-2 border-gray-200 focus:border-primary focus:ring-primary transition-colors font-maven"
                           {...field}
                         />
@@ -142,6 +143,7 @@ export default function AdminManagementPage() {
                         <Input
                           placeholder="Minimum 8 characters"
                           type="password"
+                          autoComplete="new-password"
                           className="border-2 border-gray-200 focus:border-primary focus:ring-primary transition-colors font-maven"
                           {...field}
                         />
