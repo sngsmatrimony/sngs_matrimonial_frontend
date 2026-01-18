@@ -23,6 +23,7 @@ export default function Header({ showLogout = false, isFixed = false }) {
   // Show credits if user has any credits remaining (check both membership store and user.membership)
   const userCredits = membership?.credits ?? user?.membership?.credits ?? 0;
   const showCredits = userCredits > 0;
+  const showGetMembership = !showCredits && user; // Show "Get Membership" if logged in but no credits
 
   return (
     <header className={headerClasses}>
@@ -54,6 +55,14 @@ export default function Header({ showLogout = false, isFixed = false }) {
               </span>
             </div>
           )}
+          {showGetMembership && (
+            <Link
+              href="/membership/purchase"
+              className="bg-primary hover:bg-primary/90 px-4 py-1.5 rounded-full font-telex text-sm font-semibold text-black transition-colors"
+            >
+              Get Membership
+            </Link>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -63,6 +72,15 @@ export default function Header({ showLogout = false, isFixed = false }) {
               <Coins size={14} className="text-primary" />
               <span className="font-telex text-xs font-semibold text-primary">{userCredits}</span>
             </div>
+          )}
+          {/* Mobile Get Membership button */}
+          {showGetMembership && (
+            <Link
+              href="/membership/purchase"
+              className="flex md:hidden bg-primary hover:bg-primary/90 px-3 py-1 rounded-full font-telex text-xs font-semibold text-black transition-colors"
+            >
+              Get Membership
+            </Link>
           )}
           <HelpButton />
           {showLogout && (

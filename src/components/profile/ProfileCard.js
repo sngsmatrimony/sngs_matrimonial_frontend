@@ -104,9 +104,8 @@ function ProfileCard({ profile, isLiked = false }) {
       {/* Status Badges */}
       <div className="absolute top-4 right-4 z-20 flex flex-col items-end gap-2">
         {hasNoMembership && (
-          <div className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-primary text-primary-foreground text-xs font-telex shadow-xl whitespace-nowrap animate-pulse">
+          <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary text-primary-foreground shadow-xl animate-pulse">
             <Lock className="w-4 h-4" />
-            <span className="font-semibold">Get Membership</span>
           </div>
         )}
 

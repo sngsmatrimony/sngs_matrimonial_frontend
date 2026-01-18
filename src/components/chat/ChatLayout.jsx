@@ -12,6 +12,7 @@ import useChatStore from "@/store/chatStore";
 import { useAuthStore } from "@/store/authStore";
 import { useLandingStore } from "@/store/landingStore";
 import Link from "next/link";
+import { toastInfo } from "@/lib/toast";
 
 /**
  * ChatLayout Component
@@ -24,7 +25,8 @@ import Link from "next/link";
  * @param {string} props.initialUserId - Optional ID of user to open conversation with on mount
  */
 export default function ChatLayout({ initialUserId = null }) {
-  const { user } = useAuthStore();
+  const { user, membership } = useAuthStore();
+  const hasNoMembership = !membership?.isActive || membership?.isExpired || membership?.credits <= 0;
   const { clearSelectedChatUserId } = useLandingStore();
   const {
     conversations,
@@ -193,6 +195,12 @@ export default function ChatLayout({ initialUserId = null }) {
               {/* User Avatar and Info - Clickable to view profile */}
               <Link
                 href={`/profiles/${activeConversation.otherParticipant?._id}`}
+                onClick={(e) => {
+                  if (hasNoMembership) {
+                    e.preventDefault();
+                    toastInfo('Get membership to view full profiles');
+                  }
+                }}
                 className="relative shrink-0 cursor-pointer group"
               >
                 <Avatar className="w-10 h-10 ring-2 ring-transparent group-hover:ring-primary transition-all">

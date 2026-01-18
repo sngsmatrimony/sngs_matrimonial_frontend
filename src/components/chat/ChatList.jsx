@@ -9,6 +9,8 @@ import { Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import Link from "next/link";
+import { useAuthStore } from "@/store/authStore";
+import { toastInfo } from "@/lib/toast";
 
 /**
  * ChatList Component
@@ -41,6 +43,8 @@ export default function ChatList({
   error = null,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
+  const { membership } = useAuthStore();
+  const hasNoMembership = !membership?.isActive || membership?.isExpired || membership?.credits <= 0;
 
   // Filter conversations based on search query
   const filteredConversations = conversations.filter((conversation) => {
@@ -162,7 +166,13 @@ export default function ChatList({
               {/* Avatar with Online Status - Clickable to view profile */}
               <Link
                 href={`/profiles/${otherUser._id}`}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (hasNoMembership) {
+                    e.preventDefault();
+                    toastInfo('Get membership to view full profiles');
+                  }
+                }}
                 className="relative shrink-0 cursor-pointer group"
               >
                 <Avatar className="w-12 h-12 ring-2 ring-transparent group-hover:ring-primary transition-all">

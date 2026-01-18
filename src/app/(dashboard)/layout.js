@@ -62,6 +62,7 @@ export default function UserLayout({ children }) {
   // Calculate user credits (hide on settings page as it's shown in cards there)
   const userCredits = membership?.credits ?? user?.membership?.credits ?? 0;
   const showCredits = userCredits > 0 && !pathname.includes('/settings');
+  const showGetMembership = !showCredits && user && !pathname.includes('/settings'); // Show "Get Membership" if logged in but no credits
 
   // Show loader while initializing (unless timeout reached)
   if ((!isInitialized && !initTimeout) || !token) {
@@ -107,6 +108,14 @@ export default function UserLayout({ children }) {
                 </span>
               </div>
             )}
+            {showGetMembership && (
+              <Link
+                href="/membership/purchase"
+                className="bg-primary hover:bg-primary/90 px-4 py-1.5 rounded-full font-telex text-sm font-semibold text-black transition-colors"
+              >
+                Get Membership
+              </Link>
+            )}
           </div>
 
           {/* Mobile credits display */}
@@ -114,6 +123,15 @@ export default function UserLayout({ children }) {
             <div className="flex md:hidden items-center bg-primary/70 px-2 py-1 rounded-full mr-2">
               <span className="font-telex text-xs font-semibold text-black">{userCredits} Credits</span>
             </div>
+          )}
+          {/* Mobile Get Membership button */}
+          {showGetMembership && (
+            <Link
+              href="/membership/purchase"
+              className="flex md:hidden bg-primary hover:bg-primary/90 px-3 py-1 rounded-full font-telex text-xs font-semibold text-black transition-colors mr-2"
+            >
+              Get Membership
+            </Link>
           )}
 
           {/* Logout Button */}
