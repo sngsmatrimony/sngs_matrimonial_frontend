@@ -22,7 +22,7 @@ export default function Header({ showLogout = false, isFixed = false }) {
 
   // Show credits if user has any credits remaining (check both membership store and user.membership)
   const userCredits = membership?.credits ?? user?.membership?.credits ?? 0;
-  const showCredits = userCredits > 0;
+  const showCredits = user && userCredits > 0;
   const showGetMembership = !showCredits && user; // Show "Get Membership" if logged in but no credits
 
   return (
