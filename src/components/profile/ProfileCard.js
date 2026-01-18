@@ -1,109 +1,47 @@
 'use client';
 
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useCallback, memo } from 'react';
 import Link from 'next/link';
-import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { Heart, MessageCircle, Lock, FileText } from 'lucide-react';
 import { useLandingStore } from '@/store/landingStore';
 import { useAuthStore } from '@/store/authStore';
-import { client } from '@/lib/api/client';
-import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
+import { useLikeMutation } from '@/hooks/useLikeMutation';
+import { toastInfo } from '@/lib/toast';
 
 function ProfileCard({ profile, isLiked = false }) {
   // All hooks must be called before any early returns
-  const queryClient = useQueryClient();
+  const router = useRouter();
   const { membership } = useAuthStore();
-  const {
-    setActiveTab,
-    setSelectedChatUserId,
-    likedProfilesIds,
-    setLikedProfilesIds,
-    likedProfiles,
-    setLikedProfiles
-  } = useLandingStore();
+  const { setSelectedChatUserId } = useLandingStore();
+  const { toggleLike, isLoading } = useLikeMutation();
   const [isHovered, setIsHovered] = useState(false);
-  const [liked, setLiked] = useState(isLiked);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Sync internal state when parent passes new prop (e.g. after invalidateQueries update)
-  useEffect(() => {
-    setLiked(isLiked);
-  }, [isLiked]);
-
-  // Validate profile data (after hooks)
-  if (!profile || !profile._id || profile._id === 'undefined' || profile._id === 'null') {
-    return null;
-  }
 
   // Check if user has no membership or expired/no credits
   const hasNoMembership = !membership?.isActive || membership?.isExpired || membership?.credits <= 0;
 
-  const handleLike = useCallback(async (e) => {
+  // Define callbacks before early return (React hooks rule)
+  const handleLike = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Guard against invalid profile
+    if (!profile?._id) return;
 
     // Prevent double-clicks while loading
     if (isLoading) return;
 
-    setIsLoading(true);
-    try {
-      if (liked) {
-        // Unlike
-        await client.post(`/api/profiles/${profile._id}/unlike`);
-        setLiked(false);
-        // Update global store - both arrays for instant UI sync
-        setLikedProfilesIds(likedProfilesIds.filter(id => id !== profile._id));
-        setLikedProfiles(likedProfiles.filter(p => p._id !== profile._id));
-
-        // Invalidate queries to ensure fresh data on tab switch
-        queryClient.invalidateQueries({ queryKey: ['likedProfiles'] });
-        queryClient.invalidateQueries({ queryKey: ['browseProfiles'] });
-
-        toastSuccess('Profile removed from likes');
-      } else {
-        // Like
-        await client.post(`/api/profiles/${profile._id}/like`);
-        setLiked(true);
-        // Update global store
-        setLikedProfilesIds([...likedProfilesIds, profile._id]);
-
-        // Invalidate queries to ensure fresh data on tab switch
-        queryClient.invalidateQueries({ queryKey: ['likedProfiles'] });
-        queryClient.invalidateQueries({ queryKey: ['browseProfiles'] });
-
-        toastSuccess('Profile liked!');
-      }
-    } catch (error) {
-      // Revert local state
-      setLiked(isLiked);
-
-      // Revert store state if API call failed
-      if (isLiked && !liked) {
-        // Was unliking but failed - restore to both arrays
-        if (!likedProfilesIds.includes(profile._id)) {
-          setLikedProfilesIds([...likedProfilesIds, profile._id]);
-        }
-        if (!likedProfiles.find(p => p._id === profile._id)) {
-          setLikedProfiles([...likedProfiles, profile]);
-        }
-      } else if (!isLiked && liked) {
-        // Was liking but failed - remove from both arrays
-        setLikedProfilesIds(likedProfilesIds.filter(id => id !== profile._id));
-        setLikedProfiles(likedProfiles.filter(p => p._id !== profile._id));
-      }
-
-      toastError(error.response?.data?.message || 'Error updating like');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isLoading, liked, profile._id, isLiked, likedProfilesIds, likedProfiles, setLikedProfilesIds, setLikedProfiles, queryClient]);
+    // Use the mutation hook - it handles optimistic updates, rollback, and cache sync
+    toggleLike(profile._id, profile, isLiked);
+  }, [isLoading, profile, isLiked, toggleLike]);
 
   const handleChat = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
-    setActiveTab('messages');
+    if (!profile?._id) return;
     setSelectedChatUserId(profile._id);
-  }, [profile._id, setActiveTab, setSelectedChatUserId]);
+    router.push('/messages');
+  }, [profile, setSelectedChatUserId, router]);
 
   const handleCardClick = useCallback((e) => {
     if (hasNoMembership) {
@@ -113,6 +51,11 @@ function ProfileCard({ profile, isLiked = false }) {
     }
     // If has membership, let Link handle navigation naturally
   }, [hasNoMembership]);
+
+  // Validate profile data (after hooks)
+  if (!profile || !profile._id || profile._id === 'undefined' || profile._id === 'null') {
+    return null;
+  }
 
   // Get profile picture URL
   const profileImageUrl =
@@ -166,7 +109,7 @@ function ProfileCard({ profile, isLiked = false }) {
             <span className="font-semibold">Get Membership</span>
           </div>
         )}
-        
+
         {profile?.horoscopeDocument?.url && (
           <div className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/90 text-secondary text-xs font-telex shadow-md backdrop-blur-sm" title="Horoscope available">
             <FileText className="w-4 h-4 text-primary" />
@@ -225,7 +168,7 @@ function ProfileCard({ profile, isLiked = false }) {
             <Heart
               size={40}
               className={`${
-                liked
+                isLiked
                   ? 'fill-red-500 stroke-red-500'
                   : 'stroke-white fill-none'
               } transition-all duration-200`}

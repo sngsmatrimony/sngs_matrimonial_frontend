@@ -188,7 +188,7 @@ export default function PaymentPage() {
   }, [scriptLoaded, orderData, openRazorpayCheckout]);
 
   const handleGoHome = () => {
-    router.push('/');
+    router.push('/browse');
   };
 
   return (
@@ -263,12 +263,12 @@ export default function PaymentPage() {
                 </div>
               )}
 
-              {/* Go Home Button */}
+              {/* Go to Dashboard Button */}
               <Button
                 onClick={handleGoHome}
                 className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-telex text-lg"
               >
-                Go to Homepage
+                Go to Dashboard
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </CardContent>

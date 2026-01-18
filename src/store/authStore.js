@@ -94,7 +94,7 @@ export const useAuthStore = create(
           try {
             const response = await client.get('/api/auth/me');
             const userData = response.data.user;
-            set({ 
+            set({
               user: userData,
               membership: userData.membership || {
                 isActive: false,
@@ -103,6 +103,8 @@ export const useAuthStore = create(
                 isExpired: false,
               }
             });
+            // Fetch fresh membership data from API
+            await get().refreshMembership();
           } catch (error) {
             // Token is invalid, clear it
             localStorage.removeItem('authToken');

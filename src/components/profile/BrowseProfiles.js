@@ -3,24 +3,15 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useLandingStore } from '@/store/landingStore';
 import { useAuthStore } from '@/store/authStore';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
-import { Button } from '@/components/ui/button';
-import { CreditCard } from 'lucide-react';
 import ProfileCard from './ProfileCard';
 
 export default function BrowseProfiles() {
   const router = useRouter();
   const { membership } = useAuthStore();
-  const {
-    profiles,
-    setProfiles,
-    likedProfilesIds,
-    setLikedProfilesIds,
-  } = useLandingStore();
-  
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['browseProfiles'],
     queryFn: async () => {
@@ -28,15 +19,10 @@ export default function BrowseProfiles() {
         client.get('/api/profiles/discover'),
         client.get('/api/profiles/liked'),
       ]);
-      
+
       const profiles = profilesRes.data.data || [];
       const likedIds = likedRes.data.data?.map((p) => p._id) || [];
-      
-      // Update store for backward compatibility if needed, 
-      // but UI should prefer using 'data' from useQuery
-      setProfiles(profiles);
-      setLikedProfilesIds(likedIds);
-      
+
       return { profiles, likedIds };
     },
     onError: (err) => {
@@ -53,14 +39,14 @@ export default function BrowseProfiles() {
     }
   });
 
-  const profilesData = data?.profiles || profiles;
-  const likedIdsData = data?.likedIds || likedProfilesIds;
-  const isQueryLoading = isLoading;
+  // Use React Query cache directly - it's updated by useLikeMutation optimistic updates
+  const profilesData = data?.profiles || [];
+  const likedIdsData = data?.likedIds || [];
 
   // Use Set for O(1) lookup instead of O(n) array.includes()
   const likedIdsSet = useMemo(() => new Set(likedIdsData), [likedIdsData]); 
 
-  if (isQueryLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

@@ -1,29 +1,16 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useLandingStore } from '@/store/landingStore';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
 import ProfileCard from './ProfileCard';
 
 export default function LikedProfiles() {
-  const {
-    isLoading,
-    setIsLoading,
-  } = useLandingStore();
-
-  const {
-    likedProfiles,
-    setLikedProfiles,
-  } = useLandingStore();
-  const { data: likedProfilesData, isLoading: isQueryLoading, error } = useQuery({
+  const { data: likedProfilesData, isLoading, error } = useQuery({
     queryKey: ['likedProfiles'],
     queryFn: async () => {
       const response = await client.get('/api/profiles/liked');
-      const data = response.data.data || [];
-      // Sync with store
-      setLikedProfiles(data);
-      return data;
+      return response.data.data || [];
     },
     onError: (err) => {
       console.error('Error fetching liked profiles:', err);
@@ -31,9 +18,10 @@ export default function LikedProfiles() {
     }
   });
 
-  const displayProfiles = likedProfilesData || likedProfiles;
+  // Use React Query cache directly - it's updated by useLikeMutation optimistic updates
+  const displayProfiles = likedProfilesData || [];
 
-  if (isQueryLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

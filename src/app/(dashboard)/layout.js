@@ -9,11 +9,12 @@ import { useAuthStore } from '@/store/authStore';
 import { useLandingStore } from '@/store/landingStore';
 
 export default function UserLayout({ children }) {
-  const { user, logout, initializeAuth, token } = useAuthStore();
+  const { user, logout, initializeAuth, token, membership } = useAuthStore();
   const { setActiveTab } = useLandingStore(); // Keep updating store for backward compatibility if needed, or remove later
   const router = useRouter();
   const pathname = usePathname();
   const [isInitialized, setIsInitialized] = useState(false);
+  const [initTimeout, setInitTimeout] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -22,6 +23,19 @@ export default function UserLayout({ children }) {
     };
     init();
   }, [initializeAuth]);
+
+  // Timeout safety net: redirect to login if init takes too long
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!isInitialized) {
+        console.warn('[Dashboard] Auth init timeout - redirecting to login');
+        setInitTimeout(true);
+        router.push('/login');
+      }
+    }, 10000); // 10 seconds
+
+    return () => clearTimeout(timeout);
+  }, [isInitialized, router]);
 
   useEffect(() => {
     if (isInitialized && !token) {
@@ -45,7 +59,12 @@ export default function UserLayout({ children }) {
 
   const isActive = (path) => pathname === path || pathname.startsWith(`${path}/`);
 
-  if (!isInitialized || !token) {
+  // Calculate user credits (hide on settings page as it's shown in cards there)
+  const userCredits = membership?.credits ?? user?.membership?.credits ?? 0;
+  const showCredits = userCredits > 0 && !pathname.includes('/settings');
+
+  // Show loader while initializing (unless timeout reached)
+  if ((!isInitialized && !initTimeout) || !token) {
      return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -75,11 +94,27 @@ export default function UserLayout({ children }) {
             </h1>
           </Link>
 
-          {/* Welcome Message */}
-          <div className="hidden md:flex items-center gap-2">
-            <span className="font-maven text-gray-600">Welcome,</span>
-            <span className="font-viga text-secondary">{user?.fullName}</span>
+          {/* Welcome Message and Credits */}
+          <div className="hidden md:flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="font-maven text-gray-600">Welcome,</span>
+              <span className="font-viga text-secondary">{user?.fullName}</span>
+            </div>
+            {showCredits && (
+              <div className="flex items-center bg-primary/70 px-3 py-1.5 rounded-full">
+                <span className="font-telex text-sm font-semibold text-black">
+                  {userCredits} Credits
+                </span>
+              </div>
+            )}
           </div>
+
+          {/* Mobile credits display */}
+          {showCredits && (
+            <div className="flex md:hidden items-center bg-primary/70 px-2 py-1 rounded-full mr-2">
+              <span className="font-telex text-xs font-semibold text-black">{userCredits} Credits</span>
+            </div>
+          )}
 
           {/* Logout Button */}
           <button

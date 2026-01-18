@@ -45,6 +45,7 @@ export default function Home() {
   const { token, user, initializeAuth } = useAuthStore();
   const router = useRouter();
   const [isInitialized, setIsInitialized] = useState(false);
+  const [initTimeout, setInitTimeout] = useState(false);
   const [heroContent, setHeroContent] = useState(DEFAULT_HERO_CONTENT);
   const [howItWorksContent, setHowItWorksContent] = useState(DEFAULT_HOW_IT_WORKS);
 
@@ -56,6 +57,18 @@ export default function Home() {
     };
     init();
   }, [initializeAuth]);
+
+  // Timeout safety net: show homepage content if init takes too long
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!isInitialized) {
+        console.warn('[Homepage] Auth init timeout - showing homepage content');
+        setInitTimeout(true);
+      }
+    }, 10000); // 10 seconds
+
+    return () => clearTimeout(timeout);
+  }, [isInitialized]);
 
   // Fetch Hero content
   useEffect(() => {
@@ -96,8 +109,8 @@ export default function Home() {
     }
   }, [isInitialized, token, user, router]);
 
-  // Show loader while initializing or redirecting
-  if (!isInitialized || (token && user)) {
+  // Show loader while initializing or redirecting (unless timeout reached)
+  if ((!isInitialized && !initTimeout) || (token && user)) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">

@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Heart, MessageCircle, MapPin, Briefcase, Book, Users, FileText } from 'lucide-react';
+import { Heart, MessageCircle, MapPin, Briefcase, Book, Users, FileText, Lock, Unlock } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useLandingStore } from '@/store/landingStore';
+import { useLikeMutation } from '@/hooks/useLikeMutation';
 import Header from '@/components/layout/Header';
 import { client } from '@/lib/api/client';
-import { toastSuccess, toastError } from '@/lib/toast';
+import { toastError } from '@/lib/toast';
 
 // Information Card Component
 const InfoCard = ({ icon: Icon, title, children, className = '' }) => (
@@ -28,6 +29,43 @@ const InfoField = ({ label, value, icon: Icon }) => (
       <span className="font-telex text-secondary/70 text-sm">{label}</span>
     </div>
     <span className="font-maven text-secondary font-medium">{value || '—'}</span>
+  </div>
+);
+
+// Locked Contact Information Component
+const LockedContactCard = ({ profileName, className = '' }) => (
+  <div className={`bg-white border-2 border-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow ${className}`}>
+    <div className="flex items-center gap-2 mb-4">
+      <Lock size={24} className="text-secondary" />
+      <h3 className="font-viga text-xl text-secondary">Contact Information</h3>
+    </div>
+
+    {/* Blurred placeholder */}
+    <div className="relative min-h-[140px]">
+      <div className="blur-sm select-none pointer-events-none opacity-50">
+        <div className="flex items-center justify-between py-2 border-b border-gray-100">
+          <span className="font-telex text-secondary/70 text-sm">Mobile Number</span>
+          <span className="font-maven text-secondary font-medium">+91 98XXX XXXXX</span>
+        </div>
+        <div className="flex items-center justify-between py-2">
+          <span className="font-telex text-secondary/70 text-sm">Alternate Mobile</span>
+          <span className="font-maven text-secondary font-medium">+91 97XXX XXXXX</span>
+        </div>
+      </div>
+
+      {/* Unlock message overlay */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-[2px] rounded-lg">
+        <div className="bg-primary/10 rounded-full p-4 mb-3">
+          <Lock size={32} className="text-primary" />
+        </div>
+        <p className="font-maven text-secondary text-center text-sm px-4 max-w-xs">
+          Contact details will unlock when <span className="font-semibold text-primary">{profileName}</span> views your profile
+        </p>
+        <p className="font-telex text-secondary/60 text-xs mt-2">
+          Mutual interest unlocks contact info
+        </p>
+      </div>
+    </div>
   </div>
 );
 
@@ -108,11 +146,11 @@ const formatTimeToAMPM = (time24) => {
 
 export default function ProfileDetailView({ profileId }) {
   const router = useRouter();
-  const { setActiveTab, setSelectedChatUserId } = useLandingStore();
+  const { setSelectedChatUserId } = useLandingStore();
+  const { toggleLike, isLoading: isLikeLoading } = useLikeMutation();
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [liked, setLiked] = useState(false);
-  const [isLikeLoading, setIsLikeLoading] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -141,30 +179,16 @@ export default function ProfileDetailView({ profileId }) {
     }
   };
 
-  const handleLike = async () => {
-    setIsLikeLoading(true);
-    try {
-      if (liked) {
-        await client.post(`/api/profiles/${profileId}/unlike`);
-        setLiked(false);
-        toastSuccess('Profile removed from likes');
-      } else {
-        await client.post(`/api/profiles/${profileId}/like`);
-        setLiked(true);
-        toastSuccess('Profile liked!');
-      }
-    } catch (error) {
-      console.error('Error toggling like:', error);
-      toastError(error.response?.data?.message || 'Error updating like');
-    } finally {
-      setIsLikeLoading(false);
-    }
+  const handleLike = () => {
+    // Use the mutation hook - handles API call, cache updates, and toast notifications
+    toggleLike(profileId, profile, liked);
+    // Update local state for immediate UI feedback
+    setLiked(!liked);
   };
 
   const handleChat = () => {
-    setActiveTab('messages');
     setSelectedChatUserId(profileId);
-    router.push('/');
+    router.push('/messages');
   };
 
   if (isLoading) {
@@ -311,6 +335,31 @@ export default function ProfileDetailView({ profileId }) {
 
         {/* Profile Information Cards */}
         <div className="max-w-4xl mx-auto">
+          {/* Contact Information Card - Conditional based on mutual view (positioned at top) */}
+          {profile?.canViewContact ? (
+            // UNLOCKED: Show actual contact details
+            (profile?.mobileNumber || profile?.alternateMobileNumber || profile?.sngsMembershipNumber) && (
+              <InfoCard title="📞 Contact Information" className="mb-6">
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
+                  <Unlock size={18} className="text-success" />
+                  <span className="font-telex text-success text-sm">Contact Unlocked - Mutual Interest!</span>
+                </div>
+                {profile?.sngsMembershipNumber && (
+                  <InfoField label="SNGS Membership Number" value={profile.sngsMembershipNumber} />
+                )}
+                {profile?.mobileNumber && (
+                  <InfoField label="Mobile Number" value={`+91 ${profile.mobileNumber}`} />
+                )}
+                {profile?.alternateMobileNumber && (
+                  <InfoField label="Alternate Mobile Number" value={`+91 ${profile.alternateMobileNumber}`} />
+                )}
+              </InfoCard>
+            )
+          ) : (
+            // LOCKED: Show locked card with message
+            <LockedContactCard profileName={profile?.fullName} className="mb-6" />
+          )}
+
           {/* Personal Details Card */}
           {(profile?.motherTongue || profile?.height || profile?.physicalStatus || profile?.maritalStatus || profile?.complexion || profile?.diet || profile?.weight || profile?.bloodGroup || profile?.familyStatus) && (
             <InfoCard title="💑 Personal Details" className="mb-6">
@@ -493,30 +542,6 @@ export default function ProfileDetailView({ profileId }) {
                   </span>
                 ))}
               </div>
-            </InfoCard>
-          )}
-
-          {/* Contact Information Card */}
-          {(profile?.mobileNumber || profile?.alternateMobileNumber || profile?.sngsMembershipNumber) && (
-            <InfoCard title="📞 Contact Information" className="mb-6">
-              {profile?.sngsMembershipNumber && (
-                <InfoField
-                  label="SNGS Membership Number"
-                  value={profile.sngsMembershipNumber}
-                />
-              )}
-              {profile?.mobileNumber && (
-                <InfoField
-                  label="Mobile Number"
-                  value={`+91 ${profile.mobileNumber}`}
-                />
-              )}
-              {profile?.alternateMobileNumber && (
-                <InfoField
-                  label="Alternate Mobile Number"
-                  value={`+91 ${profile.alternateMobileNumber}`}
-                />
-              )}
             </InfoCard>
           )}
 
