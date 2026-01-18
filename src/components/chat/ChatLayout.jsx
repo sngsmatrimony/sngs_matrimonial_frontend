@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import useChatStore from "@/store/chatStore";
 import { useAuthStore } from "@/store/authStore";
 import { useLandingStore } from "@/store/landingStore";
+import Link from "next/link";
 
 /**
  * ChatLayout Component
@@ -189,9 +190,12 @@ export default function ChatLayout({ initialUserId = null }) {
                 </Button>
               )}
 
-              {/* User Avatar and Info */}
-              <div className="relative shrink-0">
-                <Avatar className="w-10 h-10">
+              {/* User Avatar and Info - Clickable to view profile */}
+              <Link
+                href={`/profiles/${activeConversation.otherParticipant?._id}`}
+                className="relative shrink-0 cursor-pointer group"
+              >
+                <Avatar className="w-10 h-10 ring-2 ring-transparent group-hover:ring-primary transition-all">
                   <AvatarImage
                     src={activeConversation.otherParticipant?.profilePicture?.url || activeConversation.otherParticipant?.profilePicture}
                     alt={activeConversation.otherParticipant?.fullName}
@@ -200,7 +204,7 @@ export default function ChatLayout({ initialUserId = null }) {
                     {getInitials(activeConversation.otherParticipant?.fullName || 'User')}
                   </AvatarFallback>
                 </Avatar>
-              </div>
+              </Link>
 
               <div>
                 <h3 className="font-maven font-semibold text-[15px] text-gray-900">

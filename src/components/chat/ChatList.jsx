@@ -8,6 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
+import Link from "next/link";
 
 /**
  * ChatList Component
@@ -158,9 +159,13 @@ export default function ChatList({
                     "bg-primary/5 border-l-4 border-l-primary"
                 )}
               >
-              {/* Avatar with Online Status */}
-              <div className="relative shrink-0">
-                <Avatar className="w-12 h-12">
+              {/* Avatar with Online Status - Clickable to view profile */}
+              <Link
+                href={`/profiles/${otherUser._id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="relative shrink-0 cursor-pointer group"
+              >
+                <Avatar className="w-12 h-12 ring-2 ring-transparent group-hover:ring-primary transition-all">
                   <AvatarImage
                     src={profilePictureUrl}
                     alt={userName}
@@ -169,7 +174,7 @@ export default function ChatList({
                     {getInitials(userName)}
                   </AvatarFallback>
                 </Avatar>
-              </div>
+              </Link>
 
               {/* Conversation Details */}
               <div className="flex-1 min-w-0 text-left">
