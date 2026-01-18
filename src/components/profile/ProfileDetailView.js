@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Heart, MessageCircle, MapPin, Briefcase, Book, Users, FileText, Lock, Unlock } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useLandingStore } from '@/store/landingStore';
 import { useLikeMutation } from '@/hooks/useLikeMutation';
@@ -152,11 +153,7 @@ export default function ProfileDetailView({ profileId }) {
   const [isLoading, setIsLoading] = useState(true);
   const [liked, setLiked] = useState(false);
 
-  useEffect(() => {
-    fetchProfile();
-  }, [profileId]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     // Validate profileId before making API call
     if (!profileId || profileId === 'undefined' || profileId === 'null') {
       console.error('Invalid profile ID:', profileId);
@@ -177,7 +174,11 @@ export default function ProfileDetailView({ profileId }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [profileId, router]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const handleLike = () => {
     // Use the mutation hook - handles API call, cache updates, and toast notifications
@@ -284,23 +285,19 @@ export default function ProfileDetailView({ profileId }) {
         <div className="max-w-4xl mx-auto -mt-16 relative z-10 mb-8">
           <div className="flex flex-col md:flex-row gap-6 items-start">
             {/* Profile Picture */}
-            <div className="relative w-40 h-40 rounded-2xl border-4 border-white overflow-hidden shadow-lg bg-gray-100">
-              <img
-                src={profileImageUrl}
-                alt={profile?.fullName}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  console.error('Image failed to load:', profileImageUrl);
-                  e.target.style.display = 'none';
-                  e.target.parentElement.style.display = 'flex';
-                  e.target.parentElement.style.alignItems = 'center';
-                  e.target.parentElement.style.justifyContent = 'center';
-                  e.target.parentElement.innerHTML += '<div style="color: #999; font-size: 12px; text-align: center;">No Image</div>';
-                }}
-                onLoad={() => {
-                  console.log('Profile image loaded successfully:', profileImageUrl);
-                }}
-              />
+            <div className="relative w-40 h-40 rounded-2xl border-4 border-white overflow-hidden shadow-lg bg-gray-100 flex items-center justify-center">
+              {profileImageUrl ? (
+                <Image
+                  src={profileImageUrl}
+                  alt={profile?.fullName || 'Profile'}
+                  fill
+                  className="object-cover"
+                  sizes="160px"
+                  unoptimized
+                />
+              ) : (
+                <div className="text-center text-gray-400 font-maven text-sm">No Image</div>
+              )}
             </div>
 
             {/* Profile Info */}
@@ -555,12 +552,15 @@ export default function ProfileDetailView({ profileId }) {
                 {profile.gallery.photos.map((photo, idx) => (
                   <div
                     key={idx}
-                    className="relative aspect-square rounded-xl overflow-hidden border-2 border-gray-100 hover:shadow-lg transition-shadow"
+                    className="relative aspect-square rounded-xl overflow-hidden border-2 border-gray-100 hover:shadow-lg transition-shadow group"
                   >
-                    <img
+                    <Image
                       src={photo.url}
                       alt={`Photo ${idx + 1}`}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      sizes="(max-width: 768px) 50vw, 33vw"
+                      unoptimized
                     />
                   </div>
                 ))}

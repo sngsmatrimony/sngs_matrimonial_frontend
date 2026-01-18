@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useLandingStore } from '@/store/landingStore';
+import HelpButton from '@/components/layout/HelpButton';
 
 export default function UserLayout({ children }) {
   const { user, logout, initializeAuth, token, membership } = useAuthStore();
@@ -133,6 +134,9 @@ export default function UserLayout({ children }) {
               Get Membership
             </Link>
           )}
+
+          {/* Help Button */}
+          <HelpButton />
 
           {/* Logout Button */}
           <button

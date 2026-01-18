@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import EditProfileForm from './EditProfileForm';
 import { Pencil, Briefcase, Users, FileText } from 'lucide-react';
 
@@ -202,21 +203,13 @@ export default function UserProfileView() {
           {/* Profile Picture */}
           <div className="relative w-40 h-40 rounded-2xl border-4 border-white overflow-hidden shadow-lg bg-gray-100 flex items-center justify-center">
             {profileImageUrl ? (
-              <img
+              <Image
                 src={profileImageUrl}
-                alt={user?.fullName}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  console.error('Image failed to load:', profileImageUrl);
-                  e.target.style.display = 'none';
-                  e.target.parentElement.style.display = 'flex';
-                  e.target.parentElement.style.alignItems = 'center';
-                  e.target.parentElement.style.justifyContent = 'center';
-                  e.target.parentElement.innerHTML += '<div style="color: #999; font-size: 12px; text-align: center;">No Image</div>';
-                }}
-                onLoad={() => {
-                  console.log('Profile image loaded successfully:', profileImageUrl);
-                }}
+                alt={user?.fullName || 'Profile'}
+                fill
+                className="object-cover"
+                sizes="160px"
+                unoptimized
               />
             ) : (
               <div className="text-center text-gray-400 font-maven text-sm">
@@ -485,12 +478,15 @@ export default function UserProfileView() {
               {displayProfile.gallery.photos.map((photo, idx) => (
                 <div
                   key={idx}
-                  className="relative aspect-square rounded-xl overflow-hidden border-2 border-gray-100 hover:shadow-lg transition-shadow"
+                  className="relative aspect-square rounded-xl overflow-hidden border-2 border-gray-100 hover:shadow-lg transition-shadow group"
                 >
-                  <img
+                  <Image
                     src={photo.url}
                     alt={`Photo ${idx + 1}`}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    sizes="(max-width: 768px) 50vw, 33vw"
+                    unoptimized
                   />
                 </div>
               ))}
