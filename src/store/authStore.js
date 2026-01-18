@@ -21,6 +21,44 @@ export const useAuthStore = create(
       // Computed getter for admin status
       isAdmin: () => get().user?.role === 'admin',
 
+      // Approval status helpers
+      isPending: () => {
+        const status = get().user?.approvalStatus;
+        // Treat missing/null status as pending (legacy users)
+        return !status || status === 'pending';
+      },
+      isApproved: () => get().user?.approvalStatus === 'approved',
+      isRejected: () => get().user?.approvalStatus === 'rejected',
+      canAccessFullApp: () => get().user?.approvalStatus === 'approved',
+      getLatestRejectionReason: () => {
+        const history = get().user?.approvalHistory || [];
+        const rejection = history
+          .filter(h => h.status === 'rejected')
+          .sort((a, b) => new Date(b.actionAt) - new Date(a.actionAt))[0];
+        return rejection?.reason || null;
+      },
+
+      // Refresh user data from API
+      refreshUser: async () => {
+        try {
+          const response = await client.get('/api/auth/me');
+          const userData = response.data.user;
+          set({
+            user: userData,
+            membership: userData.membership || {
+              isActive: false,
+              credits: 0,
+              expiryDate: null,
+              isExpired: false,
+            }
+          });
+          return userData;
+        } catch (error) {
+          console.error('Error refreshing user:', error);
+          return null;
+        }
+      },
+
       // Login action
       login: async (email, password) => {
         set({ isLoading: true, error: null });

@@ -9,7 +9,7 @@ import { toastError } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import EditProfileForm from './EditProfileForm';
-import { Pencil, Briefcase, Users, FileText } from 'lucide-react';
+import { Pencil, Briefcase, Users, FileText, AlertTriangle, RefreshCw } from 'lucide-react';
 
 // Info Card Component
 const InfoCard = ({ icon: Icon, title, children, className = '' }) => (
@@ -105,11 +105,53 @@ const formatTimeToAMPM = (time24) => {
   return `${hour12}:${minutes} ${ampm}`;
 };
 
+// Rejection Action Card Component
+const RejectionActionCard = ({ reason, onEditProfile }) => (
+  <div className="max-w-4xl mx-auto mb-6">
+    <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+          <AlertTriangle className="w-6 h-6 text-red-600" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-viga text-xl text-red-800 mb-2">
+            Profile Update Required
+          </h3>
+          <p className="font-maven text-red-700 mb-4">
+            Your profile was not approved. Please review the feedback below and update your profile. Once updated, your profile will be automatically resubmitted for review.
+          </p>
+
+          {reason && (
+            <div className="bg-white rounded-lg p-4 border border-red-200 mb-4">
+              <p className="font-telex text-red-800 text-sm font-medium mb-1">
+                Admin Feedback:
+              </p>
+              <p className="font-maven text-gray-700">{reason}</p>
+            </div>
+          )}
+
+          <Button
+            onClick={onEditProfile}
+            className="bg-red-600 hover:bg-red-700 text-white font-telex gap-2"
+          >
+            <Pencil className="w-4 h-4" />
+            Edit Profile Now
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 export default function UserProfileView() {
   const { userProfile, setUserProfile, isLoading, setIsLoading } =
     useLandingStore();
-  const { user } = useAuthStore();
+  const { user, isRejected, getLatestRejectionReason } = useAuthStore();
   const [isEditMode, setIsEditMode] = useState(false);
+
+  // Get rejection info
+  const userIsRejected = isRejected();
+  const rejectionReason = getLatestRejectionReason();
 
   /* Refactored to use useQuery */
   const { data: profileData, isLoading: isQueryLoading, error, refetch } = useQuery({
@@ -183,6 +225,14 @@ export default function UserProfileView() {
 
   return (
     <div className="px-4 md:px-8 py-8">
+      {/* Rejection Action Card - Show for rejected users */}
+      {userIsRejected && (
+        <RejectionActionCard
+          reason={rejectionReason}
+          onEditProfile={() => setIsEditMode(true)}
+        />
+      )}
+
       {/* Profile Banner with Edit Button */}
       <div
         className="w-full h-64 bg-cover bg-center rounded-t-2xl relative mb-8 shadow-lg"

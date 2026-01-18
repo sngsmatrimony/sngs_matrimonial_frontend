@@ -482,7 +482,14 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
       const profileResponse = await client.get('/api/profiles/me/view');
       setUserProfile(profileResponse.data.data);
 
-      toastSuccess('Profile updated successfully!');
+      // Refresh auth store user data to get updated approval status
+      await useAuthStore.getState().refreshUser();
+
+      // Use server message if profile was resubmitted, otherwise default message
+      const successMessage = response.data.resubmittedForApproval
+        ? 'Profile updated and resubmitted for approval. Our team will review it shortly.'
+        : 'Profile updated successfully!';
+      toastSuccess(successMessage);
       onSuccess?.();
     } catch (err) {
       const msg = `Error: ${err.message || 'Please try again.'}`;

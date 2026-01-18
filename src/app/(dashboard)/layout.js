@@ -8,10 +8,14 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useLandingStore } from '@/store/landingStore';
 import HelpButton from '@/components/layout/HelpButton';
+import ApprovalStatusBanner from '@/components/layout/ApprovalStatusBanner';
 
 export default function UserLayout({ children }) {
-  const { user, logout, initializeAuth, token, membership } = useAuthStore();
+  const { user, logout, initializeAuth, token, membership, canAccessFullApp } = useAuthStore();
   const { setActiveTab } = useLandingStore(); // Keep updating store for backward compatibility if needed, or remove later
+
+  // Check if user can access full app features
+  const hasFullAccess = canAccessFullApp();
   const router = useRouter();
   const pathname = usePathname();
   const [isInitialized, setIsInitialized] = useState(false);
@@ -153,46 +157,52 @@ export default function UserLayout({ children }) {
       <div className="bg-black border-b border-gray-900 pt-2 fixed top-16 left-0 right-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-8 overflow-x-auto">
-            {/* Browse Tab */}
-            <Link
-              href="/browse"
-              className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
-                isActive('/browse')
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-white hover:text-gray-300'
-              }`}
-            >
-              <Compass size={20} />
-              <span className="hidden sm:inline">Browse</span>
-            </Link>
+            {/* Browse Tab - Requires approval */}
+            {hasFullAccess && (
+              <Link
+                href="/browse"
+                className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                  isActive('/browse')
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-white hover:text-gray-300'
+                }`}
+              >
+                <Compass size={20} />
+                <span className="hidden sm:inline">Browse</span>
+              </Link>
+            )}
 
-            {/* Liked Tab */}
-            <Link
-              href="/liked"
-              className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
-                isActive('/liked')
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-white hover:text-gray-300'
-              }`}
-            >
-              <Heart size={20} />
-              <span className="hidden sm:inline">Liked</span>
-            </Link>
+            {/* Liked Tab - Requires approval */}
+            {hasFullAccess && (
+              <Link
+                href="/liked"
+                className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                  isActive('/liked')
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-white hover:text-gray-300'
+                }`}
+              >
+                <Heart size={20} />
+                <span className="hidden sm:inline">Liked</span>
+              </Link>
+            )}
 
-            {/* Messages Tab */}
-            <Link
-              href="/messages"
-              className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
-                isActive('/messages')
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-white hover:text-gray-300'
-              }`}
-            >
-              <MessageCircle size={20} />
-              <span className="hidden sm:inline">Messages</span>
-            </Link>
+            {/* Messages Tab - Requires approval */}
+            {hasFullAccess && (
+              <Link
+                href="/messages"
+                className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                  isActive('/messages')
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-white hover:text-gray-300'
+                }`}
+              >
+                <MessageCircle size={20} />
+                <span className="hidden sm:inline">Messages</span>
+              </Link>
+            )}
 
-            {/* Profile Tab */}
+            {/* Profile Tab - Always visible */}
             <Link
               href="/profile"
               className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
@@ -205,7 +215,7 @@ export default function UserLayout({ children }) {
               <span className="hidden sm:inline">My Profile</span>
             </Link>
 
-             {/* Settings Tab */}
+             {/* Settings Tab - Always visible */}
             <Link
               href="/settings"
               className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
@@ -223,6 +233,7 @@ export default function UserLayout({ children }) {
 
       {/* Tab Content */}
       <div className="bg-white pt-32">
+        <ApprovalStatusBanner />
         {children}
       </div>
     </div>
