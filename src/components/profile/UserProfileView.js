@@ -110,7 +110,7 @@ const RejectionActionCard = ({ reason, onEditProfile }) => (
   <div className="max-w-4xl mx-auto mb-6">
     <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
       <div className="flex items-start gap-4">
-        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center shrink-0">
           <AlertTriangle className="w-6 h-6 text-red-600" />
         </div>
         <div className="flex-1">
