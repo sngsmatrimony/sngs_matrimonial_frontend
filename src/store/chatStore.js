@@ -20,6 +20,8 @@ const useChatStore = create(
       error: null,
       currentUserKeys: null,
       otherUsersKeys: new Map(),
+      // Track in-flight requests to prevent duplicates
+      pendingConversationRequests: new Set(),
 
       // Actions
       setActiveConversationId: (conversationId) => {
@@ -28,6 +30,7 @@ const useChatStore = create(
 
       /**
        * Load all conversations for current user
+       * Deduplicates by otherParticipant._id
        */
       loadConversations: async () => {
         set({ isLoading: true, error: null });
@@ -37,11 +40,22 @@ const useChatStore = create(
             return conv.otherParticipant && conv.otherParticipant.fullName;
           });
 
+          // Deduplicate conversations by otherParticipant._id
+          const seen = new Map();
+          const deduplicatedConversations = validConversations.filter((conv) => {
+            const participantId = conv.otherParticipant?._id;
+            if (!participantId || seen.has(participantId)) {
+              return false;
+            }
+            seen.set(participantId, true);
+            return true;
+          });
+
           set({
-            conversations: validConversations,
+            conversations: deduplicatedConversations,
             isLoading: false,
           });
-          return validConversations;
+          return deduplicatedConversations;
         } catch (error) {
           set({
             error: error.response?.data?.message || 'Failed to load conversations',
@@ -52,9 +66,39 @@ const useChatStore = create(
 
       /**
        * Get or create conversation with a user
+       * Prevents duplicate requests and deduplicates by participant ID
        */
       getOrCreateConversation: async (otherUserId) => {
-        set({ isLoading: true, error: null });
+        // Prevent duplicate requests for the same user
+        const pendingRequests = get().pendingConversationRequests;
+        if (pendingRequests.has(otherUserId)) {
+          // Request already in progress, find existing conversation and set as active
+          const existingConv = get().conversations.find(
+            (c) => c.otherParticipant?._id === otherUserId
+          );
+          if (existingConv) {
+            set({ activeConversationId: existingConv._id });
+            return existingConv;
+          }
+          return null;
+        }
+
+        // Check if conversation already exists by other participant ID
+        const existingConv = get().conversations.find(
+          (c) => c.otherParticipant?._id === otherUserId
+        );
+        if (existingConv) {
+          set({ activeConversationId: existingConv._id });
+          return existingConv;
+        }
+
+        // Mark request as pending
+        set((state) => ({
+          pendingConversationRequests: new Set(state.pendingConversationRequests).add(otherUserId),
+          isLoading: true,
+          error: null,
+        }));
+
         try {
           const response = await axiosClient.get(
             `/api/chat/conversations/${otherUserId}`
@@ -63,18 +107,27 @@ const useChatStore = create(
 
           // Add to conversations list if not already there, and always set as active
           set((state) => {
-            const exists = state.conversations.find(
+            // Check by both conversation ID and participant ID to prevent duplicates
+            const existsByConvId = state.conversations.find(
               (c) => c._id === conversation._id
             );
+            const existsByParticipantId = state.conversations.find(
+              (c) => c.otherParticipant?._id === otherUserId
+            );
+
+            // Remove from pending requests
+            const newPendingRequests = new Set(state.pendingConversationRequests);
+            newPendingRequests.delete(otherUserId);
 
             // Always set the active conversation ID when opening a conversation
             const newState = {
               activeConversationId: conversation._id,
               isLoading: false,
+              pendingConversationRequests: newPendingRequests,
             };
 
-            // Only add to conversations list if it's a new conversation
-            if (!exists) {
+            // Only add to conversations list if it's truly a new conversation
+            if (!existsByConvId && !existsByParticipantId) {
               newState.conversations = [conversation, ...state.conversations];
             }
 
@@ -83,9 +136,15 @@ const useChatStore = create(
 
           return conversation;
         } catch (error) {
-          set({
-            error: error.response?.data?.message || 'Failed to get conversation',
-            isLoading: false,
+          // Clear pending request on error
+          set((state) => {
+            const newPendingRequests = new Set(state.pendingConversationRequests);
+            newPendingRequests.delete(otherUserId);
+            return {
+              error: error.response?.data?.message || 'Failed to get conversation',
+              isLoading: false,
+              pendingConversationRequests: newPendingRequests,
+            };
           });
         }
       },
@@ -93,8 +152,20 @@ const useChatStore = create(
       /**
        * Create conversation and send first message
        * Used when starting a new conversation from profile chat button
+       * Prevents duplicate conversations
        */
       createConversationWithMessage: async (otherUserId, messageContent) => {
+        // Check if conversation already exists
+        const existingConv = get().conversations.find(
+          (c) => c.otherParticipant?._id === otherUserId
+        );
+        if (existingConv) {
+          // Use existing conversation, just send the message
+          set({ activeConversationId: existingConv._id });
+          const message = await get().sendMessage(existingConv._id, messageContent);
+          return { conversation: existingConv, message };
+        }
+
         set({ isSending: true, error: null });
         try {
           const response = await axiosClient.post(
@@ -104,13 +175,27 @@ const useChatStore = create(
 
           const { conversation, message } = response.data.data;
 
-          // Add conversation to list and set as active
-          set((state) => ({
-            conversations: [conversation, ...state.conversations],
-            activeConversationId: conversation._id,
-            messages: [message],
-            isSending: false,
-          }));
+          // Add conversation to list and set as active (with duplicate check)
+          set((state) => {
+            const existsByConvId = state.conversations.find(
+              (c) => c._id === conversation._id
+            );
+            const existsByParticipantId = state.conversations.find(
+              (c) => c.otherParticipant?._id === otherUserId
+            );
+
+            const newState = {
+              activeConversationId: conversation._id,
+              messages: [message],
+              isSending: false,
+            };
+
+            if (!existsByConvId && !existsByParticipantId) {
+              newState.conversations = [conversation, ...state.conversations];
+            }
+
+            return newState;
+          });
 
           return { conversation, message };
         } catch (error) {
@@ -159,6 +244,43 @@ const useChatStore = create(
         set((state) => ({
           messages: [...state.messages, message],
         }));
+      },
+
+      /**
+       * Receive message from socket - updates both messages and conversation list
+       * @param {Object} message - The received message
+       * @param {string} conversationId - The conversation ID
+       */
+      receiveMessage: (message, conversationId) => {
+        set((state) => {
+          // Only add to messages if this is the active conversation
+          const isActiveConversation = state.activeConversationId === conversationId;
+
+          // Update conversations list - move to top and update lastMessage
+          const updatedConversations = state.conversations.map((conv) =>
+            conv._id === conversationId
+              ? {
+                  ...conv,
+                  lastMessage: message,
+                  unreadCount: isActiveConversation ? 0 : (conv.unreadCount || 0) + 1,
+                }
+              : conv
+          );
+
+          // Sort conversations to put most recent at top
+          updatedConversations.sort((a, b) => {
+            const aTime = a.lastMessage?.createdAt || a.createdAt;
+            const bTime = b.lastMessage?.createdAt || b.createdAt;
+            return new Date(bTime) - new Date(aTime);
+          });
+
+          return {
+            messages: isActiveConversation
+              ? [...state.messages, message]
+              : state.messages,
+            conversations: updatedConversations,
+          };
+        });
       },
 
       /**

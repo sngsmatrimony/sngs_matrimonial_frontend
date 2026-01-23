@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useLandingStore } from '@/store/landingStore';
 import HelpButton from '@/components/layout/HelpButton';
 import ApprovalStatusBanner from '@/components/layout/ApprovalStatusBanner';
+import { SocketProvider } from '@/contexts/SocketContext';
 
 export default function UserLayout({ children }) {
   const { user, logout, initializeAuth, token, membership, canAccessFullApp } = useAuthStore();
@@ -234,7 +235,9 @@ export default function UserLayout({ children }) {
       {/* Tab Content */}
       <div className="bg-white pt-32">
         <ApprovalStatusBanner />
-        {children}
+        <SocketProvider>
+          {children}
+        </SocketProvider>
       </div>
     </div>
   );

@@ -56,10 +56,11 @@ export default function ChatLayout({ initialUserId = null }) {
     (conv) => conv._id === activeConversationId
   );
 
-  // Load conversations on mount
+  // Load conversations on mount - empty dependency array to run once
   useEffect(() => {
     loadConversations();
-  }, [loadConversations]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handle initialUserId - create conversation immediately when chat button is clicked
   useEffect(() => {
@@ -69,7 +70,9 @@ export default function ChatLayout({ initialUserId = null }) {
       // Clear from landing store to prevent persistence
       clearSelectedChatUserId();
     }
-  }, [initialUserId, user, getOrCreateConversation, clearSelectedChatUserId]);
+    // Only re-run when initialUserId or user changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUserId, user?._id]);
 
   // Load messages when conversation is selected
   useEffect(() => {
@@ -78,7 +81,9 @@ export default function ChatLayout({ initialUserId = null }) {
       // Mark all messages in conversation as read
       markConversationAsRead(activeConversationId);
     }
-  }, [activeConversationId, loadMessages, markConversationAsRead]);
+    // Only re-run when activeConversationId changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeConversationId]);
 
   // Clean up empty conversations when navigating away from Messages tab
   // Store reference to current empty conversations to delete on unmount
@@ -218,13 +223,6 @@ export default function ChatLayout({ initialUserId = null }) {
                 <h3 className="font-maven font-semibold text-[15px] text-gray-900">
                   {activeConversation.otherParticipant?.fullName || 'Unknown'}
                 </h3>
-                <p className="text-xs font-telex text-gray-500">
-                  {onlineUsers.has(activeConversation.otherParticipant?._id?.toString()) ? (
-                    <span className="text-success">Online</span>
-                  ) : (
-                    'Offline'
-                  )}
-                </p>
               </div>
             </div>
 
