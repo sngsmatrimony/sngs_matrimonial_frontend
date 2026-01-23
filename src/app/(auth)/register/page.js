@@ -38,7 +38,6 @@ const step1Schema = z.object({
   confirmPassword: z.string(),
   mobileNumber: z.string().regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number (starting with 6-9)').optional().or(z.literal('')),
   alternateMobileNumber: z.string().regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number (starting with 6-9)').optional().or(z.literal('')),
-  sngsMembershipNumber: z.string().max(50, 'Maximum 50 characters').optional().or(z.literal('')),
 }).refine(data => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
   path: ['confirmPassword'],
@@ -163,7 +162,6 @@ export default function RegisterPage() {
     confirmPassword: '',
     mobileNumber: '',
     alternateMobileNumber: '',
-    sngsMembershipNumber: '',
     // Step 2-6 will be populated with defaults from shared component
     dateOfBirth: null,
     timeOfBirth_hours: '',
@@ -561,7 +559,6 @@ export default function RegisterPage() {
         password: submissionData.password,
         mobileNumber: submissionData.mobileNumber || '', // Mobile is now optional
         alternateMobileNumber: submissionData.alternateMobileNumber || '',
-        sngsMembershipNumber: submissionData.sngsMembershipNumber || '',
         verificationToken: verificationToken,
         dateOfBirth: dob.toISOString(),
         timeOfBirth: timeOfBirth24,
@@ -905,26 +902,6 @@ export default function RegisterPage() {
                         />
                       </FormControl>
                     </div>
-                    <FormMessage className="font-telex text-xs" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="sngsMembershipNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-maven">SNGS Membership Number (Optional)</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="text"
-                        placeholder="Enter membership number"
-                        maxLength={50}
-                        className="font-maven"
-                      />
-                    </FormControl>
                     <FormMessage className="font-telex text-xs" />
                   </FormItem>
                 )}

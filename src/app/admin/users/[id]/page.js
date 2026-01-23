@@ -722,14 +722,6 @@ export default function AdminUserDetailPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">SNGS Membership #</label>
-                      <Input
-                        value={editData?.sngsMembershipNumber || ''}
-                        onChange={(e) => handleInputChange('sngsMembershipNumber', e.target.value)}
-                      />
-                    </div>
-
-                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
                       <Input
                         type="date"
@@ -1558,10 +1550,6 @@ export default function AdminUserDetailPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Alternate Mobile</label>
                     <p className="text-gray-900">{displayValue(user.alternateMobileNumber)}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">SNGS Membership Number</label>
-                    <p className="text-gray-900">{displayValue(user.sngsMembershipNumber)}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>

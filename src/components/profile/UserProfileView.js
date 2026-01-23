@@ -301,14 +301,11 @@ export default function UserProfileView() {
       {/* Profile Information Cards */}
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Contact Information Card */}
-        {(user?.mobileNumber || user?.alternateMobileNumber || user?.sngsMembershipNumber) && (
+        {(user?.mobileNumber || user?.alternateMobileNumber) && (
           <InfoCard
             title="📞 Contact Information"
             className="mb-6"
           >
-            {user?.sngsMembershipNumber && (
-              <InfoField label="SNGS Membership Number" value={user.sngsMembershipNumber} />
-            )}
             {user?.mobileNumber && (
               <InfoField label="Mobile Number" value={`+91 ${user.mobileNumber}`} />
             )}

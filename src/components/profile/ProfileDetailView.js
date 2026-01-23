@@ -335,15 +335,12 @@ export default function ProfileDetailView({ profileId }) {
           {/* Contact Information Card - Conditional based on mutual view (positioned at top) */}
           {profile?.canViewContact ? (
             // UNLOCKED: Show actual contact details
-            (profile?.mobileNumber || profile?.alternateMobileNumber || profile?.sngsMembershipNumber) && (
+            (profile?.mobileNumber || profile?.alternateMobileNumber) && (
               <InfoCard title="📞 Contact Information" className="mb-6">
                 <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
                   <Unlock size={18} className="text-success" />
                   <span className="font-telex text-success text-sm">Contact Unlocked - Mutual Interest!</span>
                 </div>
-                {profile?.sngsMembershipNumber && (
-                  <InfoField label="SNGS Membership Number" value={profile.sngsMembershipNumber} />
-                )}
                 {profile?.mobileNumber && (
                   <InfoField label="Mobile Number" value={`+91 ${profile.mobileNumber}`} />
                 )}

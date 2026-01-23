@@ -158,7 +158,6 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     // Step 1: Personal Details
     mobileNumber: user?.mobileNumber || '',
     alternateMobileNumber: user?.alternateMobileNumber || '',
-    sngsMembershipNumber: user?.sngsMembershipNumber || '',
     dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth) : null,
     timeOfBirth_hours: existingTimeDropdowns.hours,
     timeOfBirth_minutes: existingTimeDropdowns.minutes,
@@ -379,7 +378,6 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
       const updateData = {
         mobileNumber: formValues.mobileNumber,
         alternateMobileNumber: formValues.alternateMobileNumber,
-        sngsMembershipNumber: formValues.sngsMembershipNumber,
         dateOfBirth: formValues.dateOfBirth,
         timeOfBirth: timeOfBirth24,
         motherTongue: formValues.motherTongue,
