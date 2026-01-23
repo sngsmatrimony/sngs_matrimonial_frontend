@@ -26,7 +26,7 @@ export function FamilyDetailsStep({ form }) {
           name="fatherName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Father&apos;s Name (Optional)</FormLabel>
+              <FormLabel className="font-maven">Father&apos;s Name *</FormLabel>
               <FormControl>
                 <Input {...field} value={field.value ?? ''} placeholder="Enter father's name" className="font-maven" />
               </FormControl>
@@ -40,8 +40,8 @@ export function FamilyDetailsStep({ form }) {
           name="fatherOccupation"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Father&apos;s Occupation (Optional)</FormLabel>
-              <Select value={field.value || ''} onValueChange={(val) => field.onChange(val || undefined)}>
+              <FormLabel className="font-maven">Father&apos;s Occupation *</FormLabel>
+              <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="font-maven">
                     <SelectValue placeholder="Select occupation" />
@@ -70,7 +70,7 @@ export function FamilyDetailsStep({ form }) {
           name="motherName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Mother&apos;s Name (Optional)</FormLabel>
+              <FormLabel className="font-maven">Mother&apos;s Name *</FormLabel>
               <FormControl>
                 <Input {...field} value={field.value ?? ''} placeholder="Enter mother's name" className="font-maven" />
               </FormControl>
@@ -84,8 +84,8 @@ export function FamilyDetailsStep({ form }) {
           name="motherOccupation"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Mother&apos;s Occupation (Optional)</FormLabel>
-              <Select value={field.value || ''} onValueChange={(val) => field.onChange(val || undefined)}>
+              <FormLabel className="font-maven">Mother&apos;s Occupation *</FormLabel>
+              <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="font-maven">
                     <SelectValue placeholder="Select occupation" />

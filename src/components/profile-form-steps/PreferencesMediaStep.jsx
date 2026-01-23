@@ -273,17 +273,17 @@ export function PreferencesMediaStep({
         name="profileAbout"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">About Myself</FormLabel>
+            <FormLabel className="font-maven">About Myself (Optional)</FormLabel>
             <FormControl>
               <Textarea
                 {...field}
-                placeholder="Tell us about yourself (minimum 50 characters)"
+                placeholder="Tell us about yourself"
                 className="font-maven min-h-32"
                 maxLength={1000}
               />
             </FormControl>
             <div className="text-sm mt-2 text-muted-foreground">
-              {field.value?.length || 0}/1000 characters (minimum 50 required)
+              {field.value?.length || 0}/1000 characters
             </div>
             <FormMessage />
           </FormItem>

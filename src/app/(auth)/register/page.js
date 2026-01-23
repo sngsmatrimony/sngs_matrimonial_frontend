@@ -36,7 +36,7 @@ const step1Schema = z.object({
     .regex(/[A-Z]/, 'Must contain uppercase letter')
     .regex(/\d/, 'Must contain number'),
   confirmPassword: z.string(),
-  mobileNumber: z.string().regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number (starting with 6-9)').optional().or(z.literal('')),
+  mobileNumber: z.string().min(1, 'Mobile number is required').regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number (starting with 6-9)'),
   alternateMobileNumber: z.string().regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number (starting with 6-9)').optional().or(z.literal('')),
 }).refine(data => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
@@ -60,7 +60,7 @@ const step2Schema = z.object({
   caste: z.string().optional(),
   shuddhaJathakam: z.string().optional(),
   doshamTypes: z.array(z.string()).optional().default([]),
-  nakshatra: z.string().optional().nullable(),
+  nakshatra: z.string().min(1, 'Please select your nakshatra'),
   raasi: z.string().optional().nullable(),
   languagesKnown: z.array(z.string()).max(10, 'Maximum 10 languages').optional().default([]),
   placeOfBirth: z.string().max(100, 'Maximum 100 characters').optional().or(z.literal('')),
@@ -105,10 +105,10 @@ const step4Schema = z.object({
 });
 
 const step5Schema = z.object({
-  fatherName: z.string().optional(),
-  fatherOccupation: z.string().optional(),
-  motherName: z.string().optional(),
-  motherOccupation: z.string().optional(),
+  fatherName: z.string().min(1, "Father's name is required"),
+  fatherOccupation: z.string().min(1, "Father's occupation is required"),
+  motherName: z.string().min(1, "Mother's name is required"),
+  motherOccupation: z.string().min(1, "Mother's occupation is required"),
   residentialStatus: z.string().optional(),
   familyStatus: z.string().min(1, 'Please select your family status'),
 });
@@ -127,7 +127,7 @@ const step6Schema = z.object({
       return !isNaN(num) && num >= 18 && num <= 90;
     }, 'Age to must be between 18 and 90'),
   interests: z.array(z.string()).optional().default([]),
-  profileAbout: z.string().min(50, 'About must be at least 50 characters'),
+  profileAbout: z.string().max(1000, 'About must be at most 1000 characters').optional().or(z.literal('')),
   profileBannerColor: z.string().optional(),
 }).refine(data => {
   const from = parseInt(data.ageFrom, 10);
@@ -853,7 +853,7 @@ export default function RegisterPage() {
                 name="mobileNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-maven">Mobile Number (Optional)</FormLabel>
+                    <FormLabel className="font-maven">Mobile Number *</FormLabel>
                     <div className="flex gap-2">
                       <div className="w-16 flex items-center justify-center border border-input rounded-md bg-gray-50 font-maven text-sm">
                         +91

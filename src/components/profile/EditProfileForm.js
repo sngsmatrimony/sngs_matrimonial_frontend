@@ -61,7 +61,7 @@ const step2Schema = z.object({
   caste: z.string().optional(),
   shuddhaJathakam: z.string().optional(),
   doshamTypes: z.array(z.string()).optional().default([]),
-  nakshatra: z.string().optional().nullable(),
+  nakshatra: z.string().min(1, 'Please select your nakshatra'),
   raasi: z.string().optional().nullable(),
   // Removed root country/state/city validation as they are now in address blocks
   presentResidentialAddress: z.object({
@@ -120,10 +120,10 @@ const step3Schema = z.object({
 
 // Step 4: Family & Additional Details
 const step4Schema = z.object({
-  fatherName: z.string().optional(),
-  fatherOccupation: z.string().optional(),
-  motherName: z.string().optional(),
-  motherOccupation: z.string().optional(),
+  fatherName: z.string().min(1, "Father's name is required"),
+  fatherOccupation: z.string().min(1, "Father's occupation is required"),
+  motherName: z.string().min(1, "Mother's name is required"),
+  motherOccupation: z.string().min(1, "Mother's occupation is required"),
   residentialStatus: z.string().optional(),
   familyStatus: z.string().min(1, 'Please select your family status'),
 });
@@ -133,7 +133,7 @@ const step5Schema = z.object({
   ageFrom: z.string().min(1, 'Please select minimum age'),
   ageTo: z.string().min(1, 'Please select maximum age'),
   interests: z.array(z.string()).optional().default([]),
-  profileAbout: z.string().min(50, 'About must be at least 50 characters').max(1000, 'About must be at most 1000 characters'),
+  profileAbout: z.string().max(1000, 'About must be at most 1000 characters').optional().or(z.literal('')),
   profileBannerColor: z.string().optional(),
 }).refine(data => {
   const from = parseInt(data.ageFrom);

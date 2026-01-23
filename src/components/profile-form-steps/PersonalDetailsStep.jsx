@@ -659,8 +659,8 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
         name="nakshatra"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Nakshatra (Optional)</FormLabel>
-            <Select value={field.value || ''} onValueChange={(val) => field.onChange(val || null)}>
+            <FormLabel className="font-maven">Nakshatra *</FormLabel>
+            <Select value={field.value || ''} onValueChange={field.onChange}>
               <FormControl>
                 <SelectTrigger className="font-maven">
                   <SelectValue placeholder="Select nakshatra" />
