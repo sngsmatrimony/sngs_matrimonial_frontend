@@ -120,20 +120,18 @@ function ProfileCard({ profile, isLiked = false }) {
       {/* Profile Info - Always visible when not hovered */}
       {!isHovered && (
         <div className="absolute bottom-0 left-0 right-0 p-6 z-10 text-white space-y-1">
-          <h3 className="font-viga text-3xl font-bold mb-1">
-            {profile.fullName}
-          </h3>
           <p className="font-telex text-sm text-gray-200">
-            {profile.age || 'Age'}
+            {profile.dateOfBirth
+              ? new Date(profile.dateOfBirth).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })
+              : 'DOB not available'}
           </p>
-          {profile.occupation && (
+          {profile.nakshatra && (
             <p className="font-telex text-sm text-gray-300">
-              {profile.occupation}
-            </p>
-          )}
-          {profile.motherTongue && (
-            <p className="font-telex text-xs text-gray-400">
-              {profile.motherTongue}
+              {profile.nakshatra}
             </p>
           )}
         </div>
