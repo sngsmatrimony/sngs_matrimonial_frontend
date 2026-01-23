@@ -213,8 +213,8 @@ export default function ChatList({
                         "text-gray-900 font-medium"
                     )}
                   >
-                    {conversation.lastMessage?.content
-                      ? truncateMessage(conversation.lastMessage.content)
+                    {conversation.lastMessage?.preview
+                      ? truncateMessage(conversation.lastMessage.preview)
                       : "No messages yet"}
                   </p>
 
