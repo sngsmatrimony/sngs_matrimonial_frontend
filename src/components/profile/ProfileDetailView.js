@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Heart, MessageCircle, MapPin, Briefcase, Book, Users, FileText, Lock, Unlock } from 'lucide-react';
+import { Heart, MessageCircle, MapPin, Briefcase, Book, Users, FileText } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -30,43 +30,6 @@ const InfoField = ({ label, value, icon: Icon }) => (
       <span className="font-telex text-secondary/70 text-sm">{label}</span>
     </div>
     <span className="font-maven text-secondary font-medium">{value || '—'}</span>
-  </div>
-);
-
-// Locked Contact Information Component
-const LockedContactCard = ({ profileName, className = '' }) => (
-  <div className={`bg-white border-2 border-gray-100 rounded-xl p-6 hover:shadow-md transition-shadow ${className}`}>
-    <div className="flex items-center gap-2 mb-4">
-      <Lock size={24} className="text-secondary" />
-      <h3 className="font-viga text-xl text-secondary">Contact Information</h3>
-    </div>
-
-    {/* Blurred placeholder */}
-    <div className="relative min-h-[140px]">
-      <div className="blur-sm select-none pointer-events-none opacity-50">
-        <div className="flex items-center justify-between py-2 border-b border-gray-100">
-          <span className="font-telex text-secondary/70 text-sm">Mobile Number</span>
-          <span className="font-maven text-secondary font-medium">+91 98XXX XXXXX</span>
-        </div>
-        <div className="flex items-center justify-between py-2">
-          <span className="font-telex text-secondary/70 text-sm">Alternate Mobile</span>
-          <span className="font-maven text-secondary font-medium">+91 97XXX XXXXX</span>
-        </div>
-      </div>
-
-      {/* Unlock message overlay */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-[2px] rounded-lg">
-        <div className="bg-primary/10 rounded-full p-4 mb-3">
-          <Lock size={32} className="text-primary" />
-        </div>
-        <p className="font-maven text-secondary text-center text-sm px-4 max-w-xs">
-          Contact details will unlock when <span className="font-semibold text-primary">{profileName}</span> views your profile
-        </p>
-        <p className="font-telex text-secondary/60 text-xs mt-2">
-          Mutual interest unlocks contact info
-        </p>
-      </div>
-    </div>
   </div>
 );
 
@@ -332,26 +295,16 @@ export default function ProfileDetailView({ profileId }) {
 
         {/* Profile Information Cards */}
         <div className="max-w-4xl mx-auto">
-          {/* Contact Information Card - Conditional based on mutual view (positioned at top) */}
-          {profile?.canViewContact ? (
-            // UNLOCKED: Show actual contact details
-            (profile?.mobileNumber || profile?.alternateMobileNumber) && (
-              <InfoCard title="📞 Contact Information" className="mb-6">
-                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-                  <Unlock size={18} className="text-success" />
-                  <span className="font-telex text-success text-sm">Contact Unlocked - Mutual Interest!</span>
-                </div>
-                {profile?.mobileNumber && (
-                  <InfoField label="Mobile Number" value={`+91 ${profile.mobileNumber}`} />
-                )}
-                {profile?.alternateMobileNumber && (
-                  <InfoField label="Alternate Mobile Number" value={`+91 ${profile.alternateMobileNumber}`} />
-                )}
-              </InfoCard>
-            )
-          ) : (
-            // LOCKED: Show locked card with message
-            <LockedContactCard profileName={profile?.fullName} className="mb-6" />
+          {/* Contact Information Card */}
+          {(profile?.mobileNumber || profile?.alternateMobileNumber) && (
+            <InfoCard title="Contact Information" className="mb-6">
+              {profile?.mobileNumber && (
+                <InfoField label="Mobile Number" value={`+91 ${profile.mobileNumber}`} />
+              )}
+              {profile?.alternateMobileNumber && (
+                <InfoField label="Alternate Mobile Number" value={`+91 ${profile.alternateMobileNumber}`} />
+              )}
+            </InfoCard>
           )}
 
           {/* Personal Details Card */}
