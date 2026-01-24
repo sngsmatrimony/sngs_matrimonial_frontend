@@ -114,6 +114,7 @@ export default function UserLayout({ children }) {
                 </span>
               </div>
             )}
+            {/* TEMPORARILY DISABLED: Get Membership button (no live payment keys yet)
             {showGetMembership && (
               <Link
                 href="/membership/purchase"
@@ -122,6 +123,7 @@ export default function UserLayout({ children }) {
                 Get Membership
               </Link>
             )}
+            */}
           </div>
 
           {/* Mobile credits display */}
@@ -130,7 +132,7 @@ export default function UserLayout({ children }) {
               <span className="font-telex text-xs font-semibold text-secondary">{userCredits} {userCredits === 1 ? 'Credit' : 'Credits'}</span>
             </div>
           )}
-          {/* Mobile Get Membership button */}
+          {/* TEMPORARILY DISABLED: Mobile Get Membership button (no live payment keys yet)
           {showGetMembership && (
             <Link
               href="/membership/purchase"
@@ -139,6 +141,7 @@ export default function UserLayout({ children }) {
               Get Membership
             </Link>
           )}
+          */}
 
           {/* Help Button */}
           <HelpButton />

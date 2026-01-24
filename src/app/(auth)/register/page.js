@@ -661,12 +661,14 @@ export default function RegisterPage() {
           // Don't fail registration if media upload fails
         }
 
+        // TEMPORARILY DISABLED: Skip membership screen (no live payment keys yet)
         // Set flag to indicate user just registered
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('justRegistered', 'true');
-        }
+        // if (typeof window !== 'undefined') {
+        //   sessionStorage.setItem('justRegistered', 'true');
+        // }
 
-        router.push('/membership/purchase');
+        // router.push('/membership/purchase');
+        router.push('/'); // Redirect directly to home after registration
       } else {
         throw new Error(result.error || 'Registration failed');
       }

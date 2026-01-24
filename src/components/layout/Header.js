@@ -56,6 +56,7 @@ export default function Header({ showLogout = false, isFixed = false }) {
               </span>
             </div>
           )}
+          {/* TEMPORARILY DISABLED: Get Membership button (no live payment keys yet)
           {showGetMembership && (
             <Link
               href="/membership/purchase"
@@ -64,6 +65,7 @@ export default function Header({ showLogout = false, isFixed = false }) {
               Get Membership
             </Link>
           )}
+          */}
         </div>
 
         <div className="flex items-center gap-2">
@@ -74,7 +76,7 @@ export default function Header({ showLogout = false, isFixed = false }) {
               <span className="font-telex text-xs font-semibold text-secondary">{userCredits} {userCredits === 1 ? 'Credit' : 'Credits'}</span>
             </div>
           )}
-          {/* Mobile Get Membership button */}
+          {/* TEMPORARILY DISABLED: Mobile Get Membership button (no live payment keys yet)
           {showGetMembership && (
             <Link
               href="/membership/purchase"
@@ -83,6 +85,7 @@ export default function Header({ showLogout = false, isFixed = false }) {
               Get Membership
             </Link>
           )}
+          */}
           <HelpButton />
           {showLogout && (
             <button

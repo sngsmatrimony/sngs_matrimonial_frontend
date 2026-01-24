@@ -1,7 +1,8 @@
 'use client';
 
 import PasswordSection from './PasswordSection';
-import MembershipSection from './MembershipSection';
+// TEMPORARILY DISABLED: Membership section (no live payment keys yet)
+// import MembershipSection from './MembershipSection';
 import AccountManagementSection from './AccountManagementSection';
 
 export default function UserSettings() {
@@ -16,7 +17,9 @@ export default function UserSettings() {
 
       <div className="space-y-6">
         <PasswordSection />
+        {/* TEMPORARILY DISABLED: Membership section (no live payment keys yet)
         <MembershipSection />
+        */}
         <AccountManagementSection />
       </div>
     </div>
