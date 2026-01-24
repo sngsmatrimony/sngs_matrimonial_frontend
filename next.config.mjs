@@ -9,6 +9,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'sngs-matrimonial.s3.ap-south-1.amazonaws.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'sngs-matrimonial-prod.s3.ap-south-1.amazonaws.com',
+      },
     ],
     // Enable modern image formats for better compression
     formats: ['image/avif', 'image/webp'],

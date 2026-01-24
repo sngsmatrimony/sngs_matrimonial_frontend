@@ -107,9 +107,8 @@ export const adminApi = {
   uploadUserProfilePicture: (userId, file) => {
     const formData = new FormData();
     formData.append('photo', file);
-    return adminClient.post(`/api/admin/users/${userId}/upload-profile-picture`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    // Don't set Content-Type explicitly - let axios auto-generate with boundary
+    return adminClient.post(`/api/admin/users/${userId}/upload-profile-picture`, formData);
   },
 
   /**
@@ -118,9 +117,8 @@ export const adminApi = {
   uploadUserPhoto: (userId, file) => {
     const formData = new FormData();
     formData.append('photo', file);
-    return adminClient.post(`/api/admin/users/${userId}/upload-photo`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    // Don't set Content-Type explicitly - let axios auto-generate with boundary
+    return adminClient.post(`/api/admin/users/${userId}/upload-photo`, formData);
   },
 
   /**
@@ -134,9 +132,8 @@ export const adminApi = {
   uploadUserHoroscope: (userId, file) => {
     const formData = new FormData();
     formData.append('document', file);
-    return adminClient.post(`/api/admin/users/${userId}/upload-horoscope`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    // Don't set Content-Type explicitly - let axios auto-generate with boundary
+    return adminClient.post(`/api/admin/users/${userId}/upload-horoscope`, formData);
   },
 
   /**

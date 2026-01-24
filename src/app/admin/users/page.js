@@ -17,6 +17,15 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { toastError, toastSuccess } from '@/lib/toast';
 import { Eye, Trash2, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock } from 'lucide-react';
@@ -29,6 +38,8 @@ export default function AdminUsersPage() {
   const [rejectingUserId, setRejectingUserId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState(null);
 
   // Build query params
   const queryParams = {
@@ -53,15 +64,15 @@ export default function AdminUsersPage() {
     router.push(`/admin/users/${userId}`);
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      try {
-        await adminApi.deleteUser(userId);
-        toastSuccess('User deleted successfully');
-        queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
-      } catch (error) {
-        toastError(error.response?.data?.message || 'Failed to delete user');
-      }
+  const handleDeleteUser = async () => {
+    try {
+      await adminApi.deleteUser(deletingUserId);
+      toastSuccess('User deleted successfully');
+      setShowDeleteDialog(false);
+      setDeletingUserId(null);
+      queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+    } catch (error) {
+      toastError(error.response?.data?.message || 'Failed to delete user');
     }
   };
 
@@ -251,7 +262,10 @@ export default function AdminUsersPage() {
                             size="sm"
                             variant="outline"
                             className="text-destructive hover:text-destructive"
-                            onClick={() => handleDeleteUser(user._id)}
+                            onClick={() => {
+                              setDeletingUserId(user._id);
+                              setShowDeleteDialog(true);
+                            }}
                             title="Delete"
                           >
                             <Trash2 size={16} />
@@ -338,6 +352,31 @@ export default function AdminUsersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-viga text-red-600">
+              Delete User?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="font-maven">
+              Are you sure you want to delete this user? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeletingUserId(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteUser}
+            >
+              Delete User
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

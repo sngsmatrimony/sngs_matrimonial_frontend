@@ -594,25 +594,6 @@ export default function AdminUserDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Profile Picture */}
-        {user.profilePicture?.url && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Picture</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="relative w-48 h-48">
-                <Image
-                  src={user.profilePicture.url}
-                  alt={user.fullName}
-                  fill
-                  className="object-cover rounded-lg"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Edit Mode */}
         {isEditMode ? (
           <Card className="border-primary bg-white">
@@ -1552,9 +1533,30 @@ export default function AdminUserDetailPage() {
                     <p className="text-gray-900">{displayValue(user.alternateMobileNumber)}</p>
                   </div>
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Age Preference</label>
+                    <p className="text-gray-900">
+                      {user.ageFrom && user.ageTo ? `${user.ageFrom} - ${user.ageTo} years` : '-'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Birth Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Birth Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
                     <p className="text-gray-900">
-                      {user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : '-'}
+                      {user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      }) : '-'}
                     </p>
                   </div>
                   <div>
@@ -1574,11 +1576,50 @@ export default function AdminUserDetailPage() {
                     <p className="text-gray-900">{displayValue(user.placeOfBirth)}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Age Preference</label>
-                    <p className="text-gray-900">
-                      {user.ageFrom && user.ageTo ? `${user.ageFrom} - ${user.ageTo} years` : '-'}
-                    </p>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Star (Nakshatra)</label>
+                    <p className="text-gray-900">{displayValue(user.nakshatra)}</p>
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Raasi</label>
+                    <p className="text-gray-900">{displayValue(user.raasi)}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Shuddha Jathakam</label>
+                    <p className="text-gray-900">{displayValue(user.shuddhaJathakam)}</p>
+                  </div>
+                  {user?.doshamTypes && user.doshamTypes.length > 0 && (
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Dosham Types</label>
+                      <div className="flex flex-wrap gap-2">
+                        {user.doshamTypes.map((dosham, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {dosham}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {user?.horoscopeDocument?.url && (
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Horoscope Document</label>
+                      <div className="flex gap-3">
+                        <a
+                          href={user.horoscopeDocument.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-secondary underline text-sm hover:text-secondary/80"
+                        >
+                          View
+                        </a>
+                        <button
+                          onClick={() => handleDownloadHoroscope(userId)}
+                          className="text-secondary underline text-sm cursor-pointer bg-transparent border-0 p-0 hover:text-secondary/80"
+                        >
+                          Download
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -1638,30 +1679,6 @@ export default function AdminUserDetailPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Caste</label>
                     <p className="text-gray-900">{displayValue(user.caste)}</p>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Nakshatra</label>
-                    <p className="text-gray-900">{displayValue(user.nakshatra)}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Raasi</label>
-                    <p className="text-gray-900">{displayValue(user.raasi)}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Shuddha Jathakam</label>
-                    <p className="text-gray-900">{displayValue(user.shuddhaJathakam)}</p>
-                  </div>
-                  {user?.doshamTypes && user.doshamTypes.length > 0 && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Dosham Types</label>
-                      <div className="flex flex-wrap gap-2">
-                        {user.doshamTypes.map((dosham, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs">
-                            {dosham}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                   {user?.languagesKnown && user.languagesKnown.length > 0 && (
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-2">Languages Known</label>
@@ -1683,27 +1700,6 @@ export default function AdminUserDetailPage() {
                           style={{ backgroundColor: user.profileBanner.bannerColor }}
                         />
                         <span className="text-gray-900 text-sm">{user.profileBanner.bannerColor}</span>
-                      </div>
-                    </div>
-                  )}
-                  {user?.horoscopeDocument?.url && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Horoscope Document</label>
-                      <div className="flex gap-3">
-                        <a
-                          href={user.horoscopeDocument.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-secondary underline text-sm hover:text-secondary/80"
-                        >
-                          View
-                        </a>
-                        <button
-                          onClick={() => handleDownloadHoroscope(userId)}
-                          className="text-secondary underline text-sm cursor-pointer bg-transparent border-0 p-0 hover:text-secondary/80"
-                        >
-                          Download
-                        </button>
                       </div>
                     </div>
                   )}
@@ -1836,12 +1832,11 @@ export default function AdminUserDetailPage() {
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {user.gallery.photos.map((photo, idx) => (
-                      <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
-                        <Image
+                      <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-gray-200">
+                        <img
                           src={photo.url}
                           alt={`Gallery photo ${idx + 1}`}
-                          fill
-                          className="object-cover"
+                          className="w-full h-full object-cover"
                         />
                       </div>
                     ))}

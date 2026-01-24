@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Heart, MessageCircle, MapPin, Briefcase, Book, Users, FileText } from 'lucide-react';
+import { Heart, MessageCircle, MapPin, Briefcase, Book, Users, FileText, Download, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -10,6 +10,8 @@ import { useLikeMutation } from '@/hooks/useLikeMutation';
 import Header from '@/components/layout/Header';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
+import { useProfilePdf } from '@/hooks/useProfilePdf';
+import ProfilePrintView from '@/components/profile/ProfilePrintView';
 
 // Information Card Component
 const InfoCard = ({ icon: Icon, title, children, className = '' }) => (
@@ -112,6 +114,7 @@ export default function ProfileDetailView({ profileId }) {
   const router = useRouter();
   const { setSelectedChatUserId } = useLandingStore();
   const { toggleLike, isLoading: isLikeLoading } = useLikeMutation();
+  const { printRef, isGenerating, downloadPDF } = useProfilePdf();
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [liked, setLiked] = useState(false);
@@ -220,6 +223,23 @@ export default function ProfileDetailView({ profileId }) {
               size={28}
               className="stroke-secondary fill-none transition-all duration-200"
             />
+          </button>
+
+          {/* Download PDF Button */}
+          <button
+            onClick={() => downloadPDF(profile?.fullName, profile?.horoscopeDocument)}
+            disabled={isGenerating}
+            className={`bg-white/90 hover:bg-white rounded-full p-2 transition-all duration-200 flex items-center justify-center ${
+              isGenerating ? 'opacity-50 cursor-not-allowed' : 'hover:scale-110'
+            }`}
+            aria-label="Download profile PDF"
+            title="Download profile as PDF"
+          >
+            {isGenerating ? (
+              <Loader2 size={28} className="stroke-secondary animate-spin" />
+            ) : (
+              <Download size={28} className="stroke-secondary" />
+            )}
           </button>
 
           {/* Like Button */}
@@ -523,6 +543,19 @@ export default function ProfileDetailView({ profileId }) {
 
       {/* Footer spacing */}
       <div className="h-16" />
+
+      {/* Hidden PDF Print Container - positioned off-screen */}
+      <div
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          top: 0,
+          width: '794px',
+        }}
+        aria-hidden="true"
+      >
+        <ProfilePrintView ref={printRef} profile={profile} />
+      </div>
     </div>
   );
 }

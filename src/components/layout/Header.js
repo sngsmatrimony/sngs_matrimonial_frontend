@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 import HelpButton from './HelpButton';
 
 export default function Header({ showLogout = false, isFixed = false }) {
-  const { logout, user, membership } = useAuthStore();
+  const { logout, user, membership, token } = useAuthStore();
   const router = useRouter();
 
   const handleLogout = () => {
@@ -20,10 +20,11 @@ export default function Header({ showLogout = false, isFixed = false }) {
     ? 'border-b border-gray-100 fixed top-0 left-0 right-0 z-50 bg-white shadow-sm'
     : 'border-b border-gray-100';
 
-  // Show credits if user has any credits remaining (check both membership store and user.membership)
+  // Show credits only for authenticated regular users (not admins)
   const userCredits = membership?.credits ?? user?.membership?.credits ?? 0;
-  const showCredits = user && userCredits > 0;
-  const showGetMembership = !showCredits && user; // Show "Get Membership" if logged in but no credits
+  const isRegularUser = user && token && user.role !== 'admin';
+  const showCredits = isRegularUser && userCredits > 0;
+  const showGetMembership = !showCredits && isRegularUser; // Show "Get Membership" if logged in but no credits
 
   return (
     <header className={headerClasses}>
@@ -51,7 +52,7 @@ export default function Header({ showLogout = false, isFixed = false }) {
             <div className="flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-full">
               <Coins size={16} className="text-primary" />
               <span className="font-telex text-sm text-secondary">
-                <span className="font-semibold text-primary">{userCredits}</span> Credits
+                <span className="font-semibold text-secondary">{userCredits}</span> {userCredits === 1 ? 'Credit' : 'Credits'}
               </span>
             </div>
           )}
@@ -70,7 +71,7 @@ export default function Header({ showLogout = false, isFixed = false }) {
           {showCredits && (
             <div className="flex md:hidden items-center gap-1 bg-primary/10 px-2 py-1 rounded-full">
               <Coins size={14} className="text-primary" />
-              <span className="font-telex text-xs font-semibold text-primary">{userCredits}</span>
+              <span className="font-telex text-xs font-semibold text-secondary">{userCredits} {userCredits === 1 ? 'Credit' : 'Credits'}</span>
             </div>
           )}
           {/* Mobile Get Membership button */}

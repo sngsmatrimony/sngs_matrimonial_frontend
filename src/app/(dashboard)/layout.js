@@ -108,9 +108,9 @@ export default function UserLayout({ children }) {
               <span className="font-viga text-secondary">{user?.fullName}</span>
             </div>
             {showCredits && (
-              <div className="flex items-center bg-primary/70 px-3 py-1.5 rounded-full">
-                <span className="font-telex text-sm font-semibold text-black">
-                  {userCredits} Credits
+              <div className="flex items-center bg-primary/10 px-3 py-1.5 rounded-full">
+                <span className="font-telex text-sm font-semibold text-secondary">
+                  {userCredits} {userCredits === 1 ? 'Credit' : 'Credits'}
                 </span>
               </div>
             )}
@@ -126,8 +126,8 @@ export default function UserLayout({ children }) {
 
           {/* Mobile credits display */}
           {showCredits && (
-            <div className="flex md:hidden items-center bg-primary/70 px-2 py-1 rounded-full mr-2">
-              <span className="font-telex text-xs font-semibold text-black">{userCredits} Credits</span>
+            <div className="flex md:hidden items-center bg-primary/10 px-2 py-1 rounded-full mr-2">
+              <span className="font-telex text-xs font-semibold text-secondary">{userCredits} {userCredits === 1 ? 'Credit' : 'Credits'}</span>
             </div>
           )}
           {/* Mobile Get Membership button */}

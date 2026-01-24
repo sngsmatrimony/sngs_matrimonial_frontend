@@ -3,7 +3,7 @@
 import { useState, useCallback, memo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Heart, MessageCircle, Lock, FileText } from 'lucide-react';
+import { Heart, MessageCircle, Lock } from 'lucide-react';
 import { useLandingStore } from '@/store/landingStore';
 import { useAuthStore } from '@/store/authStore';
 import { useLikeMutation } from '@/hooks/useLikeMutation';
@@ -109,12 +109,6 @@ function ProfileCard({ profile, isLiked = false }) {
           </div>
         )}
 
-        {profile?.horoscopeDocument?.url && (
-          <div className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/90 text-secondary text-xs font-telex shadow-md backdrop-blur-sm" title="Horoscope available">
-            <FileText className="w-4 h-4 text-primary" />
-            <span className="font-semibold">Horoscope</span>
-          </div>
-        )}
       </div>
 
       {/* Profile Info - Always visible when not hovered */}
