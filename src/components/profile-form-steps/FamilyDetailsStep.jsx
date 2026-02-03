@@ -40,7 +40,7 @@ export function FamilyDetailsStep({ form }) {
           name="fatherOccupation"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Father&apos;s Occupation *</FormLabel>
+              <FormLabel className="font-maven">Father&apos;s Occupation</FormLabel>
               <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="font-maven">
@@ -84,7 +84,7 @@ export function FamilyDetailsStep({ form }) {
           name="motherOccupation"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Mother&apos;s Occupation *</FormLabel>
+              <FormLabel className="font-maven">Mother&apos;s Occupation</FormLabel>
               <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="font-maven">

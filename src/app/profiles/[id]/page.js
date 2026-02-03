@@ -31,7 +31,7 @@ export default function ProfileViewPage() {
       setProfile(response.data.data);
       setCreditsDeducted(response.data.data.creditsDeducted || false);
 
-      if (response.data.data.creditsDeducted) {
+      if (response.data.data.creditsDeducted && process.env.NEXT_PUBLIC_PROMOTIONAL_MODE !== 'true') {
         await refreshMembership();
         toastSuccess('1 credit deducted for viewing this profile');
       }

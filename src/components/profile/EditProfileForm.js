@@ -121,9 +121,9 @@ const step3Schema = z.object({
 // Step 4: Family & Additional Details
 const step4Schema = z.object({
   fatherName: z.string().min(1, "Father's name is required"),
-  fatherOccupation: z.string().min(1, "Father's occupation is required"),
+  fatherOccupation: z.string().optional(),
   motherName: z.string().min(1, "Mother's name is required"),
-  motherOccupation: z.string().min(1, "Mother's occupation is required"),
+  motherOccupation: z.string().optional(),
   residentialStatus: z.string().optional(),
   familyStatus: z.string().min(1, 'Please select your family status'),
 });

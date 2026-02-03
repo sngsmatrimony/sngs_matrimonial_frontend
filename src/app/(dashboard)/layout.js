@@ -65,10 +65,10 @@ export default function UserLayout({ children }) {
 
   const isActive = (path) => pathname === path || pathname.startsWith(`${path}/`);
 
-  // Calculate user credits (hide on settings page as it's shown in cards there)
-  const userCredits = membership?.credits ?? user?.membership?.credits ?? 0;
-  const showCredits = userCredits > 0 && !pathname.includes('/settings');
-  const showGetMembership = !showCredits && user && !pathname.includes('/settings'); // Show "Get Membership" if logged in but no credits
+  // PROMOTIONAL: Credits and membership display commented out during promotional period
+  // const userCredits = membership?.credits ?? user?.membership?.credits ?? 0;
+  // const showCredits = userCredits > 0 && !pathname.includes('/settings');
+  // const showGetMembership = !showCredits && user && !pathname.includes('/settings');
 
   // Show loader while initializing (unless timeout reached)
   if ((!isInitialized && !initTimeout) || !token) {
@@ -107,6 +107,7 @@ export default function UserLayout({ children }) {
               <span className="font-maven text-gray-600">Welcome,</span>
               <span className="font-viga text-secondary">{user?.fullName}</span>
             </div>
+            {/* PROMOTIONAL: Credits display and Get Membership button commented out during promotional period
             {showCredits && (
               <div className="flex items-center bg-primary/10 px-3 py-1.5 rounded-full">
                 <span className="font-telex text-sm font-semibold text-secondary">
@@ -114,7 +115,6 @@ export default function UserLayout({ children }) {
                 </span>
               </div>
             )}
-            {/* TEMPORARILY DISABLED: Get Membership button (no live payment keys yet)
             {showGetMembership && (
               <Link
                 href="/membership/purchase"
@@ -126,13 +126,12 @@ export default function UserLayout({ children }) {
             */}
           </div>
 
-          {/* Mobile credits display */}
+          {/* PROMOTIONAL: Mobile credits and Get Membership commented out during promotional period
           {showCredits && (
             <div className="flex md:hidden items-center bg-primary/10 px-2 py-1 rounded-full mr-2">
               <span className="font-telex text-xs font-semibold text-secondary">{userCredits} {userCredits === 1 ? 'Credit' : 'Credits'}</span>
             </div>
           )}
-          {/* TEMPORARILY DISABLED: Mobile Get Membership button (no live payment keys yet)
           {showGetMembership && (
             <Link
               href="/membership/purchase"

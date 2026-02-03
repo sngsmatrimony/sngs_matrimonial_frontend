@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut, Coins } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -20,11 +20,11 @@ export default function Header({ showLogout = false, isFixed = false }) {
     ? 'border-b border-gray-100 fixed top-0 left-0 right-0 z-50 bg-white shadow-sm'
     : 'border-b border-gray-100';
 
-  // Show credits only for authenticated regular users (not admins)
-  const userCredits = membership?.credits ?? user?.membership?.credits ?? 0;
-  const isRegularUser = user && token && user.role !== 'admin';
-  const showCredits = isRegularUser && userCredits > 0;
-  const showGetMembership = !showCredits && isRegularUser; // Show "Get Membership" if logged in but no credits
+  // PROMOTIONAL: Credits and membership display commented out during promotional period
+  // const userCredits = membership?.credits ?? user?.membership?.credits ?? 0;
+  // const isRegularUser = user && token && user.role !== 'admin';
+  // const showCredits = isRegularUser && userCredits > 0;
+  // const showGetMembership = !showCredits && isRegularUser;
 
   return (
     <header className={headerClasses}>
@@ -48,6 +48,7 @@ export default function Header({ showLogout = false, isFixed = false }) {
               Welcome, <span className="font-semibold">{user.fullName}</span>
             </span>
           )}
+          {/* PROMOTIONAL: Credits display and Get Membership button commented out during promotional period
           {showCredits && (
             <div className="flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 rounded-full">
               <Coins size={16} className="text-primary" />
@@ -56,7 +57,6 @@ export default function Header({ showLogout = false, isFixed = false }) {
               </span>
             </div>
           )}
-          {/* TEMPORARILY DISABLED: Get Membership button (no live payment keys yet)
           {showGetMembership && (
             <Link
               href="/membership/purchase"
@@ -69,14 +69,13 @@ export default function Header({ showLogout = false, isFixed = false }) {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Mobile credits display */}
+          {/* PROMOTIONAL: Mobile credits and Get Membership commented out during promotional period
           {showCredits && (
             <div className="flex md:hidden items-center gap-1 bg-primary/10 px-2 py-1 rounded-full">
               <Coins size={14} className="text-primary" />
               <span className="font-telex text-xs font-semibold text-secondary">{userCredits} {userCredits === 1 ? 'Credit' : 'Credits'}</span>
             </div>
           )}
-          {/* TEMPORARILY DISABLED: Mobile Get Membership button (no live payment keys yet)
           {showGetMembership && (
             <Link
               href="/membership/purchase"

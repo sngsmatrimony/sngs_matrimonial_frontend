@@ -17,8 +17,9 @@ function ProfileCard({ profile, isLiked = false }) {
   const { toggleLike, isLoading } = useLikeMutation();
   const [isHovered, setIsHovered] = useState(false);
 
-  // Check if user has no membership or expired/no credits
-  const hasNoMembership = !membership?.isActive || membership?.isExpired || membership?.credits <= 0;
+  // Check if user has no membership or expired/no credits (bypassed in promotional mode)
+  const isPromotional = process.env.NEXT_PUBLIC_PROMOTIONAL_MODE === 'true';
+  const hasNoMembership = isPromotional ? false : (!membership?.isActive || membership?.isExpired || membership?.credits <= 0);
 
   // Define callbacks before early return (React hooks rule)
   const handleLike = useCallback((e) => {

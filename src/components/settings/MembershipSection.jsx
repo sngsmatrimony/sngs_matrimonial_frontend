@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/authStore';
 export default function MembershipSection() {
   const router = useRouter();
   const { membership } = useAuthStore();
+  const isPromotional = process.env.NEXT_PUBLIC_PROMOTIONAL_MODE === 'true';
 
   return (
     <Card>
@@ -23,7 +24,17 @@ export default function MembershipSection() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {membership?.isActive && !membership?.isExpired ? (
+        {isPromotional ? (
+          <div className="text-center py-8">
+            <Badge className="bg-success text-black font-telex text-sm px-4 py-1 mb-4">Promotional Period</Badge>
+            <h3 className="font-viga text-xl text-secondary mb-2">
+              All Features Are Free!
+            </h3>
+            <p className="font-maven text-gray-600">
+              Enjoy unlimited access to all profiles during our promotional period.
+            </p>
+          </div>
+        ) : membership?.isActive && !membership?.isExpired ? (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 border rounded-lg">
