@@ -173,11 +173,12 @@ export default function Home() {
           {/* Hero Image */}
           <div className="relative h-96 rounded-2xl overflow-hidden shadow-lg">
             <Image
-              src="/images/bg_1.jpg"
+              src="/images/bg_1.webp"
               alt="Happy couples"
               fill
-              sizes="100vw"
+              sizes="(min-width: 768px) 640px, 100vw"
               priority
+              quality={70}
               className="object-cover"
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/30 to-transparent"></div>
