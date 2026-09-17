@@ -20,13 +20,15 @@ export async function GET(request) {
       's3.amazonaws.com',
       'sngs-matrimonial.s3.ap-south-1.amazonaws.com',
       's3.ap-south-1.amazonaws.com',
+      'supabase.co',
     ];
 
-    // Allow any S3 bucket URL pattern
     const isS3Url = url.hostname.endsWith('.amazonaws.com') ||
                     url.hostname.endsWith('.s3.amazonaws.com');
+    const isSupabaseUrl = url.hostname.endsWith('.supabase.co') ||
+                          url.hostname.includes('supabase.co');
 
-    if (!isS3Url && !allowedHosts.includes(url.hostname)) {
+    if (!isS3Url && !isSupabaseUrl && !allowedHosts.includes(url.hostname)) {
       return NextResponse.json({ error: 'Domain not allowed' }, { status: 403 });
     }
   } catch {

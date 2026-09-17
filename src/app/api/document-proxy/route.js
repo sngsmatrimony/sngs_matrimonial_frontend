@@ -16,11 +16,12 @@ export async function GET(request) {
   try {
     const url = new URL(documentUrl);
 
-    // Allow any S3 bucket URL pattern
     const isS3Url = url.hostname.endsWith('.amazonaws.com') ||
                     url.hostname.endsWith('.s3.amazonaws.com');
+    const isSupabaseUrl = url.hostname.endsWith('.supabase.co') ||
+                          url.hostname.includes('supabase.co');
 
-    if (!isS3Url) {
+    if (!isS3Url && !isSupabaseUrl) {
       return NextResponse.json({ error: 'Domain not allowed' }, { status: 403 });
     }
   } catch {
