@@ -1,7 +1,7 @@
 import { Maven_Pro, Viga, Telex } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
-
+import PromoBanner from '@/components/layout/PromoBanner';
 const maven = Maven_Pro({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -36,7 +36,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${maven.variable} ${viga.variable} ${telex.variable}`}>
       <body className="antialiased">
-        <Providers>{children}</Providers>
+        <Providers>
+          <PromoBanner />
+          {/* If you have a global Header component, it would typically go right here */}
+          {children}
+        </Providers>
       </body>
     </html>
   );
