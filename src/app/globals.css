@@ -57,61 +57,61 @@
 :root {
   --radius: 0.625rem;
 
-  /* Background & Text */
-  --background: #FFFFFF;
-  --foreground: #000000;
+  /* Background & Text — Cream page, Charcoal text (Sacred Modernity) */
+  --background: #FDF8F0;
+  --foreground: #1A1A1A;
   --card: #FFFFFF;
-  --card-foreground: #000000;
+  --card-foreground: #1A1A1A;
   --popover: #FFFFFF;
-  --popover-foreground: #000000;
+  --popover-foreground: #1A1A1A;
 
-  /* Primary (Bright Yellow #FFE100) */
-  --primary: #FFE100;
-  --primary-foreground: #000000;
+  /* Primary (Gold #D4A843) — CTAs, accents, used sparingly */
+  --primary: #D4A843;
+  --primary-foreground: #1A1A1A;
 
-  /* Secondary (Blue-Gray #546A76) */
-  --secondary: #546A76;
+  /* Secondary (Navy #2C3E50) — authority, gradients, dark surfaces */
+  --secondary: #2C3E50;
   --secondary-foreground: #FFFFFF;
 
-  /* Accent (Orange #FF9B00) */
-  --accent: #FF9B00;
+  /* Accent (Warm Terracotta #C75B39) — urgency, premium badges only */
+  --accent: #C75B39;
   --accent-foreground: #FFFFFF;
 
-  /* Muted (Light Gray for subtle backgrounds) */
-  --muted: #F5F5F5;
-  --muted-foreground: #8E92A0;
+  /* Muted (Gold Light #F5E6C3) — subtle backgrounds, badges, hover */
+  --muted: #F5E6C3;
+  --muted-foreground: #6B5D42;
 
-  /* Destructive (Error Red) */
-  --destructive: #EF4444;
+  /* Destructive (Error) */
+  --destructive: #D64545;
 
-  /* Border & Input */
-  --border: #E5E5E5;
-  --input: #E5E5E5;
-  --ring: #FF9B00;
+  /* Border & Input — soft gold-tinted, not flat gray */
+  --border: #EADFC4;
+  --input: #EADFC4;
+  --ring: #D4A843;
 
-  /* Success Colors (Greens) */
-  --success: #7CEA9C;
-  --success-foreground: #000000;
+  /* Success (Green, per brief) */
+  --success: #2E7D32;
+  --success-foreground: #FFFFFF;
 
-  /* Success Alt (Turquoise) */
-  --success-alt: #55D6BE;
+  /* Success Alt */
+  --success-alt: #4CAF50;
 
-  /* Chart Colors (using brand colors) */
-  --chart-1: #FFE100;
-  --chart-2: #FF9B00;
-  --chart-3: #546A76;
-  --chart-4: #7CEA9C;
-  --chart-5: #55D6BE;
+  /* Chart Colors (brand palette) */
+  --chart-1: #D4A843;
+  --chart-2: #2C3E50;
+  --chart-3: #C75B39;
+  --chart-4: #2E7D32;
+  --chart-5: #B8860B;
 
   /* Sidebar */
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #000000;
-  --sidebar-primary: #FFE100;
-  --sidebar-primary-foreground: #000000;
-  --sidebar-accent: #FF9B00;
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #E5E5E5;
-  --sidebar-ring: #FFE100;
+  --sidebar-foreground: #1A1A1A;
+  --sidebar-primary: #D4A843;
+  --sidebar-primary-foreground: #1A1A1A;
+  --sidebar-accent: #F5E6C3;
+  --sidebar-accent-foreground: #2C3E50;
+  --sidebar-border: #EADFC4;
+  --sidebar-ring: #D4A843;
 }
 
 
@@ -133,15 +133,20 @@
 /* Gradient utilities for brand colors */
 @layer components {
   .gradient-warm {
-    @apply bg-linear-to-r from-primary via-[#FFC900] to-accent;
+    @apply bg-linear-to-r from-[#B8860B] via-primary to-[#B8860B];
   }
 
   .gradient-warm-btn {
-    @apply bg-linear-to-r from-primary via-[#FFC900] to-accent text-primary-foreground font-semibold rounded-lg hover:shadow-lg hover:scale-105 transition-all;
+    @apply bg-linear-to-r from-[#B8860B] via-primary to-[#B8860B] text-primary-foreground font-semibold rounded-lg hover:shadow-lg hover:brightness-105 transition-all;
   }
 
   .gradient-warm-subtle {
-    @apply bg-linear-to-br from-accent/10 to-primary/5;
+    @apply bg-linear-to-br from-secondary/6 to-primary/8;
+  }
+
+  /* Navy surface gradient — headers, hero bands ("temple meets hotel lobby") */
+  .gradient-navy {
+    @apply bg-linear-to-br from-secondary to-[#1A2733];
   }
 }
 
