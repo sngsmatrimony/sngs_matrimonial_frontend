@@ -5,7 +5,21 @@ import { useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  UserPlus,
+  HeartHandshake,
+  MapPin,
+  Briefcase,
+  Users,
+  Images,
+  ShieldCheck,
+  AlertCircle,
+  Mail,
+} from 'lucide-react';
 import client from '@/lib/api/client';
 
 import { Button } from '@/components/ui/button';
@@ -153,6 +167,10 @@ export default function RegisterPage() {
   const [emailVerified, setEmailVerified] = useState(false);
   const [verificationToken, setVerificationToken] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
+
+  // Password visibility toggles
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     // Step 1
@@ -682,37 +700,55 @@ export default function RegisterPage() {
   };
 
   const stepTitles = [
-    '📝 Create Account',
-    '💑 Personal Details',
-    '📍 Location Details',
-    '💼 Professional Details',
-    '👨‍👩‍👧‍👦 Family & Additional Details',
-    '📸 Preferences & Media'
+    { label: 'Create Your Account', icon: UserPlus },
+    { label: 'Personal Details', icon: HeartHandshake },
+    { label: 'Location Details', icon: MapPin },
+    { label: 'Professional Details', icon: Briefcase },
+    { label: 'Family & Additional Details', icon: Users },
+    { label: 'Preferences & Media', icon: Images },
   ];
   const progressValue = (currentStep / 6) * 100;
+  const CurrentStepIcon = stepTitles[currentStep - 1].icon;
 
   // Step 1 content
   if (currentStep === 1) {
     return (
-      <Card className="border-0 shadow-lg bg-white w-full max-w-3xl mx-auto">
-        <CardHeader className="pb-6 border-b border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <CardTitle className="font-viga text-2xl text-secondary">
-              {stepTitles[0]}
-            </CardTitle>
-            <div className="font-telex text-sm text-secondary/70 whitespace-nowrap">
-              Step 1/6
+      <div className="min-h-screen w-full bg-[#FDF8F0] bg-[radial-gradient(circle_at_15%_10%,rgba(212,168,67,0.10),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(212,168,67,0.08),transparent_45%)] px-4 py-10 sm:py-16 flex items-center justify-center">
+      <Card className="border border-[#D4A843]/20 shadow-[0_4px_30px_-10px_rgba(26,26,26,0.18)] bg-white w-full max-w-3xl mx-auto rounded-2xl overflow-hidden">
+        <CardHeader className="pb-6 pt-8 px-6 sm:px-10 bg-gradient-to-br from-[#2C3E50] to-[#1A2733] relative overflow-hidden">
+          {/* subtle gold hairline at the base of the header */}
+          <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#D4A843]/0 via-[#D4A843] to-[#D4A843]/0" />
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F5E6C3] text-[#2C3E50] ring-1 ring-[#D4A843]/50 shrink-0">
+                <UserPlus className="w-5 h-5" strokeWidth={1.75} />
+              </span>
+              <div>
+                <p className="font-telex text-[11px] tracking-[0.14em] uppercase text-[#D4A843] font-semibold mb-0.5">
+                  Step 1 of 6
+                </p>
+                <CardTitle className="font-viga text-2xl text-white font-bold leading-tight">
+                  {stepTitles[0].label}
+                </CardTitle>
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-1.5 font-telex text-xs text-white/70 font-medium whitespace-nowrap">
+              <ShieldCheck className="w-4 h-4 text-[#D4A843]" strokeWidth={1.75} />
+              100% Verified Profiles
             </div>
           </div>
-          <Progress value={progressValue} className="h-2" />
+          <div className="relative">
+            <Progress value={progressValue} className="h-1.5 bg-white/15 [&>div]:bg-[#D4A843]" />
+          </div>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="px-6 sm:px-10">
           <Form {...form}>
-            <div className="space-y-6 py-6">
+            <div className="space-y-6 py-8">
               {error && (
-                <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-lg text-sm font-medium">
-                  {error}
+                <div className="flex items-start gap-3 bg-destructive/5 border border-destructive/20 border-l-4 border-l-destructive text-destructive px-4 py-3.5 rounded-xl text-sm font-medium">
+                  <AlertCircle className="w-4.5 h-4.5 mt-0.5 shrink-0" strokeWidth={1.75} />
+                  <span>{error}</span>
                 </div>
               )}
 
@@ -721,9 +757,13 @@ export default function RegisterPage() {
                 name="fullName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-maven">Full Name</FormLabel>
+                    <FormLabel className="font-maven text-stone-700 font-medium">Full Name</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Enter your full name" className="font-maven" />
+                      <Input
+                        {...field}
+                        placeholder="Enter your full name"
+                        className="font-maven h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -735,45 +775,48 @@ export default function RegisterPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-maven">Email Address *</FormLabel>
-                    <div className="flex gap-2">
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="email"
-                          placeholder="your@email.com"
-                          className="font-maven flex-1"
-                          disabled={emailVerified}
-                          onChange={(e) => {
-                            field.onChange(e);
-                            setFormData(prev => ({
-                              ...prev,
-                              email: e.target.value
-                            }));
-                            if (emailVerified) {
-                              setEmailVerified(false);
-                              setVerificationToken('');
-                              setEmailVerificationStep('input');
-                            }
-                          }}
-                        />
-                      </FormControl>
+                    <FormLabel className="font-maven text-stone-700 font-medium">Email Address *</FormLabel>
+                    <div className="flex gap-2.5">
+                      <div className="relative flex-1">
+                        <Mail className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" strokeWidth={1.75} />
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="email"
+                            placeholder="your@email.com"
+                            className="font-maven pl-10 h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+                            disabled={emailVerified}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              setFormData(prev => ({
+                                ...prev,
+                                email: e.target.value
+                              }));
+                              if (emailVerified) {
+                                setEmailVerified(false);
+                                setVerificationToken('');
+                                setEmailVerificationStep('input');
+                              }
+                            }}
+                          />
+                        </FormControl>
+                      </div>
                       {!emailVerified && (
                         <Button
                           type="button"
                           onClick={sendOTP}
                           disabled={otpLoading || !formData.email || !z.string().email().safeParse(formData.email).success}
-                          className="bg-primary text-primary-foreground font-telex whitespace-nowrap"
+                          className="bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-telex font-semibold whitespace-nowrap h-12 px-5 rounded-xl shadow-sm"
                         >
                           {otpLoading ? 'Sending...' : 'Verify Email'}
                         </Button>
                       )}
                       {emailVerified && (
-                        <div className="flex items-center gap-2 px-3 py-2 bg-success/10 text-success rounded-md border border-success/20">
-                          <svg className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="flex items-center gap-2 px-4 h-12 bg-success/10 text-success rounded-xl border border-success/20">
+                          <svg className="w-4.5 h-4.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
-                          <span className="font-maven font-semibold text-sm">Verified</span>
+                          <span className="font-maven font-semibold text-sm whitespace-nowrap">Verified</span>
                         </div>
                       )}
                     </div>
@@ -784,9 +827,9 @@ export default function RegisterPage() {
 
               {/* OTP Input Section - shown after sending OTP */}
               {emailVerificationStep === 'otp' && !emailVerified && (
-                <div className="space-y-3 p-4 bg-gray-50 rounded-lg border-2 border-primary/20">
-                  <p className="font-maven text-sm text-secondary">
-                    Enter the 6-digit OTP sent to <strong>{formData.email}</strong>
+                <div className="space-y-4 p-5 bg-[#F5E6C3]/40 rounded-xl border border-[#D4A843]/30 border-l-4 border-l-[#D4A843]">
+                  <p className="font-maven text-sm text-stone-600">
+                    Enter the 6-digit code sent to <strong className="text-secondary">{formData.email}</strong>
                   </p>
                   <Input
                     type="text"
@@ -798,14 +841,14 @@ export default function RegisterPage() {
                       const cleaned = e.target.value.replace(/\D/g, '').slice(0, 6);
                       setOtpValue(cleaned);
                     }}
-                    className="text-center text-2xl tracking-widest font-maven"
+                    className="text-center text-2xl tracking-[0.5em] font-maven h-14 rounded-xl bg-white border-[#D4A843]/40 focus-visible:ring-[#D4A843]/40"
                   />
-                  <div className="flex gap-2">
+                  <div className="flex gap-2.5">
                     <Button
                       type="button"
                       onClick={verifyOTP}
                       disabled={otpLoading || !otpValue || otpValue.length !== 6}
-                      className="flex-1 bg-primary text-primary-foreground font-telex"
+                      className="flex-1 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-telex font-semibold h-11 rounded-xl shadow-sm"
                     >
                       {otpLoading ? 'Verifying...' : 'Verify OTP'}
                     </Button>
@@ -814,7 +857,7 @@ export default function RegisterPage() {
                       onClick={resendOTP}
                       disabled={resendTimer > 0}
                       variant="outline"
-                      className="font-telex"
+                      className="font-telex h-11 rounded-xl border-[#D4A843]/40 text-[#2C3E50] hover:bg-[#F5E6C3]/30"
                     >
                       {resendTimer > 0 ? `Resend (${resendTimer}s)` : 'Resend OTP'}
                     </Button>
@@ -827,10 +870,34 @@ export default function RegisterPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-maven">Password</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="password" autoComplete="new-password" placeholder="••••••••" className="font-maven" />
-                    </FormControl>
+                    <FormLabel className="font-maven text-stone-700 font-medium">Password</FormLabel>
+                    <div className="relative">
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type={showPassword ? 'text' : 'password'}
+                          autoComplete="new-password"
+                          placeholder="••••••••"
+                          className="font-maven h-12 rounded-xl border-[#D4A843]/25 pr-11 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+                        />
+                      </FormControl>
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        tabIndex={-1}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-[#B8860B] transition-colors"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-4.5 h-4.5" strokeWidth={1.75} />
+                        ) : (
+                          <Eye className="w-4.5 h-4.5" strokeWidth={1.75} />
+                        )}
+                      </button>
+                    </div>
+                    <p className="font-maven text-xs text-stone-500">
+                      At least 8 characters, with an uppercase letter, a lowercase letter and a number.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -841,10 +908,31 @@ export default function RegisterPage() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-maven">Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="password" autoComplete="new-password" placeholder="••••••••" className="font-maven" />
-                    </FormControl>
+                    <FormLabel className="font-maven text-stone-700 font-medium">Confirm Password</FormLabel>
+                    <div className="relative">
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          autoComplete="new-password"
+                          placeholder="••••••••"
+                          className="font-maven h-12 rounded-xl border-[#D4A843]/25 pr-11 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+                        />
+                      </FormControl>
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword((prev) => !prev)}
+                        aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                        tabIndex={-1}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-[#B8860B] transition-colors"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="w-4.5 h-4.5" strokeWidth={1.75} />
+                        ) : (
+                          <Eye className="w-4.5 h-4.5" strokeWidth={1.75} />
+                        )}
+                      </button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -855,9 +943,9 @@ export default function RegisterPage() {
                 name="mobileNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-maven">Mobile Number *</FormLabel>
-                    <div className="flex gap-2">
-                      <div className="w-16 flex items-center justify-center border border-input rounded-md bg-gray-50 font-maven text-sm">
+                    <FormLabel className="font-maven text-stone-700 font-medium">Mobile Number *</FormLabel>
+                    <div className="flex">
+                      <div className="w-16 flex items-center justify-center border border-r-0 border-[#D4A843]/25 rounded-l-xl bg-[#F5E6C3]/50 font-maven text-sm text-[#2C3E50] font-medium">
                         +91
                       </div>
                       <FormControl>
@@ -867,7 +955,7 @@ export default function RegisterPage() {
                           placeholder="9876543210"
                           maxLength={10}
                           pattern="[0-9]*"
-                          className="font-maven flex-1"
+                          className="font-maven flex-1 h-12 rounded-l-none rounded-r-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
                           onChange={(e) => {
                             field.onChange(e);
                             setFormData(prev => ({
@@ -888,9 +976,9 @@ export default function RegisterPage() {
                 name="alternateMobileNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="font-maven">Alternate Mobile Number (Optional)</FormLabel>
-                    <div className="flex gap-2">
-                      <div className="w-16 flex items-center justify-center border border-input rounded-md bg-gray-50 font-maven text-sm">
+                    <FormLabel className="font-maven text-stone-700 font-medium">Alternate Mobile Number (Optional)</FormLabel>
+                    <div className="flex">
+                      <div className="w-16 flex items-center justify-center border border-r-0 border-[#D4A843]/25 rounded-l-xl bg-[#F5E6C3]/50 font-maven text-sm text-[#2C3E50] font-medium">
                         +91
                       </div>
                       <FormControl>
@@ -900,7 +988,7 @@ export default function RegisterPage() {
                           placeholder="9876543210"
                           maxLength={10}
                           pattern="[0-9]*"
-                          className="font-maven flex-1"
+                          className="font-maven flex-1 h-12 rounded-l-none rounded-r-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
                         />
                       </FormControl>
                     </div>
@@ -913,55 +1001,68 @@ export default function RegisterPage() {
           </Form>
         </CardContent>
 
-        <div className="flex gap-3 p-6">
-          <Button variant="outline" className="flex-1 font-maven" onClick={() => router.push('/login')}>
+        <div className="flex gap-3 px-6 sm:px-10 py-6 border-t border-[#D4A843]/20 bg-[#F5E6C3]/25">
+          <Button
+            variant="outline"
+            className="flex-1 font-maven h-12 rounded-xl border-[#D4A843]/30 text-[#2C3E50] font-medium hover:bg-[#F5E6C3]/30 hover:border-[#D4A843]/50"
+            onClick={() => router.push('/login')}
+          >
             Back to Login
           </Button>
           <Button
             onClick={validateAndProceed}
             disabled={isLoading || !emailVerified}
-            className="flex-1 bg-primary text-primary-foreground font-maven"
+            className="flex-1 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-maven font-semibold h-12 rounded-xl shadow-sm disabled:opacity-50"
           >
             {!emailVerified ? 'Verify Email to Continue' : isLoading ? 'Validating...' : 'Next'}
             {!isLoading && emailVerified && <ChevronRight className="ml-2 w-4 h-4" />}
           </Button>
         </div>
       </Card>
+      </div>
     );
   }
 
   // Steps 2-6 use shared components
   return (
-    <Card className="border-0 shadow-lg bg-white w-full max-w-3xl mx-auto">
-      <CardHeader className="pb-6 border-b border-gray-100">
-        <div className="flex items-center justify-between mb-4">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={handleBackNavigation}
-            className="p-0 h-auto hover:bg-transparent"
-          >
-            <ChevronLeft className="w-6 h-6 text-secondary" />
-          </Button>
-
-          <CardTitle className="font-viga text-2xl text-secondary flex-1 ml-4">
-            {stepTitles[currentStep - 1]}
-          </CardTitle>
-
-          <div className="font-telex text-sm text-secondary/70 whitespace-nowrap">
-            Step {currentStep}/6
+    <div className="min-h-screen w-full bg-[#FDF8F0] bg-[radial-gradient(circle_at_15%_10%,rgba(212,168,67,0.10),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(212,168,67,0.08),transparent_45%)] px-4 py-10 sm:py-16 flex items-center justify-center">
+    <Card className="border border-[#D4A843]/20 shadow-[0_4px_30px_-10px_rgba(26,26,26,0.18)] bg-white w-full max-w-3xl mx-auto rounded-2xl overflow-hidden">
+      <CardHeader className="pb-6 pt-8 px-6 sm:px-10 bg-gradient-to-br from-[#2C3E50] to-[#1A2733] relative overflow-hidden">
+        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#D4A843]/0 via-[#D4A843] to-[#D4A843]/0" />
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleBackNavigation}
+              aria-label="Go back"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-white/70 hover:bg-white/10 hover:text-[#D4A843] transition-colors shrink-0"
+            >
+              <ChevronLeft className="w-5 h-5" strokeWidth={1.75} />
+            </button>
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F5E6C3] text-[#2C3E50] ring-1 ring-[#D4A843]/50 shrink-0">
+              <CurrentStepIcon className="w-5 h-5" strokeWidth={1.75} />
+            </span>
+            <div>
+              <p className="font-telex text-[11px] tracking-[0.14em] uppercase text-[#D4A843] font-semibold mb-0.5">
+                Step {currentStep} of 6
+              </p>
+              <CardTitle className="font-viga text-2xl text-white font-bold leading-tight">
+                {stepTitles[currentStep - 1].label}
+              </CardTitle>
+            </div>
           </div>
         </div>
 
-        <Progress value={progressValue} className="h-2" />
+        <Progress value={progressValue} className="h-1.5 bg-white/15 [&>div]:bg-[#D4A843]" />
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="px-6 sm:px-10">
         <Form {...form}>
-          <div className="space-y-6 py-6">
+          <div className="space-y-6 py-8">
             {error && (
-              <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-lg text-sm font-medium">
-                {error}
+              <div className="flex items-start gap-3 bg-destructive/5 border border-destructive/20 border-l-4 border-l-destructive text-destructive px-4 py-3.5 rounded-xl text-sm font-medium">
+                <AlertCircle className="w-4.5 h-4.5 mt-0.5 shrink-0" strokeWidth={1.75} />
+                <span>{error}</span>
               </div>
             )}
 
@@ -981,12 +1082,12 @@ export default function RegisterPage() {
         </Form>
       </CardContent>
 
-      <div className="flex gap-3 p-6">
+      <div className="flex gap-3 px-6 sm:px-10 py-6 border-t border-[#D4A843]/20 bg-[#F5E6C3]/25">
         <Button
           type="button"
           variant="outline"
           onClick={handleBackNavigation}
-          className="flex-1 font-maven"
+          className="flex-1 font-maven h-12 rounded-xl border-[#D4A843]/30 text-[#2C3E50] font-medium hover:bg-[#F5E6C3]/30 hover:border-[#D4A843]/50"
         >
           Back
         </Button>
@@ -994,12 +1095,13 @@ export default function RegisterPage() {
         <Button
           onClick={validateAndProceed}
           disabled={isLoading}
-          className="flex-1 bg-primary text-primary-foreground font-maven"
+          className="flex-1 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-maven font-semibold h-12 rounded-xl shadow-sm disabled:opacity-50"
         >
           {isLoading ? 'Processing...' : currentStep === 6 ? 'Complete Registration' : 'Next'}
           {!isLoading && currentStep < 6 && <ChevronRight className="ml-2 w-4 h-4" />}
         </Button>
       </div>
     </Card>
+    </div>
   );
 }
