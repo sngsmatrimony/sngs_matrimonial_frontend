@@ -263,6 +263,7 @@ export default function RegisterPage() {
     resolver: zodResolver(getSchemaForStep(currentStep)),
     defaultValues: formData,
     mode: 'onBlur',
+    reValidateMode: 'onChange',
   });
 
   // Track previous step to only reset form when step changes
@@ -713,8 +714,7 @@ export default function RegisterPage() {
   // Step 1 content
   if (currentStep === 1) {
     return (
-      <div className="min-h-screen w-full bg-[#FDF8F0] bg-[radial-gradient(circle_at_15%_10%,rgba(212,168,67,0.10),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(212,168,67,0.08),transparent_45%)] px-4 py-10 sm:py-16 flex items-center justify-center">
-      <Card className="border border-[#D4A843]/20 shadow-[0_4px_30px_-10px_rgba(26,26,26,0.18)] bg-white w-full max-w-3xl mx-auto rounded-2xl overflow-hidden">
+      <Card className="border border-[#D4A843]/20 shadow-[0_4px_30px_-10px_rgba(26,26,26,0.18)] bg-white w-full max-w-3xl mx-auto rounded-2xl overflow-hidden py-0 gap-0">
         <CardHeader className="pb-6 pt-8 px-6 sm:px-10 bg-gradient-to-br from-[#2C3E50] to-[#1A2733] relative overflow-hidden">
           {/* subtle gold hairline at the base of the header */}
           <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#D4A843]/0 via-[#D4A843] to-[#D4A843]/0" />
@@ -763,9 +763,15 @@ export default function RegisterPage() {
                         {...field}
                         placeholder="Enter your full name"
                         className="font-maven h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+                        onChange={(e) => {
+                          field.onChange(e);
+                          if (form.formState.errors.fullName) {
+                            form.trigger('fullName');
+                          }
+                        }}
                       />
                     </FormControl>
-                    <FormMessage />
+                    <FormMessage className="font-maven text-xs font-normal text-[#B3554F] mt-1" />
                   </FormItem>
                 )}
               />
@@ -797,6 +803,9 @@ export default function RegisterPage() {
                                 setVerificationToken('');
                                 setEmailVerificationStep('input');
                               }
+                              if (form.formState.errors.email) {
+                                form.trigger('email');
+                              }
                             }}
                           />
                         </FormControl>
@@ -820,7 +829,7 @@ export default function RegisterPage() {
                         </div>
                       )}
                     </div>
-                    <FormMessage />
+                    <FormMessage className="font-maven text-xs font-normal text-[#B3554F] mt-1" />
                   </FormItem>
                 )}
               />
@@ -868,7 +877,7 @@ export default function RegisterPage() {
               <FormField
                 control={form.control}
                 name="password"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <FormLabel className="font-maven text-stone-700 font-medium">Password</FormLabel>
                     <div className="relative">
@@ -879,6 +888,15 @@ export default function RegisterPage() {
                           autoComplete="new-password"
                           placeholder="••••••••"
                           className="font-maven h-12 rounded-xl border-[#D4A843]/25 pr-11 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+                          onChange={(e) => {
+                            field.onChange(e);
+                            if (form.formState.errors.password) {
+                              form.trigger('password');
+                            }
+                            if (form.formState.errors.confirmPassword) {
+                              form.trigger('confirmPassword');
+                            }
+                          }}
                         />
                       </FormControl>
                       <button
@@ -895,10 +913,12 @@ export default function RegisterPage() {
                         )}
                       </button>
                     </div>
-                    <p className="font-maven text-xs text-stone-500">
-                      At least 8 characters, with an uppercase letter, a lowercase letter and a number.
-                    </p>
-                    <FormMessage />
+                    {!fieldState.error && (
+                      <p className="font-maven text-xs text-stone-500">
+                        At least 8 characters, with an uppercase letter, a lowercase letter and a number.
+                      </p>
+                    )}
+                    <FormMessage className="font-maven text-xs font-normal text-[#B3554F] mt-1" />
                   </FormItem>
                 )}
               />
@@ -917,6 +937,12 @@ export default function RegisterPage() {
                           autoComplete="new-password"
                           placeholder="••••••••"
                           className="font-maven h-12 rounded-xl border-[#D4A843]/25 pr-11 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+                          onChange={(e) => {
+                            field.onChange(e);
+                            if (form.formState.errors.confirmPassword) {
+                              form.trigger('confirmPassword');
+                            }
+                          }}
                         />
                       </FormControl>
                       <button
@@ -933,7 +959,7 @@ export default function RegisterPage() {
                         )}
                       </button>
                     </div>
-                    <FormMessage />
+                    <FormMessage className="font-maven text-xs font-normal text-[#B3554F] mt-1" />
                   </FormItem>
                 )}
               />
@@ -962,11 +988,14 @@ export default function RegisterPage() {
                               ...prev,
                               mobileNumber: e.target.value
                             }));
+                            if (form.formState.errors.mobileNumber) {
+                              form.trigger('mobileNumber');
+                            }
                           }}
                         />
                       </FormControl>
                     </div>
-                    <FormMessage className="font-telex text-xs" />
+                    <FormMessage className="font-maven text-xs font-normal text-[#B3554F] mt-1" />
                   </FormItem>
                 )}
               />
@@ -989,10 +1018,16 @@ export default function RegisterPage() {
                           maxLength={10}
                           pattern="[0-9]*"
                           className="font-maven flex-1 h-12 rounded-l-none rounded-r-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+                          onChange={(e) => {
+                            field.onChange(e);
+                            if (form.formState.errors.alternateMobileNumber) {
+                              form.trigger('alternateMobileNumber');
+                            }
+                          }}
                         />
                       </FormControl>
                     </div>
-                    <FormMessage className="font-telex text-xs" />
+                    <FormMessage className="font-maven text-xs font-normal text-[#B3554F] mt-1" />
                   </FormItem>
                 )}
               />
@@ -1019,14 +1054,12 @@ export default function RegisterPage() {
           </Button>
         </div>
       </Card>
-      </div>
     );
   }
 
   // Steps 2-6 use shared components
   return (
-    <div className="min-h-screen w-full bg-[#FDF8F0] bg-[radial-gradient(circle_at_15%_10%,rgba(212,168,67,0.10),transparent_45%),radial-gradient(circle_at_85%_90%,rgba(212,168,67,0.08),transparent_45%)] px-4 py-10 sm:py-16 flex items-center justify-center">
-    <Card className="border border-[#D4A843]/20 shadow-[0_4px_30px_-10px_rgba(26,26,26,0.18)] bg-white w-full max-w-3xl mx-auto rounded-2xl overflow-hidden">
+    <Card className="border border-[#D4A843]/20 shadow-[0_4px_30px_-10px_rgba(26,26,26,0.18)] bg-white w-full max-w-3xl mx-auto rounded-2xl overflow-hidden py-0 gap-0">
       <CardHeader className="pb-6 pt-8 px-6 sm:px-10 bg-gradient-to-br from-[#2C3E50] to-[#1A2733] relative overflow-hidden">
         <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#D4A843]/0 via-[#D4A843] to-[#D4A843]/0" />
         <div className="flex items-center justify-between mb-5">
@@ -1102,6 +1135,5 @@ export default function RegisterPage() {
         </Button>
       </div>
     </Card>
-    </div>
   );
 }
