@@ -17,8 +17,8 @@ export default function Header({ showLogout = false, isFixed = false }) {
   };
 
   const headerClasses = isFixed
-    ? 'border-b border-gray-100 fixed top-0 left-0 right-0 z-50 bg-white shadow-sm'
-    : 'border-b border-gray-100';
+    ? 'border-b border-[#D4A843]/15 fixed top-0 left-0 right-0 z-50 bg-white shadow-[0_1px_12px_-4px_rgba(0,0,0,0.06)]'
+    : 'bg-white border-b border-[#D4A843]/15 shadow-[0_1px_12px_-4px_rgba(0,0,0,0.06)]';
 
   // PROMOTIONAL: Credits and membership display commented out during promotional period
   // const userCredits = membership?.credits ?? user?.membership?.credits ?? 0;
