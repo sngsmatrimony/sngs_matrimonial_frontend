@@ -15,22 +15,22 @@ export function FamilyDetailsStep({ form }) {
 
   return (
     <div className="space-y-6">
-      {/* <h2 className="font-viga text-xl text-secondary">Family & Additional Details</h2> */}
+      {/* <h2 className="font-serif text-xl text-[#1A1A1A]">Family & Additional Details</h2> */}
 
       {/* Father Details */}
-      <div className="space-y-4 p-4 border border-gray-200 rounded-lg">
-        <h3 className="font-maven font-semibold text-secondary">Father&apos;s Information</h3>
+      <div className="space-y-4 p-5 border border-[#D4A843]/20 rounded-xl bg-[#FDF8F0]/60">
+        <h3 className="font-sans font-semibold text-[#1A1A1A]">Father&apos;s Information</h3>
 
         <FormField
           control={form.control}
           name="fatherName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Father&apos;s Name *</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Father&apos;s Name *</FormLabel>
               <FormControl>
-                <Input {...field} value={field.value ?? ''} placeholder="Enter father's name" className="font-maven" />
+                <Input {...field} value={field.value ?? ''} placeholder="Enter father's name" className="font-sans h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50" />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
@@ -40,10 +40,10 @@ export function FamilyDetailsStep({ form }) {
           name="fatherOccupation"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Father&apos;s Occupation</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Father&apos;s Occupation *</FormLabel>
               <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
-                  <SelectTrigger className="font-maven">
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                     <SelectValue placeholder="Select occupation" />
                   </SelectTrigger>
                 </FormControl>
@@ -55,26 +55,26 @@ export function FamilyDetailsStep({ form }) {
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
       </div>
 
       {/* Mother Details */}
-      <div className="space-y-4 p-4 border border-gray-200 rounded-lg">
-        <h3 className="font-maven font-semibold text-secondary">Mother&apos;s Information</h3>
+      <div className="space-y-4 p-5 border border-[#D4A843]/20 rounded-xl bg-[#FDF8F0]/60">
+        <h3 className="font-sans font-semibold text-[#1A1A1A]">Mother&apos;s Information</h3>
 
         <FormField
           control={form.control}
           name="motherName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Mother&apos;s Name *</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Mother&apos;s Name *</FormLabel>
               <FormControl>
-                <Input {...field} value={field.value ?? ''} placeholder="Enter mother's name" className="font-maven" />
+                <Input {...field} value={field.value ?? ''} placeholder="Enter mother's name" className="font-sans h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50" />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
@@ -84,10 +84,10 @@ export function FamilyDetailsStep({ form }) {
           name="motherOccupation"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Mother&apos;s Occupation</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Mother&apos;s Occupation *</FormLabel>
               <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
-                  <SelectTrigger className="font-maven">
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                     <SelectValue placeholder="Select occupation" />
                   </SelectTrigger>
                 </FormControl>
@@ -99,7 +99,7 @@ export function FamilyDetailsStep({ form }) {
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
@@ -111,7 +111,7 @@ export function FamilyDetailsStep({ form }) {
         name="residentialStatus"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Residential Status (Optional)</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Residential Status *</FormLabel>
             <FormControl>
               <div className="flex flex-wrap gap-2">
                 {RESIDENTIAL_STATUS.map(status => (
@@ -119,10 +119,10 @@ export function FamilyDetailsStep({ form }) {
                     key={status}
                     type="button"
                     onClick={() => field.onChange(field.value === status ? '' : status)}
-                    className={`px-4 py-2 rounded-full font-telex font-semibold transition-all ${
+                    className={`px-4 py-2 rounded-full font-sans font-semibold transition-all ${
                       field.value === status
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-gray-100 text-secondary border-2 border-gray-200 hover:border-primary'
+                        ? 'bg-[#D4A843] text-[#1A1A1A] border-2 border-[#D4A843] shadow-sm'
+                        : 'bg-white text-[#2C3E50] border-2 border-[#D4A843]/30 hover:border-[#D4A843] hover:bg-[#F5E6C3]/40'
                     }`}
                   >
                     {status}
@@ -130,7 +130,7 @@ export function FamilyDetailsStep({ form }) {
                 ))}
               </div>
             </FormControl>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -141,7 +141,7 @@ export function FamilyDetailsStep({ form }) {
         name="familyStatus"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Family Status</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Family Status *</FormLabel>
             <FormControl>
               <div className="flex flex-wrap gap-2">
                 {FAMILY_STATUS.map(status => (
@@ -149,10 +149,10 @@ export function FamilyDetailsStep({ form }) {
                     key={status}
                     type="button"
                     onClick={() => field.onChange(status)}
-                    className={`px-4 py-2 rounded-full font-telex font-semibold transition-all ${
+                    className={`px-4 py-2 rounded-full font-sans text-sm font-medium transition-all duration-150 ${
                       field.value === status
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-gray-100 text-secondary border-2 border-gray-200 hover:border-primary'
+                        ? 'bg-[#D4A843] text-[#1A1A1A] border-2 border-[#D4A843] shadow-sm'
+                        : 'bg-white text-[#2C3E50] border-2 border-[#D4A843]/30 hover:border-[#D4A843] hover:bg-[#F5E6C3]/40'
                     }`}
                   >
                     {status}
@@ -160,7 +160,7 @@ export function FamilyDetailsStep({ form }) {
                 ))}
               </div>
             </FormControl>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />

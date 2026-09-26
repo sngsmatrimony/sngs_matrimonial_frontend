@@ -7,7 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import Header from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,15 +49,14 @@ export default function AdminForgotPasswordPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header showLogout={false} />
       <div className="flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           <Card className="border-0 shadow-lg bg-white">
             <CardHeader className="space-y-2 pb-6">
-              <CardTitle className="font-viga text-3xl text-center text-primary">
+              <CardTitle className="font-serif text-3xl text-center text-primary">
                 Admin Password Reset
               </CardTitle>
-              <CardDescription className="font-maven text-center text-secondary">
+              <CardDescription className="font-sans text-center text-secondary">
                 Enter your registered email to receive an OTP
               </CardDescription>
             </CardHeader>
@@ -70,25 +68,25 @@ export default function AdminForgotPasswordPage() {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-telex text-secondary font-semibold">
+                        <FormLabel className="font-sans text-secondary font-semibold">
                           Email Address
                         </FormLabel>
                         <FormControl>
                           <Input
                             placeholder="admin@example.com"
                             type="email"
-                            className="border-2 border-gray-200 focus:border-primary font-maven"
+                            className="border-2 border-gray-200 focus:border-primary font-sans"
                             {...field}
                           />
                         </FormControl>
-                        <FormMessage className="text-destructive font-maven" />
+                        <FormMessage className="text-destructive font-sans" />
                       </FormItem>
                     )}
                   />
 
                   <Button
                     type="submit"
-                    className="font-telex w-full bg-primary hover:bg-primary/90 h-12 text-lg font-semibold text-black"
+                    className="font-sans w-full bg-primary hover:bg-primary/90 h-12 text-lg font-semibold text-black"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Sending OTP...' : 'Send OTP'}
@@ -96,7 +94,7 @@ export default function AdminForgotPasswordPage() {
                 </form>
               </Form>
 
-              <div className="font-maven mt-6 pt-6 border-t border-gray-200 text-center text-sm">
+              <div className="font-sans mt-6 pt-6 border-t border-gray-200 text-center text-sm">
                 <Link href="/admin/login" className="text-primary hover:text-primary/80 font-semibold">
                   Back to Admin Login
                 </Link>

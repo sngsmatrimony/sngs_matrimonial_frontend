@@ -104,6 +104,32 @@ export const parseTimeToDropdowns = (timeString) => {
 };
 
 /**
+ * Format a lastActiveAt timestamp into a short "Active X ago" label for profile cards.
+ * @param {string|Date} lastActiveAt
+ * @returns {string} e.g. "Active today", "Active 3h ago", "Active 5d ago"
+ */
+export const formatRelativeActivity = (lastActiveAt) => {
+  if (!lastActiveAt) return '';
+
+  const then = new Date(lastActiveAt).getTime();
+  if (Number.isNaN(then)) return '';
+
+  const diffMs = Date.now() - then;
+  const minutes = Math.floor(diffMs / (60 * 1000));
+  const hours = Math.floor(diffMs / (60 * 60 * 1000));
+  const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+
+  if (minutes < 30) return 'Active now';
+  if (hours < 1) return `Active ${minutes}m ago`;
+  if (hours < 24) return `Active ${hours}h ago`;
+  if (days < 1) return 'Active today';
+  if (days === 1) return 'Active yesterday';
+  if (days < 7) return `Active ${days}d ago`;
+  if (days < 30) return `Active ${Math.floor(days / 7)}w ago`;
+  return 'Active a while ago';
+};
+
+/**
  * Format time input from user with proper spacing and case
  * @param {string} value - Raw input value
  * @returns {string} Formatted time or empty string

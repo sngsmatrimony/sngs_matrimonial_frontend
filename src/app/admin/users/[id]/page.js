@@ -26,6 +26,13 @@ import {
 } from '@/components/ui/dialog';
 import Image from 'next/image';
 
+function humanizeFieldPath(path) {
+  const key = path.split('.').pop();
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/^./, (c) => c.toUpperCase());
+}
+
 const RELIGIONS = [
   'Hindu', 'Muslim - Shia', 'Muslim - Sunni', 'Muslim - Others', 'Christian', 'Sikh',
   'Jain - Digambar', 'Jain - Swetambar', 'Jain - Others', 'Parsi', 'Buddhist', 'Jewish', 'Inter-Religion'
@@ -402,11 +409,12 @@ export default function AdminUserDetailPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.back()}>
-              <ArrowLeft size={20} />
+            <Button variant="ghost" onClick={() => router.back()}>
+              <ArrowLeft size={20} className="mr-1.5" />
+              Back
             </Button>
             <div>
-              <h1 className="text-3xl font-bold font-viga text-secondary">{user.fullName}</h1>
+              <h1 className="text-3xl font-bold font-serif text-secondary">{user.fullName}</h1>
               <p className="text-gray-600">{user.email}</p>
             </div>
           </div>
@@ -469,6 +477,54 @@ export default function AdminUserDetailPage() {
                 </Button>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Profile Completion Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Profile Completion</span>
+              <Badge
+                className={
+                  user.profileCompletion >= 80
+                    ? 'bg-green-100 text-green-800 border-green-300'
+                    : user.profileCompletion >= 50
+                      ? 'bg-amber-100 text-amber-800 border-amber-300'
+                      : 'bg-red-100 text-red-800 border-red-300'
+                }
+              >
+                {user.profileCompletion || 0}%
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-4">
+              <div
+                className={`h-full rounded-full ${
+                  user.profileCompletion >= 80
+                    ? 'bg-green-500'
+                    : user.profileCompletion >= 50
+                      ? 'bg-amber-500'
+                      : 'bg-red-400'
+                }`}
+                style={{ width: `${user.profileCompletion || 0}%` }}
+              />
+            </div>
+            {user.missingFields && user.missingFields.length > 0 ? (
+              <div>
+                <p className="text-sm text-gray-600 mb-2">Missing fields:</p>
+                <div className="flex flex-wrap gap-2">
+                  {user.missingFields.map((field) => (
+                    <Badge key={field} variant="outline" className="text-gray-600 font-normal">
+                      {humanizeFieldPath(field)}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-green-700">All required fields are filled in.</p>
+            )}
           </CardContent>
         </Card>
 
@@ -885,6 +941,7 @@ export default function AdminUserDetailPage() {
                           <SelectItem value="Vegetarian">Vegetarian</SelectItem>
                           <SelectItem value="Non-Vegetarian">Non-Vegetarian</SelectItem>
                           <SelectItem value="Eggetarian">Eggetarian</SelectItem>
+                          <SelectItem value="Both (Veg & Non-Veg)">Both (Veg & Non-Veg)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1920,7 +1977,7 @@ export default function AdminUserDetailPage() {
         <Dialog open={showApprovalRejectDialog} onOpenChange={setShowApprovalRejectDialog}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="font-viga">Reject User Registration</DialogTitle>
+              <DialogTitle className="font-serif">Reject User Registration</DialogTitle>
               <DialogDescription>
                 Please provide a reason for rejecting this user. This will be sent to the user via email.
               </DialogDescription>

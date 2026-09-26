@@ -78,20 +78,20 @@ export default function ChatList({
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-white border-r">
+    <div className="w-full h-full flex flex-col bg-white border-r border-[#D4A843]/15">
       {/* Header */}
-      <div className="px-4 py-4 border-b bg-white shrink-0">
-        <h2 className="text-xl font-viga text-secondary mb-3">Messages</h2>
+      <div className="px-4 py-4 border-b border-[#D4A843]/15 bg-white shrink-0">
+        <h2 className="text-xl font-serif text-[#2C3E50] mb-3">Messages</h2>
 
         {/* Search Bar */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#2C3E50]/40" />
           <Input
             type="text"
             placeholder="Search conversations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 font-telex text-sm border-gray-300 focus:border-primary focus:ring-primary/20"
+            className="pl-10 font-sans text-sm border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
           />
         </div>
       </div>
@@ -101,17 +101,17 @@ export default function ChatList({
         {/* Loading State */}
         {isLoading && (
           <div className="flex items-center justify-center h-32">
-            <Loader2 className="w-6 h-6 text-secondary animate-spin" />
+            <Loader2 className="w-6 h-6 text-[#2C3E50] animate-spin" />
           </div>
         )}
 
         {/* Error State */}
         {error && !isLoading && (
           <div className="px-4 py-8 text-center">
-            <p className="text-sm font-maven text-red-600 mb-2">
+            <p className="text-sm font-sans text-[#C75B39] mb-2">
               {typeof error === 'string' ? error : error.message || "Failed to load conversations"}
             </p>
-            <p className="text-xs font-telex text-gray-500">
+            <p className="text-xs font-sans text-[#2C3E50]/60">
               Please check your connection and try again
             </p>
           </div>
@@ -123,10 +123,10 @@ export default function ChatList({
           filteredConversations.length === 0 &&
           conversations.length === 0 && (
             <div className="px-4 py-12 text-center">
-              <p className="text-base font-maven text-gray-600">
+              <p className="text-base font-sans text-[#2C3E50]/70">
                 No conversations yet
               </p>
-              <p className="text-sm font-telex text-gray-500 mt-1">
+              <p className="text-sm font-sans text-[#2C3E50]/60 mt-1">
                 Start messaging someone to begin
               </p>
             </div>
@@ -139,7 +139,7 @@ export default function ChatList({
           conversations.length > 0 &&
           searchQuery && (
             <div className="px-4 py-12 text-center">
-              <p className="text-sm font-maven text-gray-600">
+              <p className="text-sm font-sans text-[#2C3E50]/70">
                 No conversations found for &quot;{searchQuery}&quot;
               </p>
             </div>
@@ -151,16 +151,16 @@ export default function ChatList({
           filteredConversations.map((conversation) => {
             const otherUser = conversation.otherParticipant || {};
             const userName = otherUser.fullName || otherUser.name || 'Unknown';
-            const profilePictureUrl = otherUser.profilePicture?.url || otherUser.profilePicture || '/images/default-profile.png';
+            const profilePictureUrl = otherUser.profilePicture?.url || otherUser.profilePicture || undefined;
 
             return (
               <button
                 key={conversation._id}
                 onClick={() => onSelectConversation(conversation._id)}
                 className={cn(
-                  "w-full px-4 py-3 flex items-start gap-3 hover:bg-gray-50 transition-colors border-b border-gray-100",
+                  "w-full px-4 py-3 flex items-start gap-3 hover:bg-[#F5E6C3]/30 transition-colors border-b border-[#D4A843]/10",
                   activeConversationId === conversation._id &&
-                    "bg-primary/5 border-l-4 border-l-primary"
+                    "bg-[#F5E6C3]/40 border-l-4 border-l-[#D4A843]"
                 )}
               >
               {/* Avatar with Online Status - Clickable to view profile */}
@@ -175,12 +175,12 @@ export default function ChatList({
                 }}
                 className="relative shrink-0 cursor-pointer group"
               >
-                <Avatar className="w-12 h-12 ring-2 ring-transparent group-hover:ring-primary transition-all">
+                <Avatar className="w-12 h-12 ring-2 ring-transparent group-hover:ring-[#D4A843] transition-all">
                   <AvatarImage
                     src={profilePictureUrl}
                     alt={userName}
                   />
-                  <AvatarFallback className="bg-secondary text-white font-telex">
+                  <AvatarFallback className="bg-[#2C3E50] text-white font-sans">
                     {getInitials(userName)}
                   </AvatarFallback>
                 </Avatar>
@@ -192,13 +192,13 @@ export default function ChatList({
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <h3
                     className={cn(
-                      "font-maven font-semibold text-[15px] text-gray-900 truncate",
-                      conversation.unreadCount > 0 && "text-gray-900"
+                      "font-sans font-semibold text-[15px] text-[#1A1A1A] truncate",
+                      conversation.unreadCount > 0 && "text-[#1A1A1A]"
                     )}
                   >
                     {userName}
                   </h3>
-                  <span className="text-[11px] font-telex text-gray-500 shrink-0">
+                  <span className="text-[11px] font-sans text-[#2C3E50]/60 shrink-0">
                     {conversation.lastMessage?.timestamp &&
                       formatTimestamp(conversation.lastMessage.timestamp)}
                   </span>
@@ -208,9 +208,9 @@ export default function ChatList({
                 <div className="flex items-center justify-between gap-2">
                   <p
                     className={cn(
-                      "text-sm font-telex text-gray-600 truncate",
+                      "text-sm font-sans text-[#2C3E50]/70 truncate",
                       conversation.unreadCount > 0 &&
-                        "text-gray-900 font-medium"
+                        "text-[#1A1A1A] font-medium"
                     )}
                   >
                     {conversation.lastMessage?.preview
@@ -220,7 +220,7 @@ export default function ChatList({
 
                   {conversation.unreadCount > 0 && (
                     <Badge
-                      className="bg-primary text-black font-telex text-[10px] px-1.5 py-0 min-w-5 h-5 flex items-center justify-center shrink-0"
+                      className="bg-[#D4A843] text-[#1A1A1A] font-sans text-[10px] px-1.5 py-0 min-w-5 h-5 flex items-center justify-center shrink-0"
                     >
                       {conversation.unreadCount > 99
                         ? "99+"

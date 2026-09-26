@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useLandingStore } from '@/store/landingStore';
 import HelpButton from '@/components/layout/HelpButton';
 import ApprovalStatusBanner from '@/components/layout/ApprovalStatusBanner';
+import ApprovalGuard from '@/components/guards/ApprovalGuard';
 import { SocketProvider } from '@/contexts/SocketContext';
 
 export default function UserLayout({ children }) {
@@ -73,10 +74,10 @@ export default function UserLayout({ children }) {
   // Show loader while initializing (unless timeout reached)
   if ((!isInitialized && !initTimeout) || !token) {
      return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#FDF8F0] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-primary animate-spin"></div>
-          <p className="font-maven text-secondary">Loading...</p>
+          <div className="w-12 h-12 rounded-full border-4 border-[#F5E6C3] border-t-[#D4A843] animate-spin"></div>
+          <p className="font-sans text-[#2C3E50]">Loading...</p>
         </div>
       </div>
     );
@@ -85,18 +86,18 @@ export default function UserLayout({ children }) {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="border-b border-gray-100 fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+      <header className="border-b border-[#D4A843]/20 fixed top-0 left-0 right-0 z-50 bg-[#FDF8F0]/95 backdrop-blur-md shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
             <Image
-              src="/logo.jpeg"
+              src="/logo_1.png"
               alt="SNGS Matrimonial Logo"
-              width={48}
-              height={48}
-              className="h-12 w-auto"
+              width={44}
+              height={44}
+              className="h-11 w-auto rounded shadow-sm"
               style={{ width: 'auto', height: 'auto' }}
             />
-            <h1 className="font-viga text-2xl text-accent hidden sm:block">
+            <h1 className="font-serif text-xl font-bold text-[#1A1A1A] hidden sm:block">
               SNGS Matrimonial
             </h1>
           </Link>
@@ -104,8 +105,8 @@ export default function UserLayout({ children }) {
           {/* Welcome Message and Credits */}
           <div className="hidden md:flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="font-maven text-gray-600">Welcome,</span>
-              <span className="font-viga text-secondary">{user?.fullName}</span>
+              <span className="font-sans text-[#2C3E50]/70 text-sm">Welcome,</span>
+              <span className="font-serif font-semibold text-[#1A1A1A]">{user?.fullName}</span>
             </div>
             {/* PROMOTIONAL: Credits display and Get Membership button commented out during promotional period
             {showCredits && (
@@ -148,7 +149,7 @@ export default function UserLayout({ children }) {
           {/* Logout Button */}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors font-telex"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#FBEAE5] text-[#C75B39] hover:bg-[#F5DDD5] transition-colors font-sans font-medium text-sm"
           >
             <LogOut size={18} />
             <span className="hidden sm:inline">Logout</span>
@@ -156,22 +157,22 @@ export default function UserLayout({ children }) {
         </div>
       </header>
 
-      {/* Tab Navigation */}
-      <div className="bg-black border-b border-gray-900 pt-2 fixed top-16 left-0 right-0 z-40">
+      {/* Tab Navigation — desktop/tablet only; mobile uses the fixed bottom nav instead */}
+      <div className="hidden md:block bg-[#2C3E50] border-b border-[#D4A843]/20 pt-2 fixed top-[65px] left-0 right-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-8 overflow-x-auto">
             {/* Browse Tab - Requires approval */}
             {hasFullAccess && (
               <Link
                 href="/browse"
-                className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                className={`py-4 font-sans font-medium text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
                   isActive('/browse')
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-white hover:text-gray-300'
+                    ? 'border-[#D4A843] text-[#D4A843]'
+                    : 'border-transparent text-white/80 hover:text-white'
                 }`}
               >
-                <Compass size={20} />
-                <span className="hidden sm:inline">Browse</span>
+                <Compass size={18} strokeWidth={1.75} />
+                Browse
               </Link>
             )}
 
@@ -179,14 +180,14 @@ export default function UserLayout({ children }) {
             {hasFullAccess && (
               <Link
                 href="/liked"
-                className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                className={`py-4 font-sans font-medium text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
                   isActive('/liked')
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-white hover:text-gray-300'
+                    ? 'border-[#D4A843] text-[#D4A843]'
+                    : 'border-transparent text-white/80 hover:text-white'
                 }`}
               >
-                <Heart size={20} />
-                <span className="hidden sm:inline">Liked</span>
+                <Heart size={18} strokeWidth={1.75} />
+                Liked
               </Link>
             )}
 
@@ -194,51 +195,53 @@ export default function UserLayout({ children }) {
             {hasFullAccess && (
               <Link
                 href="/messages"
-                className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                className={`py-4 font-sans font-medium text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
                   isActive('/messages')
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-white hover:text-gray-300'
+                    ? 'border-[#D4A843] text-[#D4A843]'
+                    : 'border-transparent text-white/80 hover:text-white'
                 }`}
               >
-                <MessageCircle size={20} />
-                <span className="hidden sm:inline">Messages</span>
+                <MessageCircle size={18} strokeWidth={1.75} />
+                Messages
               </Link>
             )}
 
             {/* Profile Tab - Always visible */}
             <Link
               href="/profile"
-              className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+              className={`py-4 font-sans font-medium text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
                 isActive('/profile')
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-white hover:text-gray-300'
+                  ? 'border-[#D4A843] text-[#D4A843]'
+                  : 'border-transparent text-white/80 hover:text-white'
               }`}
             >
-              <User size={20} />
-              <span className="hidden sm:inline">My Profile</span>
+              <User size={18} strokeWidth={1.75} />
+              My Profile
             </Link>
 
              {/* Settings Tab - Always visible */}
             <Link
               href="/settings"
-              className={`py-4 font-telex font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+              className={`py-4 font-sans font-medium text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
                 isActive('/settings')
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-white hover:text-gray-300'
+                  ? 'border-[#D4A843] text-[#D4A843]'
+                  : 'border-transparent text-white/80 hover:text-white'
               }`}
             >
-              <Settings size={20} />
-              <span className="hidden sm:inline">Settings</span>
+              <Settings size={18} strokeWidth={1.75} />
+              Settings
             </Link>
           </div>
         </div>
       </div>
 
       {/* Tab Content */}
-      <div className="bg-white pt-32">
+      <div className="bg-white pt-[65px] md:pt-[121px]">
         <ApprovalStatusBanner />
         <SocketProvider>
-          {children}
+          <ApprovalGuard>
+            {children}
+          </ApprovalGuard>
         </SocketProvider>
       </div>
     </div>

@@ -52,7 +52,6 @@ export default function PaymentPage() {
     // Poll for Razorpay (in case onLoad doesn't fire for cached scripts)
     const checkInterval = setInterval(() => {
       if (window.Razorpay) {
-        console.log('[PaymentPage] Razorpay detected via polling, setting scriptLoaded=true');
         setScriptLoaded(true);
         clearInterval(checkInterval);
       }
@@ -166,20 +165,12 @@ export default function PaymentPage() {
 
   // Auto-open Razorpay when script loads and order is fetched
   useEffect(() => {
-    console.log('[PaymentPage] Auto-open effect triggered', {
-      scriptLoaded,
-      orderData: !!orderData,
-      razorpayDefined: !!window.Razorpay,
-    });
-
     // Prevent opening checkout multiple times
     if (checkoutOpenedRef.current) {
-      console.log('[PaymentPage] Checkout already opened, skipping...');
       return;
     }
 
     if (scriptLoaded && orderData) {
-      console.log('[PaymentPage] All conditions met, opening checkout...');
       checkoutOpenedRef.current = true;
       // Safe: ref guard prevents duplicate opens, state update is intentional and controlled
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -197,7 +188,6 @@ export default function PaymentPage() {
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
         onLoad={() => {
-          console.log('[PaymentPage] Script onLoad fired');
           setScriptLoaded(true);
         }}
         onError={() => {
@@ -215,8 +205,8 @@ export default function PaymentPage() {
         {/* Loading State */}
         {paymentStatus === 'loading' && (
           <div className="text-center">
-            <Loader2 className="w-12 h-12 text-white animate-spin mx-auto mb-4" />
-            <p className="text-white font-maven text-lg">Loading payment gateway...</p>
+            <Loader2 className="w-12 h-12 text-[#D4A843] animate-spin mx-auto mb-4" />
+            <p className="text-white font-sans text-lg">Loading payment gateway...</p>
           </div>
         )}
 
@@ -229,34 +219,34 @@ export default function PaymentPage() {
 
         {/* Success State - Show transaction details */}
         {paymentStatus === 'success' && (
-          <Card className="max-w-md w-full border-2 border-success shadow-2xl">
+          <Card className="max-w-md w-full border-2 border-[#2E7D32] shadow-2xl">
             <CardContent className="pt-12 pb-8 text-center">
               {/* Success Icon */}
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-success/10 mb-6">
-                <CheckCircle2 className="w-12 h-12 text-success" />
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[#2E7D32]/10 mb-6">
+                <CheckCircle2 className="w-12 h-12 text-[#2E7D32]" />
               </div>
 
               {/* Success Message */}
-              <h1 className="font-viga text-3xl text-secondary mb-3">
+              <h1 className="font-serif text-3xl font-bold text-[#1A1A1A] mb-3">
                 Payment Successful!
               </h1>
 
-              <p className="font-maven text-gray-600 mb-6">
+              <p className="font-sans text-[#2C3E50]/70 mb-6">
                 Your membership has been activated.
               </p>
 
               {/* Transaction Details */}
               {transactionData && (
-                <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-3 text-left">
+                <div className="bg-[#FDF8F0] border border-[#D4A843]/15 rounded-lg p-4 mb-6 space-y-3 text-left">
                   <div className="flex justify-between text-sm">
-                    <span className="font-telex text-gray-600">Transaction ID:</span>
-                    <span className="font-mono text-xs text-secondary break-all ml-2">
+                    <span className="font-sans text-[#2C3E50]/70">Transaction ID:</span>
+                    <span className="font-mono text-xs text-[#1A1A1A] break-all ml-2">
                       {transactionData.paymentId}
                     </span>
                   </div>
-                  <div className="border-t border-gray-200 pt-3 flex justify-between text-sm">
-                    <span className="font-telex text-gray-600">Order ID:</span>
-                    <span className="font-mono text-xs text-secondary break-all ml-2">
+                  <div className="border-t border-[#D4A843]/15 pt-3 flex justify-between text-sm">
+                    <span className="font-sans text-[#2C3E50]/70">Order ID:</span>
+                    <span className="font-mono text-xs text-[#1A1A1A] break-all ml-2">
                       {transactionData.orderId}
                     </span>
                   </div>
@@ -266,7 +256,7 @@ export default function PaymentPage() {
               {/* Go to Dashboard Button */}
               <Button
                 onClick={handleGoHome}
-                className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-telex text-lg"
+                className="w-full h-12 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold text-lg"
               >
                 Go to Dashboard
                 <ArrowRight className="ml-2 h-5 w-5" />

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, HeartHandshake, MapPin, Briefcase, Users, Images } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,7 @@ import { convertTo24Hour, buildTimeFromDropdowns, parseTimeToDropdowns } from '@
 import { client } from '@/lib/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { useLandingStore } from '@/store/landingStore';
+import { useIdProofRequired } from '@/hooks/useIdProofRequired';
 import {
   PersonalDetailsStep,
   LocationAddressStep,
@@ -26,21 +27,31 @@ import {
 // Step 1: Personal Details (DOB, Mother Tongue, Gender, Seeking, Height, Physical Status, Marital Status)
 const step1Schema = z.object({
   dateOfBirth: z.date({ message: 'Please select your date of birth' }),
-  timeOfBirth: z.string()
-    .regex(/^(0?[0-9]|1[0-2]):([0-5][0-9])\s(AM|PM)$/i, 'Invalid time format. Use HH:MM AM/PM')
-    .optional()
-    .or(z.literal('')),
+  timeOfBirth_hours: z.string().optional(),
+  timeOfBirth_minutes: z.string().optional(),
+  timeOfBirth_meridiem: z.string().optional(),
   motherTongue: z.string().min(1, 'Please select your mother tongue'),
   height: z.string().min(1, 'Please select your height'),
   physicalStatus: z.string().min(1, 'Please select your physical status'),
   maritalStatus: z.string().min(1, 'Please select your marital status'),
   gender: z.string().min(1, 'Please select your gender'),
   seekingGender: z.string().min(1, 'Please select who you are seeking'),
-  weight: z.number().min(30, 'Weight must be at least 30 kg').max(200, 'Weight must be at most 200 kg').nullable().optional(),
-  bloodGroup: z.string().optional(),
-  diet: z.enum(['Vegetarian', 'Non-Vegetarian', 'Eggetarian'], {
+  placeOfBirth: z.string().min(1, 'Please enter your place of birth').max(100, 'Maximum 100 characters'),
+  complexion: z.enum(['Very Fair', 'Fair', 'Wheatish', 'Wheatish Brown', 'Dark', 'Very Dark'], {
+    errorMap: () => ({ message: 'Please select your complexion' })
+  }),
+  languagesKnown: z.array(z.string()).min(1, 'Please select at least one language').max(10, 'Maximum 10 languages'),
+  weight: z.number({ required_error: 'Please enter your weight', invalid_type_error: 'Please enter your weight' }).min(30, 'Weight must be at least 30 kg').max(200, 'Weight must be at most 200 kg'),
+  bloodGroup: z.string().min(1, 'Please select your blood group'),
+  diet: z.enum(['Vegetarian', 'Non-Vegetarian', 'Eggetarian', 'Both (Veg & Non-Veg)'], {
     errorMap: () => ({ message: 'Please select your diet preference' })
-  }).optional().or(z.literal('')),
+  }),
+  religion: z.string().min(1, 'Please select your religion'),
+  caste: z.string().optional(),
+  shuddhaJathakam: z.string().optional(),
+  doshamTypes: z.array(z.string()).optional().default([]),
+  nakshatra: z.string().optional(),
+  raasi: z.string().optional(),
 }).refine((data) => {
   if (!data.dateOfBirth) return false;
   const today = new Date();
@@ -53,26 +64,41 @@ const step1Schema = z.object({
 }, {
   message: 'Age must be between 18 and 90 years',
   path: ['dateOfBirth'],
+}).superRefine((data, ctx) => {
+  if (data.religion === 'Hindu') {
+    if (!data.caste) {
+      ctx.addIssue({ code: 'custom', message: 'Please select your caste', path: ['caste'] });
+    }
+    if (!data.shuddhaJathakam) {
+      ctx.addIssue({ code: 'custom', message: 'Please select shuddha jathakam status', path: ['shuddhaJathakam'] });
+    }
+    if (!data.nakshatra) {
+      ctx.addIssue({ code: 'custom', message: 'Please select your nakshatra', path: ['nakshatra'] });
+    }
+    if (!data.raasi) {
+      ctx.addIssue({ code: 'custom', message: 'Please select your raasi', path: ['raasi'] });
+    }
+  }
+  if (data.shuddhaJathakam === 'No' && (!data.doshamTypes || data.doshamTypes.length === 0)) {
+    ctx.addIssue({ code: 'custom', message: 'Please select at least one dosham type', path: ['doshamTypes'] });
+  }
 });
 
-// Step 2: Religion & Addresses (Religion, Caste, Jathakam, etc. + Addresses)
+// Step 2: Addresses
 const step2Schema = z.object({
-  religion: z.string().min(1, 'Please select your religion'),
-  caste: z.string().optional(),
-  shuddhaJathakam: z.string().optional(),
-  doshamTypes: z.array(z.string()).optional().default([]),
-  nakshatra: z.string().min(1, 'Please select your nakshatra'),
-  raasi: z.string().optional().nullable(),
-  // Removed root country/state/city validation as they are now in address blocks
   presentResidentialAddress: z.object({
     country: z.string().min(1, 'Please select your country'),
-    street: z.string().optional(),
-    area: z.string().optional(),
-    landmark: z.string().optional(),
-    pincode: z.string().optional(),
-    city: z.string().optional(),
+    street: z.string().min(1, 'Please enter your street address'),
+    area: z.string().min(1, 'Please enter your area or locality'),
+    landmark: z.string().min(1, 'Please enter a nearby landmark'),
+    pincode: z.string().min(1, 'Please enter your pincode'),
+    city: z.string().min(1, 'Please enter your city'),
     state: z.string().optional(),
-  }).optional(),
+  }).superRefine((data, ctx) => {
+    if (data.country === 'India' && !data.state) {
+      ctx.addIssue({ code: 'custom', message: 'Please select your state', path: ['state'] });
+    }
+  }),
   nativePlaceAddress: z.object({
     country: z.string().optional(),
     street: z.string().optional(),
@@ -82,30 +108,6 @@ const step2Schema = z.object({
     city: z.string().optional(),
     state: z.string().optional(),
   }).optional(),
-}).refine((data) => {
-  if (data.religion === 'Hindu' && !data.caste) {
-    return false;
-  }
-  return true;
-}, {
-  message: 'Caste is required for Hindu religion',
-  path: ['caste'],
-}).refine((data) => {
-  if (data.country === 'India' && !data.state) {
-    return false;
-  }
-  return true;
-}, {
-  message: 'State is required for India',
-  path: ['state'],
-}).refine((data) => {
-  if (data.shuddhaJathakam === 'No' && (!data.doshamTypes || data.doshamTypes.length === 0)) {
-    return false;
-  }
-  return true;
-}, {
-  message: 'Please select at least one dosham type',
-  path: ['doshamTypes'],
 });
 
 // Step 3: Professional Details
@@ -115,16 +117,16 @@ const step3Schema = z.object({
   occupation: z.string().min(1, 'Please select your occupation'),
   annualIncomeCurrency: z.string().min(1, 'Please select currency'),
   annualIncomeAmount: z.string().min(1, 'Please select/enter income amount'),
-  professionalAdditionalInfo: z.string().max(500, 'Maximum 500 characters').optional().or(z.literal('')),
+  professionalAdditionalInfo: z.string().min(1, 'Please share some additional information').max(500, 'Maximum 500 characters'),
 });
 
 // Step 4: Family & Additional Details
 const step4Schema = z.object({
   fatherName: z.string().min(1, "Father's name is required"),
-  fatherOccupation: z.string().optional(),
+  fatherOccupation: z.string().min(1, "Please enter father's occupation"),
   motherName: z.string().min(1, "Mother's name is required"),
-  motherOccupation: z.string().optional(),
-  residentialStatus: z.string().optional(),
+  motherOccupation: z.string().min(1, "Please enter mother's occupation"),
+  residentialStatus: z.string().min(1, 'Please select your residential status'),
   familyStatus: z.string().min(1, 'Please select your family status'),
 });
 
@@ -132,8 +134,8 @@ const step4Schema = z.object({
 const step5Schema = z.object({
   ageFrom: z.string().min(1, 'Please select minimum age'),
   ageTo: z.string().min(1, 'Please select maximum age'),
-  interests: z.array(z.string()).optional().default([]),
-  profileAbout: z.string().max(1000, 'About must be at most 1000 characters').optional().or(z.literal('')),
+  interests: z.array(z.string()).min(1, 'Please select at least one interest'),
+  profileAbout: z.string().min(1, 'Please tell us about yourself').max(1000, 'About must be at most 1000 characters'),
   profileBannerColor: z.string().optional(),
 }).refine(data => {
   const from = parseInt(data.ageFrom);
@@ -148,8 +150,9 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const { uploadProfilePicture, setProfileBannerColor, deleteHoroscopeDocument } = useAuthStore();
+  const { uploadProfilePicture, setProfileBannerColor, deleteHoroscopeDocument, deleteIdProof } = useAuthStore();
   const { setUserProfile } = useLandingStore();
+  const idProofRequired = useIdProofRequired();
 
   // Parse existing timeOfBirth (24-hour format) to dropdown values (12-hour format)
   const existingTimeDropdowns = user?.timeOfBirth ? parseTimeToDropdowns(user.timeOfBirth) : { hours: '', minutes: '', meridiem: '' };
@@ -168,13 +171,16 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     maritalStatus: user?.maritalStatus || '',
     gender: user?.gender || '',
     seekingGender: user?.seekingGender || '',
+    placeOfBirth: user?.placeOfBirth || '',
+    complexion: user?.complexion || '',
+    languagesKnown: user?.languagesKnown || [],
     // Step 2: Religion & Addresses
     religion: user?.religion || '',
     caste: user?.caste || '',
     shuddhaJathakam: user?.shuddhaJathakam || '',
     doshamTypes: user?.doshamTypes || [],
-    nakshatra: user?.nakshatra || undefined,
-    raasi: user?.raasi || undefined,
+    nakshatra: user?.nakshatra || '',
+    raasi: user?.raasi || '',
     // Step 3: Location Details
     country: user?.country || '',
     state: user?.state || '',
@@ -208,6 +214,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     profilePicture: null,
     galleryPhotos: [],
     horoscope: null, // Only set when user uploads a NEW file; existing doc is shown via existingHoroscopeDoc
+    idProof: null, // Only set when user uploads a NEW file; existing doc is shown via existingIdProof
   });
 
   const getSchemaForStep = (step) => {
@@ -224,7 +231,8 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
   const form = useForm({
     resolver: zodResolver(getSchemaForStep(currentStep)),
     defaultValues: formData,
-    mode: 'onBlur',
+    mode: 'onChange',
+    reValidateMode: 'onChange',
   });
 
   // Track previous step to only reset form when step changes
@@ -263,6 +271,23 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     }
   }, [deleteHoroscopeDocument]);
 
+  const handleDeleteIdProof = useCallback(async () => {
+    try {
+      const result = await deleteIdProof();
+      if (result.success) {
+        setFormData(prev => ({
+          ...prev,
+          idProof: null
+        }));
+        toastSuccess('ID proof deleted successfully');
+      } else {
+        toastError(result.error || 'Failed to delete ID proof');
+      }
+    } catch (err) {
+      toastError('Failed to delete ID proof');
+    }
+  }, [deleteIdProof]);
+
   const saveCurrentStepData = () => {
     const currentValues = form.getValues();
 
@@ -274,6 +299,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
       profilePicture: prev.profilePicture,
       galleryPhotos: prev.galleryPhotos,
       horoscope: prev.horoscope,
+      idProof: prev.idProof,
     }));
   };
 
@@ -289,6 +315,11 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     setError('');
 
     if (currentStep === 5) {
+      const hasExistingIdProof = !!(user?.idProof?.url || userProfile?.idProof?.url);
+      if (idProofRequired && !formData.idProof?.file && !hasExistingIdProof) {
+        toastError('Please upload an ID proof document to continue.');
+        return;
+      }
       await submitUpdate();
       return;
     }
@@ -296,20 +327,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     const isValid = await form.trigger();
 
     if (!isValid) {
-      const errors = form.formState.errors;
-      const errorMessages = [];
-      Object.entries(errors).forEach(([, error]) => {
-        if (error?.message) {
-          errorMessages.push(error.message);
-        }
-      });
-
-      const msg = errorMessages.length > 0
-        ? errorMessages.join('\n')
-        : `Please fill in all required fields correctly`;
-
-      setError(msg);
-      toastError(msg);
+      toastError('Some fields are not filled in correctly. Please check and try again.');
       return;
     }
 
@@ -321,6 +339,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
       profilePicture: prev.profilePicture,
       galleryPhotos: prev.galleryPhotos,
       horoscope: prev.horoscope,
+      idProof: prev.idProof,
     }));
     setCurrentStep(currentStep + 1);
   };
@@ -362,8 +381,8 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     setError('');
 
     try {
-      // Get the latest form values from react-hook-form
-      const formValues = form.getValues();
+      // Merge accumulated formData (all steps) with latest RHF state (step 5 inputs)
+      const formValues = { ...formData, ...form.getValues() };
 
       const parsedIncome = parseIncomeAmount(formValues.annualIncomeCurrency, formValues.annualIncomeAmount);
 
@@ -381,6 +400,9 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
         dateOfBirth: formValues.dateOfBirth,
         timeOfBirth: timeOfBirth24,
         motherTongue: formValues.motherTongue,
+        placeOfBirth: formValues.placeOfBirth || '',
+        complexion: formValues.complexion || '',
+        languagesKnown: formValues.languagesKnown || [],
         height: formValues.height,
         physicalStatus: formValues.physicalStatus,
         maritalStatus: formValues.maritalStatus,
@@ -390,8 +412,8 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
         caste: formValues.religion === 'Hindu' ? formValues.caste : '',
         shuddhaJathakam: formValues.religion === 'Hindu' ? formValues.shuddhaJathakam : '',
         doshamTypes: formValues.shuddhaJathakam === 'No' ? formValues.doshamTypes : [],
-        nakshatra: formValues.nakshatra || null,
-        raasi: formValues.raasi || null,
+        nakshatra: formValues.religion === 'Hindu' ? (formValues.nakshatra || null) : null,
+        raasi: formValues.religion === 'Hindu' ? (formValues.raasi || null) : null,
         country: formValues.presentResidentialAddress?.country || '',
         state: formValues.presentResidentialAddress?.country === 'India' ? formValues.presentResidentialAddress?.state : '',
         city: formValues.presentResidentialAddress?.city || '',
@@ -439,42 +461,35 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
 
       // Upload media files if any
       try {
-        console.log('[EditProfile] Starting media uploads...');
-        console.log('[EditProfile] profilePicture:', formData.profilePicture);
-
         if (formData.profilePicture?.file) {
-          console.log('[EditProfile] Uploading profile picture:', formData.profilePicture.file.name);
-          const picResult = await useAuthStore.getState().uploadProfilePicture(formData.profilePicture.file);
-          console.log('[EditProfile] Profile picture upload result:', picResult);
-        } else {
-          console.log('[EditProfile] No profile picture file found');
+          await useAuthStore.getState().uploadProfilePicture(formData.profilePicture.file);
         }
 
         if (formData.galleryPhotos?.length > 0) {
-          console.log('[EditProfile] Uploading gallery photos:', formData.galleryPhotos.length);
           for (const photo of formData.galleryPhotos) {
             if (photo.file && !photo.existing) {
-              console.log('[EditProfile] Uploading photo:', photo.file.name);
-              const photoResult = await useAuthStore.getState().uploadPhoto(photo.file);
-              console.log('[EditProfile] Photo upload result:', photoResult);
+              await useAuthStore.getState().uploadPhoto(photo.file);
             }
           }
         }
 
-        // Upload horoscope document if provided (new upload)
         if (formData.horoscope?.file) {
           try {
-            console.log('[EditProfile] Uploading horoscope document:', formData.horoscope.file.name);
             await useAuthStore.getState().uploadHoroscopeDocument(formData.horoscope.file);
-            console.log('[EditProfile] Horoscope document uploaded successfully');
           } catch (error) {
             console.warn('Horoscope upload warning:', error.message);
-            // Don't fail profile update if horoscope upload fails
+          }
+        }
+
+        if (formData.idProof?.file) {
+          try {
+            await useAuthStore.getState().uploadIdProof(formData.idProof.file);
+          } catch (error) {
+            console.warn('ID proof upload warning:', error.message);
           }
         }
       } catch (mediaErr) {
         console.warn('Media upload warning:', mediaErr.message);
-        // Don't fail profile update if media upload fails
       }
 
       const profileResponse = await client.get('/api/profiles/me/view');
@@ -499,43 +514,53 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
   };
 
   const stepTitles = [
-    '💑 Personal Details',
-    '🙏 Religion & Addresses',
-    '💼 Professional Details',
-    '👨‍👩‍👧‍👦 Family & Additional',
-    '📸 Preferences & Media'
+    { label: 'Personal Details', icon: HeartHandshake },
+    { label: 'Religion & Addresses', icon: MapPin },
+    { label: 'Professional Details', icon: Briefcase },
+    { label: 'Family & Additional', icon: Users },
+    { label: 'Preferences & Media', icon: Images },
   ];
   const progressValue = (currentStep / 5) * 100;
+  const CurrentStepIcon = stepTitles[currentStep - 1].icon;
 
   return (
-    <Card className="border-0 shadow-lg bg-white w-full max-w-3xl mx-auto">
-      <CardHeader className="pb-6 border-b border-gray-100">
-        <div className="flex items-center justify-between mb-4">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              if (currentStep > 1) {
-                handleBackNavigation();
-              } else {
-                onCancel();
-              }
-            }}
-            className="p-0 h-auto hover:bg-transparent"
-          >
-            <ChevronLeft className="w-6 h-6 text-secondary" />
-          </Button>
+    <Card className="border border-white/40 shadow-xl bg-white w-full max-w-3xl mx-auto rounded-[28px] overflow-hidden py-0 gap-0">
+      <CardHeader className="pb-7 pt-9 px-6 sm:px-10 bg-gradient-to-br from-[#2C3E50] via-[#233240] to-[#1A2733] relative overflow-hidden">
+        {/* Subtle decorative texture */}
+        <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_15%_20%,#D4A843_0%,transparent_45%),radial-gradient(circle_at_85%_80%,#D4A843_0%,transparent_45%)]" />
+        <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#D4A843]/0 via-[#D4A843] to-[#D4A843]/0" />
 
-          <CardTitle className="font-viga text-2xl text-secondary flex-1 ml-4">
-            {stepTitles[currentStep - 1]}
-          </CardTitle>
-
-          <div className="font-telex text-sm text-secondary/70 whitespace-nowrap">
-            Step {currentStep}/5
+        <div className="flex items-center justify-between mb-5 relative">
+          <div className="flex items-center gap-3.5">
+            <button
+              type="button"
+              onClick={() => {
+                if (currentStep > 1) {
+                  handleBackNavigation();
+                } else {
+                  onCancel();
+                }
+              }}
+              className="flex h-9 items-center gap-1 pl-2 pr-3 rounded-full text-white/70 hover:bg-white/10 hover:text-[#D4A843] transition-colors shrink-0"
+            >
+              <ChevronLeft className="w-5 h-5" strokeWidth={1.75} />
+              <span className="hidden sm:inline font-sans text-sm">Back</span>
+            </button>
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#F5E6C3] to-[#EAD5A0] text-[#2C3E50] ring-2 ring-[#D4A843]/40 ring-offset-2 ring-offset-[#2C3E50] shadow-lg shrink-0">
+              <CurrentStepIcon className="w-5 h-5" strokeWidth={1.75} />
+            </span>
+            <div>
+              <p className="font-sans text-[11px] tracking-[0.18em] uppercase text-[#D4A843] font-semibold mb-0.5">
+                Step {currentStep} of 5
+              </p>
+              <CardTitle className="font-serif text-2xl text-white font-bold leading-tight tracking-tight">
+                {stepTitles[currentStep - 1].label}
+              </CardTitle>
+            </div>
           </div>
         </div>
 
-        <Progress value={progressValue} className="h-2" />
+        <Progress value={progressValue} className="h-1.5 bg-white/15 rounded-full [&>div]:bg-gradient-to-r [&>div]:from-[#D4A843] [&>div]:to-[#F0C868] [&>div]:rounded-full" />
       </CardHeader>
 
       <CardContent>
@@ -568,6 +593,9 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
                 profilePicture={formData.profilePicture}
                 galleryPhotos={formData.galleryPhotos}
                 onFileUpdate={handleFileUpdate}
+                idProof={formData.idProof}
+                idProofRequired={idProofRequired}
+                onDeleteIdProof={handleDeleteIdProof}
               />
             )}
           </div>
@@ -585,7 +613,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
               onCancel();
             }
           }}
-          className="flex-1 font-maven"
+          className="flex-1 font-sans"
         >
           Back
         </Button>
@@ -593,7 +621,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
         <Button
           onClick={validateAndProceed}
           disabled={isLoading}
-          className="flex-1 bg-primary text-primary-foreground font-maven"
+          className="flex-1 bg-primary text-primary-foreground font-sans font-semibold"
         >
           {isLoading ? 'Saving...' : currentStep === 5 ? 'Save Profile' : 'Next'}
           {!isLoading && currentStep < 5 && <ChevronRight className="ml-2 w-4 h-4" />}

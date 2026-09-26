@@ -6,11 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CreditCard, ShoppingBag } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { useEnforcementStatus } from '@/hooks/useEnforcementStatus';
 
 export default function MembershipSection() {
   const router = useRouter();
   const { membership } = useAuthStore();
-  const isPromotional = process.env.NEXT_PUBLIC_PROMOTIONAL_MODE === 'true';
+  const enforcementActive = useEnforcementStatus();
+  const isPromotional = !enforcementActive;
 
   return (
     <Card>

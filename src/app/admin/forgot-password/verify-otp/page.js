@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import Header from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -74,15 +73,14 @@ export default function AdminVerifyOTPPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header showLogout={false} />
       <div className="flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           <Card className="border-0 shadow-lg bg-white">
             <CardHeader className="space-y-2 pb-6">
-              <CardTitle className="font-viga text-3xl text-center text-primary">
+              <CardTitle className="font-serif text-3xl text-center text-primary">
                 Reset Admin Password
               </CardTitle>
-              <CardDescription className="font-maven text-center text-secondary">
+              <CardDescription className="font-sans text-center text-secondary">
                 {email && `Enter the OTP sent to ${email}`}
               </CardDescription>
             </CardHeader>
@@ -94,7 +92,7 @@ export default function AdminVerifyOTPPage() {
                     name="otp"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-telex text-secondary font-semibold">
+                        <FormLabel className="font-sans text-secondary font-semibold">
                           OTP
                         </FormLabel>
                         <FormControl>
@@ -102,11 +100,11 @@ export default function AdminVerifyOTPPage() {
                             placeholder="123456"
                             type="text"
                             maxLength={6}
-                            className="border-2 border-gray-200 focus:border-primary text-center text-2xl tracking-widest font-maven"
+                            className="border-2 border-gray-200 focus:border-primary text-center text-2xl tracking-widest font-sans"
                             {...field}
                           />
                         </FormControl>
-                        <FormMessage className="text-destructive font-maven" />
+                        <FormMessage className="text-destructive font-sans" />
                       </FormItem>
                     )}
                   />
@@ -116,7 +114,7 @@ export default function AdminVerifyOTPPage() {
                     name="newPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-telex text-secondary font-semibold">
+                        <FormLabel className="font-sans text-secondary font-semibold">
                           New Password
                         </FormLabel>
                         <FormControl>
@@ -124,11 +122,11 @@ export default function AdminVerifyOTPPage() {
                             placeholder="••••••••"
                             type="password"
                             autoComplete="new-password"
-                            className="border-2 border-gray-200 focus:border-primary font-maven"
+                            className="border-2 border-gray-200 focus:border-primary font-sans"
                             {...field}
                           />
                         </FormControl>
-                        <FormMessage className="text-destructive font-maven text-xs" />
+                        <FormMessage className="text-destructive font-sans text-xs" />
                       </FormItem>
                     )}
                   />
@@ -138,7 +136,7 @@ export default function AdminVerifyOTPPage() {
                     name="confirmPassword"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-telex text-secondary font-semibold">
+                        <FormLabel className="font-sans text-secondary font-semibold">
                           Confirm Password
                         </FormLabel>
                         <FormControl>
@@ -146,18 +144,18 @@ export default function AdminVerifyOTPPage() {
                             placeholder="••••••••"
                             type="password"
                             autoComplete="new-password"
-                            className="border-2 border-gray-200 focus:border-primary font-maven"
+                            className="border-2 border-gray-200 focus:border-primary font-sans"
                             {...field}
                           />
                         </FormControl>
-                        <FormMessage className="text-destructive font-maven" />
+                        <FormMessage className="text-destructive font-sans" />
                       </FormItem>
                     )}
                   />
 
                   <Button
                     type="submit"
-                    className="font-telex w-full bg-primary hover:bg-primary/90 h-12 text-lg font-semibold text-black"
+                    className="font-sans w-full bg-primary hover:bg-primary/90 h-12 text-lg font-semibold text-black"
                     disabled={isLoading}
                   >
                     {isLoading ? 'Resetting Password...' : 'Reset Password'}

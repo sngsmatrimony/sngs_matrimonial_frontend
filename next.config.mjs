@@ -18,6 +18,7 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
     // Optimize image loading
     minimumCacheTTL: 60,
+    qualities: [75, 90, 100],
   },
 
   // Optimize package imports for smaller bundles

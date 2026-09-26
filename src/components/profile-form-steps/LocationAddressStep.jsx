@@ -10,18 +10,18 @@ function AddressFieldset({ form, prefix, title, isOptional = false }) {
   const watchCountry = useWatch({ control: form.control, name: `${prefix}.country` });
 
   return (
-    <div className="space-y-4 p-4 border border-gray-200 rounded-lg">
-      <h3 className="font-maven font-semibold text-secondary">{title}{isOptional ? ' (Optional)' : ''}</h3>
+    <div className="space-y-4 p-5 border border-[#D4A843]/20 rounded-xl bg-[#FDF8F0]/60">
+      <h3 className="font-sans font-semibold text-[#1A1A1A]">{title}{isOptional ? ' (Optional)' : ''}</h3>
 
       <FormField
         control={form.control}
         name={`${prefix}.country`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Country</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Country{isOptional ? ' (Optional)' : ' *'}</FormLabel>
             <Select value={field.value || ''} onValueChange={field.onChange}>
               <FormControl>
-                <SelectTrigger className="font-maven">
+                <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                   <SelectValue placeholder="Select country" />
                 </SelectTrigger>
               </FormControl>
@@ -33,7 +33,7 @@ function AddressFieldset({ form, prefix, title, isOptional = false }) {
                 ))}
               </SelectContent>
             </Select>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -44,10 +44,10 @@ function AddressFieldset({ form, prefix, title, isOptional = false }) {
           name={`${prefix}.state`}
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">State</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">State{isOptional ? ' (Optional)' : ' *'}</FormLabel>
               <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
-                  <SelectTrigger className="font-maven">
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                     <SelectValue placeholder="Select state" />
                   </SelectTrigger>
                 </FormControl>
@@ -59,7 +59,7 @@ function AddressFieldset({ form, prefix, title, isOptional = false }) {
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
@@ -70,11 +70,11 @@ function AddressFieldset({ form, prefix, title, isOptional = false }) {
         name={`${prefix}.city`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">City</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">City{isOptional ? ' (Optional)' : ' *'}</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="Enter city" className="font-maven" />
+              <Input {...field} placeholder="Enter city" className="font-sans h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50" />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -84,11 +84,11 @@ function AddressFieldset({ form, prefix, title, isOptional = false }) {
         name={`${prefix}.street`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Street Address</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Street Address{isOptional ? ' (Optional)' : ' *'}</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="Enter street address" className="font-maven" />
+              <Input {...field} placeholder="Enter street address" className="font-sans h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50" />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -98,11 +98,11 @@ function AddressFieldset({ form, prefix, title, isOptional = false }) {
         name={`${prefix}.area`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Area / Locality</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Area / Locality{isOptional ? ' (Optional)' : ' *'}</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="Enter area or locality" className="font-maven" />
+              <Input {...field} placeholder="Enter area or locality" className="font-sans h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50" />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -112,11 +112,11 @@ function AddressFieldset({ form, prefix, title, isOptional = false }) {
         name={`${prefix}.landmark`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Landmark</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Landmark{isOptional ? ' (Optional)' : ' *'}</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="Enter nearby landmark" className="font-maven" />
+              <Input {...field} placeholder="Enter nearby landmark" className="font-sans h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50" />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -126,11 +126,11 @@ function AddressFieldset({ form, prefix, title, isOptional = false }) {
         name={`${prefix}.pincode`}
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Pincode</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Pincode{isOptional ? ' (Optional)' : ' *'}</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="Enter pincode" className="font-maven" />
+              <Input {...field} placeholder="Enter pincode" className="font-sans h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50" />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -141,7 +141,7 @@ function AddressFieldset({ form, prefix, title, isOptional = false }) {
 export function LocationAddressStep({ form }) {
   return (
     <div className="space-y-6">
-      <h2 className="font-viga text-xl text-secondary">Location & Addresses</h2>
+      <h2 className="font-serif text-xl font-semibold text-[#1A1A1A] mb-1">Location & Addresses</h2>
 
       {/* Present Residential Address (Now Validated as Main Location) */}
       <AddressFieldset

@@ -12,6 +12,22 @@ import { client } from '@/lib/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
 
+// Real, plan-specific feature bullets — matches exactly what each toggle in
+// the admin membership-plans page actually grants (see checkMembership.js's
+// hasPlanFeature), instead of the same 3 hardcoded claims on every plan.
+function buildFeatureBullets(plan) {
+  const features = plan.features || {};
+  const bullets = [
+    features.unlimitedProfileViews ? 'Unlimited profile views' : `View ${plan.credits} profiles`,
+    'Re-view any profile anytime, free',
+  ];
+  if (features.unlimitedBrowsing) bullets.push('Full search results, no teaser limit');
+  if (features.unlimitedContactAccess) bullets.push('See phone numbers directly, no approval needed');
+  if (features.unlimitedChat) bullets.push('Start unlimited new chats');
+  if (features.unlimitedHoroscopeDownload) bullets.push('Unlimited horoscope downloads');
+  return bullets;
+}
+
 export default function PurchaseMembershipPage() {
   const router = useRouter();
   const { user, membership, refreshMembership, logout } = useAuthStore();
@@ -90,33 +106,33 @@ export default function PurchaseMembershipPage() {
   return (
     <>
       {/* Fixed Header */}
-      <header className="border-b border-gray-100 fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
+      <header className="border-b border-[#D4A843]/20 fixed top-0 left-0 right-0 z-50 bg-[#FDF8F0]/95 backdrop-blur-md shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           {/* Logo + Title */}
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
             <Image
-              src="/logo.jpeg"
+              src="/logo_1.png"
               alt="SNGS Matrimonial Logo"
               width={48}
               height={48}
-              className="h-12 w-auto"
+              className="h-12 w-auto rounded shadow-sm"
               style={{ width: 'auto', height: 'auto' }}
             />
-            <h1 className="font-viga text-2xl text-accent hidden sm:block">
+            <h1 className="font-serif text-2xl font-bold text-[#1A1A1A] hidden sm:block">
               SNGS Matrimonial
             </h1>
           </Link>
 
           {/* Welcome Message - Center */}
           <div className="hidden md:flex items-center gap-2 flex-1 justify-center">
-            <span className="font-maven text-gray-600">Welcome,</span>
-            <span className="font-viga text-secondary">{user?.fullName}</span>
+            <span className="font-sans text-[#2C3E50]/70 text-sm">Welcome,</span>
+            <span className="font-serif font-semibold text-[#1A1A1A]">{user?.fullName}</span>
           </div>
 
           {/* Credit Badge (if active) */}
           {membership?.isActive && !membership?.isExpired && (
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/80 border border-primary/20">
-              <span className="font-telex font-semibold text-secondary">
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-[#F5E6C3]/70 border border-[#D4A843]/30">
+              <span className="font-sans font-semibold text-sm text-[#1A1A1A]">
                 {membership?.credits} credits
               </span>
             </div>
@@ -125,7 +141,7 @@ export default function PurchaseMembershipPage() {
           {/* Logout Button */}
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 mx-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors font-telex"
+            className="flex items-center gap-2 px-4 py-2 mx-2 rounded-lg bg-[#FBEAE5] text-[#C75B39] hover:bg-[#F5DDD5] transition-colors font-sans font-medium text-sm"
           >
             <LogOut size={18} />
             <span className="hidden sm:inline">Logout</span>
@@ -134,14 +150,14 @@ export default function PurchaseMembershipPage() {
       </header>
 
       {/* Main Content - Add pt-24 for fixed header spacing */}
-      <div className="min-h-screen bg-gray-50 pt-24 py-12 px-4">
+      <div className="min-h-screen bg-[#FDF8F0] pt-24 py-12 px-4">
         <div className="max-w-6xl mx-auto">
           {/* Active Membership Status - Subtle */}
           {membership?.isActive && !membership?.isExpired && (
             <div className="max-w-xl mx-auto mb-8">
-              <div className="flex items-center justify-center gap-2 p-3 bg-success/10 border border-success/30 rounded-lg">
-                <CheckCircle2 className="w-5 h-5 text-success" />
-                <p className="font-maven text-sm text-secondary">
+              <div className="flex items-center justify-center gap-2 p-3 bg-[#2E7D32]/10 border border-[#2E7D32]/30 rounded-lg">
+                <CheckCircle2 className="w-5 h-5 text-[#2E7D32]" />
+                <p className="font-sans text-sm text-[#2C3E50]">
                   You have <span className="font-semibold">{membership.credits} credits</span> remaining {membership.expiryDate ? `(expires ${new Date(membership.expiryDate).toLocaleDateString()})` : '(never expires)'}
                 </p>
               </div>
@@ -150,8 +166,8 @@ export default function PurchaseMembershipPage() {
 
           {/* Simple Value Proposition */}
           <div className="text-center mb-12">
-            <p className="font-maven text-gray-600">
-              1 credit = 1 profile view • Unlimited messaging • Re-view anytime free
+            <p className="font-sans text-[#2C3E50]/70">
+              1 credit = 1 profile view • Re-view any profile anytime, free
             </p>
           </div>
 
@@ -159,8 +175,8 @@ export default function PurchaseMembershipPage() {
           {planLoading ? (
             <div className="max-w-5xl mx-auto mb-16">
               <div className="flex flex-col items-center justify-center gap-4 py-12">
-                <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                <p className="font-maven text-gray-600">Loading membership plans...</p>
+                <Loader2 className="w-8 h-8 text-[#D4A843] animate-spin" />
+                <p className="font-sans text-[#2C3E50]/70">Loading membership plans...</p>
               </div>
             </div>
           ) : plans.length > 0 ? (
@@ -171,37 +187,37 @@ export default function PurchaseMembershipPage() {
                     key={plan._id}
                     className={`border-2 transition-all hover:shadow-xl ${
                       plan.isDefault
-                        ? 'border-primary shadow-2xl relative'
-                        : 'border-gray-200 hover:border-primary/50'
+                        ? 'border-[#D4A843] shadow-2xl relative'
+                        : 'border-[#D4A843]/15 hover:border-[#D4A843]/50'
                     }`}
                   >
                     {plan.isDefault && (
                       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                        <Badge className="bg-accent text-accent-foreground font-telex px-3 py-1">
+                        <Badge className="bg-[#D4A843] text-[#1A1A1A] font-sans font-semibold px-3 py-1">
                           Most Popular
                         </Badge>
                       </div>
                     )}
 
                     <CardHeader className="text-center pb-4">
-                      <CardTitle className="font-viga text-2xl text-secondary mb-2">
+                      <CardTitle className="font-serif text-2xl font-bold text-[#1A1A1A] mb-2">
                         {plan.name}
                       </CardTitle>
-                      <CardDescription className="font-maven text-sm text-gray-600">
+                      <CardDescription className="font-sans text-sm text-[#2C3E50]/70">
                         {plan.description}
                       </CardDescription>
                     </CardHeader>
 
                     <CardContent className="space-y-6">
                       {/* Pricing */}
-                      <div className="text-center py-4 bg-linear-to-br from-primary/5 to-accent/5 rounded-lg">
-                        <div className="font-viga text-5xl text-secondary mb-1">
+                      <div className="text-center py-4 bg-[#F5E6C3]/40 rounded-lg">
+                        <div className="font-serif text-5xl font-bold text-[#1A1A1A] mb-1">
                           ₹{plan.price.amount.toLocaleString('en-IN')}
                         </div>
-                        <p className="font-maven text-sm text-gray-600">
+                        <p className="font-sans text-sm text-[#2C3E50]/70">
                           {plan.credits} Credits
                         </p>
-                        <p className="font-telex text-xs text-gray-500 mt-1">
+                        <p className="font-sans text-xs text-[#2C3E50]/50 mt-1">
                           {plan.validityDays === null || plan.validityDays === undefined
                             ? 'Unlimited validity'
                             : `Valid for ${plan.validityDays} days`}
@@ -210,28 +226,22 @@ export default function PurchaseMembershipPage() {
 
                       {/* Key Features */}
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2 font-maven text-sm">
-                          <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
-                          <span>View {plan.credits} profiles</span>
-                        </div>
-                        <div className="flex items-center gap-2 font-maven text-sm">
-                          <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
-                          <span>Unlimited re-views</span>
-                        </div>
-                        <div className="flex items-center gap-2 font-maven text-sm">
-                          <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
-                          <span>Unlimited messaging</span>
-                        </div>
+                        {buildFeatureBullets(plan).map((bullet) => (
+                          <div key={bullet} className="flex items-center gap-2 font-sans text-sm text-[#1A1A1A]">
+                            <CheckCircle2 className="w-4 h-4 text-[#2E7D32] shrink-0" />
+                            <span>{bullet}</span>
+                          </div>
+                        ))}
                       </div>
 
                       {/* Purchase Button */}
                       <Button
                         onClick={() => handlePurchase(plan)}
                         disabled={processingPlanId !== null}
-                        className={`w-full h-12 font-telex transition-all ${
+                        className={`w-full h-12 font-sans font-semibold transition-all ${
                           plan.isDefault
-                            ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg'
-                            : 'bg-secondary hover:bg-secondary/90 text-white'
+                            ? 'bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] shadow-lg'
+                            : 'bg-[#2C3E50] hover:bg-[#1A1A1A] text-white'
                         }`}
                       >
                         {processingPlanId === plan._id ? (
@@ -252,17 +262,17 @@ export default function PurchaseMembershipPage() {
               </div>
 
               {/* Security Badge */}
-              <div className="mt-8 flex items-center justify-center gap-2 text-gray-600">
+              <div className="mt-8 flex items-center justify-center gap-2 text-[#2C3E50]/70">
                 <Shield className="w-4 h-4" />
-                <span className="font-telex text-sm">Secured by Razorpay • 256-bit SSL Encryption</span>
+                <span className="font-sans text-sm">Secured by Razorpay • 256-bit SSL Encryption</span>
               </div>
             </div>
           ) : (
             <div className="max-w-xl mx-auto mb-16">
-              <Card className="border-2 border-gray-200">
+              <Card className="border-2 border-[#D4A843]/15">
                 <CardContent className="pt-6">
                   <div className="flex flex-col items-center justify-center gap-4 py-12">
-                    <p className="font-maven text-gray-600 text-center">
+                    <p className="font-sans text-[#2C3E50]/70 text-center">
                       No membership plans available at the moment. Please check back later.
                     </p>
                   </div>
@@ -274,14 +284,14 @@ export default function PurchaseMembershipPage() {
           {/* Skip for Now - Only shown after registration */}
           {showSkip && (
             <div className="max-w-4xl mx-auto text-center pb-8 md:pb-0">
-              <p className="font-maven text-gray-600 mb-3">
+              <p className="font-sans text-[#2C3E50]/70 mb-3">
                 Not ready to purchase? You can explore the platform first.
               </p>
               <Button
                 onClick={() => {
                   router.push('/');
                 }}
-                className="font-telex bg-black hover:bg-gray-800 text-white rounded-full px-8 py-2"
+                className="font-sans font-semibold bg-[#1A1A1A] hover:bg-[#2C3E50] text-white rounded-full px-8 py-2"
               >
                 Skip for Now
               </Button>

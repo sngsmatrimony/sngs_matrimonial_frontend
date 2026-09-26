@@ -61,12 +61,12 @@ export default function MessageBubble({ message, currentUserId, onMarkAsRead }) 
         className={cn(
           "max-w-[70%] rounded-2xl px-4 py-2.5 shadow-sm",
           isSentByCurrentUser
-            ? "bg-gray-100 text-black rounded-br-sm"
-            : "bg-primary text-black rounded-bl-sm"
+            ? "bg-[#D4A843] text-[#1A1A1A] rounded-br-sm"
+            : "bg-[#F5E6C3]/60 text-[#1A1A1A] rounded-bl-sm"
         )}
       >
         {/* Message Content */}
-        <p className="text-[15px] leading-relaxed font-maven wrap-break-words whitespace-pre-wrap">
+        <p className="text-[15px] leading-relaxed font-sans wrap-break-words whitespace-pre-wrap">
           {message.content}
         </p>
 
@@ -79,8 +79,8 @@ export default function MessageBubble({ message, currentUserId, onMarkAsRead }) 
         >
           <span
             className={cn(
-              "text-[11px] font-telex",
-              isSentByCurrentUser ? "text-gray-600" : "text-black/70"
+              "text-[11px] font-sans",
+              isSentByCurrentUser ? "text-[#1A1A1A]/60" : "text-[#2C3E50]/60"
             )}
           >
             {formatTime(message.timestamp)}
@@ -90,11 +90,11 @@ export default function MessageBubble({ message, currentUserId, onMarkAsRead }) 
           {isSentByCurrentUser && (
             <span className="ml-1 flex items-center">
               {message.isRead ? (
-                <CheckCheck className="w-4 h-4 text-[#0084FF]" strokeWidth={2.5} />
+                <CheckCheck className="w-4 h-4 text-[#2E7D32]" strokeWidth={2.5} />
               ) : message.isDelivered ? (
-                <CheckCheck className="w-4 h-4 text-black/70" strokeWidth={2.5} />
+                <CheckCheck className="w-4 h-4 text-[#1A1A1A]/60" strokeWidth={2.5} />
               ) : (
-                <Check className="w-4 h-4 text-black/70" strokeWidth={2.5} />
+                <Check className="w-4 h-4 text-[#1A1A1A]/60" strokeWidth={2.5} />
               )}
             </span>
           )}

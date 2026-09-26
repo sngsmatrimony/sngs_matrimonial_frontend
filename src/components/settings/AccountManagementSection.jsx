@@ -64,38 +64,38 @@ export default function AccountManagementSection() {
   };
 
   return (
-    <Card className="border-red-200">
+    <Card className="border-[#E8B4A0]">
       <CardHeader>
-        <CardTitle className="font-viga flex items-center gap-2 text-red-600">
+        <CardTitle className="font-serif flex items-center gap-2 text-[#C75B39]">
           <AlertTriangle size={20} />
           Account Management
         </CardTitle>
-        <CardDescription className="font-maven">
+        <CardDescription className="font-sans">
           Manage your account status and data
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Deletion Section */}
-        <div className="p-4 border border-red-300 rounded-lg bg-red-50">
-          <h3 className="font-viga text-lg text-red-600 mb-2">Delete Account</h3>
-          <p className="font-maven text-sm text-gray-700 mb-4">
+        <div className="p-4 border border-[#E8B4A0] rounded-lg bg-[#FBEAE5]">
+          <h3 className="font-serif text-lg text-[#C75B39] mb-2">Delete Account</h3>
+          <p className="font-sans text-sm text-[#2C3E50] mb-4">
             Permanently delete your account and all associated data. This action cannot be undone.
             Active memberships and credits will be forfeited.
           </p>
           <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="font-telex">
+              <Button variant="destructive" className="font-sans">
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete Account
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle className="font-viga text-red-600">
+                <AlertDialogTitle className="font-serif text-[#C75B39]">
                   Permanently Delete Your Account?
                 </AlertDialogTitle>
-                <AlertDialogDescription className="font-maven">
-                  <strong className="text-red-600">Warning: This action cannot be undone!</strong>
+                <AlertDialogDescription className="font-sans">
+                  <strong className="text-[#C75B39]">Warning: This action cannot be undone!</strong>
                   <br />
                   <br />
                   Deleting your account will:
@@ -112,7 +112,7 @@ export default function AccountManagementSection() {
 
               <div className="space-y-4 my-4">
                 <div>
-                  <Label htmlFor="delete-password" className="font-telex">
+                  <Label htmlFor="delete-password" className="font-sans">
                     Enter your password to confirm
                   </Label>
                   <Input
@@ -123,7 +123,7 @@ export default function AccountManagementSection() {
                     value={deletePassword}
                     onChange={(e) => setDeletePassword(e.target.value)}
                     autoComplete="current-password"
-                    className="font-maven mt-1"
+                    className="font-sans mt-1"
                   />
                 </div>
 
@@ -135,7 +135,7 @@ export default function AccountManagementSection() {
                   />
                   <label
                     htmlFor="delete-confirm"
-                    className="font-maven text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    className="font-sans text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
                     I understand this action is permanent and cannot be undone
                   </label>
@@ -143,7 +143,7 @@ export default function AccountManagementSection() {
               </div>
 
               <AlertDialogFooter>
-                <AlertDialogCancel className="font-telex" onClick={() => {
+                <AlertDialogCancel className="font-sans" onClick={() => {
                   setDeletePassword('');
                   setDeleteConfirm(false);
                 }}>
@@ -153,7 +153,7 @@ export default function AccountManagementSection() {
                   onClick={handleDelete}
                   disabled={deleteMutation.isPending}
                   variant="destructive"
-                  className="font-telex"
+                  className="font-sans"
                 >
                   {deleteMutation.isPending ? (
                     <>

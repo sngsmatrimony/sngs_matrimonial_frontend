@@ -31,6 +31,38 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Plus, Edit2, Trash2, Star } from 'lucide-react';
 
+// Named, code-backed entitlements — each one maps to exactly one real
+// enforcement check in the backend (see checkMembership.js's hasPlanFeature).
+const FEATURE_OPTIONS = [
+  {
+    key: 'unlimitedProfileViews',
+    label: 'Unlimited Profile Views',
+    description: 'Members can view unlimited profiles without spending credits.',
+  },
+  {
+    key: 'unlimitedContactAccess',
+    label: 'Unlimited Contact Access',
+    description: "Phone numbers are never masked for this plan's members.",
+  },
+  {
+    key: 'unlimitedChat',
+    label: 'Unlimited Chat',
+    description: 'Members can start new conversations regardless of remaining credits.',
+  },
+  {
+    key: 'unlimitedHoroscopeDownload',
+    label: 'Unlimited Horoscope Downloads',
+    description: 'Members can download horoscope documents regardless of remaining credits.',
+  },
+  {
+    key: 'unlimitedBrowsing',
+    label: 'Unlimited Browsing',
+    description: 'Full search results — not capped to the non-member teaser list.',
+  },
+];
+
+const DEFAULT_FEATURES = Object.fromEntries(FEATURE_OPTIONS.map((f) => [f.key, false]));
+
 export default function AdminMembershipPlansPage() {
   const router = useRouter();
   const [plans, setPlans] = useState([]);
@@ -48,6 +80,7 @@ export default function AdminMembershipPlansPage() {
     validityDays: '',
     isDefault: false,
     isUnlimited: false,
+    features: DEFAULT_FEATURES,
   });
 
   useEffect(() => {
@@ -78,6 +111,7 @@ export default function AdminMembershipPlansPage() {
         validityDays: plan.validityDays === null ? '' : String(plan.validityDays),
         isDefault: plan.isDefault || false,
         isUnlimited: plan.validityDays === null,
+        features: { ...DEFAULT_FEATURES, ...(plan.features || {}) },
       });
     } else {
       setEditingPlan(null);
@@ -89,6 +123,7 @@ export default function AdminMembershipPlansPage() {
         validityDays: '',
         isDefault: false,
         isUnlimited: false,
+        features: DEFAULT_FEATURES,
       });
     }
     setIsDialogOpen(true);
@@ -125,6 +160,7 @@ export default function AdminMembershipPlansPage() {
         },
         validityDays: formData.isUnlimited ? null : parseInt(formData.validityDays),
         isDefault: formData.isDefault,
+        features: formData.features,
       };
 
       if (editingPlan) {
@@ -185,7 +221,7 @@ export default function AdminMembershipPlansPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-          <p className="font-maven text-secondary">Loading plans...</p>
+          <p className="font-sans text-secondary">Loading plans...</p>
         </div>
       </div>
     );
@@ -196,14 +232,14 @@ export default function AdminMembershipPlansPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-viga text-3xl text-secondary mb-2">Membership Plans</h1>
-          <p className="font-maven text-gray-600">
+          <h1 className="font-serif text-3xl text-secondary mb-2">Membership Plans</h1>
+          <p className="font-sans text-gray-600">
             Create and manage membership plans
           </p>
         </div>
         <Button
           onClick={() => handleOpenDialog()}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground font-telex"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground font-sans"
         >
           <Plus className="mr-2 h-4 w-4" />
           Create Plan
@@ -215,12 +251,12 @@ export default function AdminMembershipPlansPage() {
         <Card>
           <CardContent className="py-16">
             <div className="text-center">
-              <p className="font-maven text-lg text-gray-600 mb-4">
+              <p className="font-sans text-lg text-gray-600 mb-4">
                 No membership plans yet
               </p>
               <Button
                 onClick={() => handleOpenDialog()}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground font-telex"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-sans"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Create First Plan
@@ -239,7 +275,7 @@ export default function AdminMembershipPlansPage() {
             >
               {plan.isDefault && (
                 <div className="absolute top-2 right-4">
-                  <Badge className="bg-accent text-accent-foreground flex items-center gap-1 font-telex">
+                  <Badge className="bg-accent text-accent-foreground flex items-center gap-1 font-sans">
                     <Star className="w-3 h-3" />
                     Default
                   </Badge>
@@ -249,17 +285,17 @@ export default function AdminMembershipPlansPage() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="font-viga text-xl text-secondary">
+                    <CardTitle className="font-serif text-xl text-secondary">
                       {plan.name}
                     </CardTitle>
                     {plan.description && (
-                      <CardDescription className="font-maven mt-1">
+                      <CardDescription className="font-sans mt-1">
                         {plan.description}
                       </CardDescription>
                     )}
                   </div>
                   <Badge
-                    className={`ml-2 font-telex ${
+                    className={`ml-2 font-sans ${
                       plan.isActive
                         ? 'bg-success text-black'
                         : 'bg-gray-300 text-gray-700'
@@ -274,36 +310,36 @@ export default function AdminMembershipPlansPage() {
                 {/* Plan Details Grid */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="font-telex text-xs text-gray-600 mb-1">
+                    <p className="font-sans text-xs text-gray-600 mb-1">
                       Credits
                     </p>
-                    <p className="font-viga text-2xl text-secondary">
+                    <p className="font-serif text-2xl text-secondary">
                       {plan.credits}
                     </p>
                   </div>
                   <div>
-                    <p className="font-telex text-xs text-gray-600 mb-1">
+                    <p className="font-sans text-xs text-gray-600 mb-1">
                       Price
                     </p>
-                    <p className="font-viga text-2xl text-secondary">
+                    <p className="font-serif text-2xl text-secondary">
                       ₹{plan.price.amount}
                     </p>
                   </div>
                   <div>
-                    <p className="font-telex text-xs text-gray-600 mb-1">
+                    <p className="font-sans text-xs text-gray-600 mb-1">
                       Validity
                     </p>
-                    <p className="font-maven">
+                    <p className="font-sans">
                       {plan.validityDays === null || plan.validityDays === undefined
                         ? 'Unlimited'
                         : `${plan.validityDays} day${plan.validityDays !== 1 ? 's' : ''}`}
                     </p>
                   </div>
                   <div>
-                    <p className="font-telex text-xs text-gray-600 mb-1">
+                    <p className="font-sans text-xs text-gray-600 mb-1">
                       Price/Credit
                     </p>
-                    <p className="font-maven">
+                    <p className="font-sans">
                       ₹{(plan.price.amount / plan.credits).toFixed(2)}
                     </p>
                   </div>
@@ -315,7 +351,7 @@ export default function AdminMembershipPlansPage() {
                     onClick={() => handleOpenDialog(plan)}
                     size="sm"
                     variant="outline"
-                    className="flex-1 font-telex"
+                    className="flex-1 font-sans"
                   >
                     <Edit2 className="w-4 h-4 mr-1" />
                     Edit
@@ -327,7 +363,7 @@ export default function AdminMembershipPlansPage() {
                     }}
                     size="sm"
                     variant="outline"
-                    className="flex-1 text-red-600 border-red-200 hover:bg-red-50 font-telex"
+                    className="flex-1 text-red-600 border-red-200 hover:bg-red-50 font-sans"
                   >
                     <Trash2 className="w-4 h-4 mr-1" />
                     Delete
@@ -336,7 +372,7 @@ export default function AdminMembershipPlansPage() {
                     onClick={() => handleToggleActive(plan)}
                     size="sm"
                     variant="outline"
-                    className="flex-1 font-telex"
+                    className="flex-1 font-sans"
                   >
                     {plan.isActive ? 'Deactivate' : 'Activate'}
                   </Button>
@@ -351,10 +387,10 @@ export default function AdminMembershipPlansPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-viga">
+            <DialogTitle className="font-serif">
               {editingPlan ? 'Edit Plan' : 'Create New Plan'}
             </DialogTitle>
-            <DialogDescription className="font-maven">
+            <DialogDescription className="font-sans">
               {editingPlan
                 ? 'Update the plan details below'
                 : 'Fill in the details to create a new membership plan'}
@@ -364,33 +400,33 @@ export default function AdminMembershipPlansPage() {
           <div className="space-y-4">
             {/* Name */}
             <div>
-              <Label className="font-telex text-sm">Plan Name *</Label>
+              <Label className="font-sans text-sm">Plan Name *</Label>
               <Input
                 placeholder="e.g., Starter Plan"
                 value={formData.name}
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                className="font-maven mt-1"
+                className="font-sans mt-1"
               />
             </div>
 
             {/* Description */}
             <div>
-              <Label className="font-telex text-sm">Description</Label>
+              <Label className="font-sans text-sm">Description</Label>
               <Textarea
                 placeholder="Brief description of this plan (optional)"
                 value={formData.description}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                className="font-maven mt-1 resize-none h-20"
+                className="font-sans mt-1 resize-none h-20"
               />
             </div>
 
             {/* Credits */}
             <div>
-              <Label className="font-telex text-sm">Credits *</Label>
+              <Label className="font-sans text-sm">Credits *</Label>
               <Input
                 type="number"
                 min="1"
@@ -399,13 +435,13 @@ export default function AdminMembershipPlansPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, credits: e.target.value })
                 }
-                className="font-maven mt-1"
+                className="font-sans mt-1"
               />
             </div>
 
             {/* Price */}
             <div>
-              <Label className="font-telex text-sm">Price (₹) *</Label>
+              <Label className="font-sans text-sm">Price (₹) *</Label>
               <Input
                 type="number"
                 min="1"
@@ -414,13 +450,13 @@ export default function AdminMembershipPlansPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, price: e.target.value })
                 }
-                className="font-maven mt-1"
+                className="font-sans mt-1"
               />
             </div>
 
             {/* Validity Days */}
             <div>
-              <Label className="font-telex text-sm">Validity (Days) *</Label>
+              <Label className="font-sans text-sm">Validity (Days) *</Label>
               <Input
                 type="number"
                 min="1"
@@ -430,7 +466,7 @@ export default function AdminMembershipPlansPage() {
                   setFormData({ ...formData, validityDays: e.target.value })
                 }
                 disabled={formData.isUnlimited}
-                className="font-maven mt-1"
+                className="font-sans mt-1"
               />
             </div>
 
@@ -443,7 +479,7 @@ export default function AdminMembershipPlansPage() {
                   setFormData({ ...formData, isUnlimited: checked, validityDays: checked ? '' : formData.validityDays })
                 }
               />
-              <Label htmlFor="isUnlimited" className="font-telex text-sm cursor-pointer">
+              <Label htmlFor="isUnlimited" className="font-sans text-sm cursor-pointer">
                 Unlimited validity (no expiry)
               </Label>
             </div>
@@ -457,9 +493,35 @@ export default function AdminMembershipPlansPage() {
                   setFormData({ ...formData, isDefault: checked })
                 }
               />
-              <Label htmlFor="isDefault" className="font-telex text-sm cursor-pointer">
+              <Label htmlFor="isDefault" className="font-sans text-sm cursor-pointer">
                 Set as default plan
               </Label>
+            </div>
+
+            {/* Feature Access */}
+            <div className="pt-3 border-t border-[#D4A843]/15 space-y-3">
+              <Label className="font-sans text-sm font-semibold text-[#1A1A1A]">Feature Access</Label>
+              {FEATURE_OPTIONS.map((feature) => (
+                <div key={feature.key} className="flex items-start gap-3">
+                  <Checkbox
+                    id={feature.key}
+                    checked={!!formData.features[feature.key]}
+                    onCheckedChange={(checked) =>
+                      setFormData({
+                        ...formData,
+                        features: { ...formData.features, [feature.key]: checked },
+                      })
+                    }
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <Label htmlFor={feature.key} className="font-sans text-sm cursor-pointer">
+                      {feature.label}
+                    </Label>
+                    <p className="font-sans text-xs text-gray-500 mt-0.5">{feature.description}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -468,14 +530,14 @@ export default function AdminMembershipPlansPage() {
               variant="outline"
               onClick={() => setIsDialogOpen(false)}
               disabled={isSaving}
-              className="font-telex"
+              className="font-sans"
             >
               Cancel
             </Button>
             <Button
               onClick={handleSavePlan}
               disabled={isSaving}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground font-telex"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-sans"
             >
               {isSaving ? (
                 <>
@@ -497,8 +559,8 @@ export default function AdminMembershipPlansPage() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-viga">Delete Plan?</AlertDialogTitle>
-            <AlertDialogDescription className="font-maven">
+            <AlertDialogTitle className="font-serif">Delete Plan?</AlertDialogTitle>
+            <AlertDialogDescription className="font-sans">
               {planToDelete?.name} will be permanently deleted. This action cannot
               be undone.
             </AlertDialogDescription>
@@ -510,14 +572,14 @@ export default function AdminMembershipPlansPage() {
                 setPlanToDelete(null);
               }}
               disabled={isSaving}
-              className="font-telex"
+              className="font-sans"
             >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeletePlan}
               disabled={isSaving}
-              className="bg-red-600 hover:bg-red-700 text-white font-telex"
+              className="bg-red-600 hover:bg-red-700 text-white font-sans"
             >
               {isSaving ? (
                 <>

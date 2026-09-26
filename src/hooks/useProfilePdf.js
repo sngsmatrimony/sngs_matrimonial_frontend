@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import client from '@/lib/api/client';
 import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
 
 /**
@@ -12,9 +13,7 @@ export const useProfilePdf = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const printRef = useRef(null);
 
-  const downloadPDF = useCallback(async (fullName, horoscopeDocument = null) => {
-    console.log('[PDF Hook] downloadPDF called with:', { fullName, horoscopeDocument });
-
+  const downloadPDF = useCallback(async (fullName, horoscopeDocument = null, profileId = null) => {
     if (!printRef.current) {
       toastError('Unable to generate PDF. Please try again.');
       return;
@@ -26,6 +25,11 @@ export const useProfilePdf = () => {
     }
 
     setIsGenerating(true);
+
+    // Fire-and-forget: PDF generation itself is entirely client-side and
+    // otherwise invisible to the server, so log it separately for abuse
+    // monitoring. Never blocks or fails the actual download.
+    client.post('/api/profiles/pdf-download-log', { targetId: profileId || undefined }).catch(() => {});
 
     // Show appropriate message based on whether horoscope will be included
     if (horoscopeDocument?.url) {
@@ -43,8 +47,6 @@ export const useProfilePdf = () => {
         url: horoscopeDocument.url,
         fileType: horoscopeDocument.fileType,
       } : null;
-
-      console.log('[PDF Hook] horoscopeData to pass:', horoscopeData);
 
       await generateProfilePDF(printRef.current, fullName, horoscopeData);
 

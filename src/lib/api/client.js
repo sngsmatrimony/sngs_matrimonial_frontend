@@ -27,7 +27,12 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // A 401 from the login endpoint itself just means wrong credentials —
+    // not an expired session. Redirecting there would hard-reload /login
+    // and wipe the error toast/message before the user can read it.
+    const isLoginRequest = error.config?.url?.includes('/api/auth/login');
+
+    if (error.response?.status === 401 && !isLoginRequest) {
       // Token expired or invalid - clear auth
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');

@@ -9,20 +9,14 @@
  * @returns {Promise<{ blob: Blob, contentType: string } | null>}
  */
 export const fetchHoroscopeDocument = async (url) => {
-  console.log('[Horoscope] fetchHoroscopeDocument called with:', url);
-
   if (!url) {
-    console.log('[Horoscope] No URL provided, returning null');
     return null;
   }
 
   try {
     // Use the document-proxy API route for horoscope files
     const proxyUrl = `/api/document-proxy?url=${encodeURIComponent(url)}`;
-    console.log('[Horoscope] Fetching via proxy:', proxyUrl);
-
     const response = await fetch(proxyUrl);
-    console.log('[Horoscope] Proxy response status:', response.status);
 
     if (!response.ok) {
       console.warn('[Horoscope] Failed to fetch horoscope document:', response.status);
@@ -31,7 +25,6 @@ export const fetchHoroscopeDocument = async (url) => {
 
     const blob = await response.blob();
     const contentType = response.headers.get('content-type') || '';
-    console.log('[Horoscope] Fetch success:', { contentType, blobSize: blob.size });
 
     return { blob, contentType };
   } catch (error) {

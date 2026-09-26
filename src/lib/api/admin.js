@@ -48,6 +48,12 @@ export const adminApi = {
    */
   deleteUser: (id) => adminClient.delete(`/api/admin/users/${id}`),
 
+  /**
+   * Send a notification email to a specific set of users by id
+   */
+  bulkEmailUsers: (userIds, subject, message) =>
+    adminClient.post('/api/admin/users/bulk-email', { userIds, subject, message }),
+
   // ==================== Analytics ====================
 
   /**
@@ -59,6 +65,35 @@ export const adminApi = {
    * Get user demographics
    */
   getDemographics: () => adminClient.get('/api/admin/analytics/demographics'),
+
+  // ==================== Activity Logs ====================
+
+  /**
+   * Get activity log entries with pagination, search, and filters
+   */
+  getActivityLogs: (params) => adminClient.get('/api/admin/activity-logs', { params }),
+
+  // ==================== Phone Number Requests ====================
+
+  /**
+   * Get phone-number requests, filterable by status, paginated
+   */
+  getPhoneRequests: (params) => adminClient.get('/api/admin/phone-requests', { params }),
+
+  /**
+   * Approve a phone-number request
+   */
+  approvePhoneRequest: (id) => adminClient.put(`/api/admin/phone-requests/${id}/approve`),
+
+  /**
+   * Deny a phone-number request
+   */
+  denyPhoneRequest: (id) => adminClient.put(`/api/admin/phone-requests/${id}/deny`),
+
+  /**
+   * Reply on a phone-number request's note thread
+   */
+  sendPhoneRequestMessage: (id, text) => adminClient.post(`/api/admin/phone-requests/${id}/message`, { text }),
 
   // ==================== Settings ====================
 
@@ -86,6 +121,26 @@ export const adminApi = {
    * Update Hero section content
    */
   updateHeroContent: (data) => adminClient.put('/api/admin/hero-content', data),
+
+  /**
+   * Get membership enforcement toggle state
+   */
+  getEnforcementSettings: () => adminClient.get('/api/admin/settings/enforcement'),
+
+  /**
+   * Update membership enforcement toggle state
+   */
+  updateEnforcementSettings: (data) => adminClient.put('/api/admin/settings/enforcement', data),
+
+  /**
+   * Get "ID proof required" toggle state
+   */
+  getIdProofSettings: () => adminClient.get('/api/admin/settings/id-proof-required'),
+
+  /**
+   * Update "ID proof required" toggle state
+   */
+  updateIdProofSettings: (data) => adminClient.put('/api/admin/settings/id-proof-required', data),
 
   // ==================== Admin Management ====================
 

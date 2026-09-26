@@ -424,25 +424,17 @@ export const generateProfilePDF = async (element, fullName, horoscopeData = null
 
     // Handle horoscope document if available
     if (horoscopeData?.url) {
-      console.log('[PDF] Processing horoscope:', { url: horoscopeData.url, fileType: horoscopeData.fileType });
-
       try {
         const docResult = await fetchHoroscopeDocument(horoscopeData.url);
-        console.log('[PDF] Horoscope fetch result:', docResult ? 'success' : 'null');
 
         if (docResult) {
           const { blob, contentType } = docResult;
-          console.log('[PDF] Horoscope details:', { contentType, blobSize: blob.size });
-
           const isPdf = isPdfDocument(contentType, horoscopeData.url, horoscopeData.fileType);
-          console.log('[PDF] Is PDF document:', isPdf);
 
           if (isPdf) {
             // Merge horoscope PDF with profile PDF
-            console.log('[PDF] Merging horoscope PDF with profile PDF');
             const horoscopeBuffer = await blobToArrayBuffer(blob);
             const mergedPdfBytes = await mergeWithHoroscopePdf(pdf, horoscopeBuffer);
-            console.log('[PDF] PDF merge complete, merged size:', mergedPdfBytes.length);
 
             // Create blob and trigger download
             const mergedBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
@@ -458,10 +450,8 @@ export const generateProfilePDF = async (element, fullName, horoscopeData = null
             return { success: true };
           } else {
             // Add horoscope image as a new page
-            console.log('[PDF] Adding horoscope image as new page');
             const imageBase64 = await blobToBase64(blob);
             await addHoroscopeImagePage(pdf, imageBase64, fullName, totalPages + 1, totalPages + 1);
-            console.log('[PDF] Horoscope image page added successfully');
           }
         } else {
           console.warn('[PDF] Horoscope fetch returned null - document may not exist or failed to load');
@@ -470,8 +460,6 @@ export const generateProfilePDF = async (element, fullName, horoscopeData = null
         console.error('[PDF] Failed to add horoscope to PDF:', horoscopeError);
         // Continue with profile-only PDF
       }
-    } else {
-      console.log('[PDF] No horoscope document to include');
     }
 
     // Generate filename: replace spaces with underscores, add suffix

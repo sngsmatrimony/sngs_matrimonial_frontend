@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import MessageBubble from "./MessageBubble";
 import TypingIndicator from "./TypingIndicator";
 import MessageInput from "./MessageInput";
+import ChatSafetyBanner from "./ChatSafetyBanner";
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -98,12 +99,12 @@ export default function ChatConversation({
 
   if (!conversationId) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50">
+      <div className="flex-1 flex items-center justify-center bg-[#FDF8F0]">
         <div className="text-center">
-          <p className="text-lg font-viga text-secondary mb-2">
+          <p className="text-lg font-serif text-[#2C3E50] mb-2">
             Select a conversation
           </p>
-          <p className="text-sm font-maven text-gray-600">
+          <p className="text-sm font-sans text-[#2C3E50]/70">
             Choose a conversation from the list to start messaging
           </p>
         </div>
@@ -113,19 +114,19 @@ export default function ChatConversation({
 
   if (error) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-50">
+      <div className="flex-1 flex items-center justify-center bg-[#FDF8F0]">
         <div className="text-center max-w-md px-4">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-lg font-viga text-gray-900 mb-2">
+          <AlertCircle className="w-12 h-12 text-[#C75B39] mx-auto mb-4" />
+          <p className="text-lg font-serif text-[#1A1A1A] mb-2">
             Error loading conversation
           </p>
-          <p className="text-sm font-maven text-gray-600 mb-4">
+          <p className="text-sm font-sans text-[#2C3E50]/70 mb-4">
             {error.message || "Something went wrong. Please try again."}
           </p>
           <Button
             onClick={() => window.location.reload()}
             variant="outline"
-            className="border-primary text-primary hover:bg-primary/10"
+            className="border-[#D4A843]/40 text-[#D4A843] hover:bg-[#F5E6C3]/40"
           >
             Reload Page
           </Button>
@@ -136,6 +137,8 @@ export default function ChatConversation({
 
   return (
     <div className="flex-1 flex flex-col bg-white min-h-0">
+      <ChatSafetyBanner />
+
       {/* Messages Container */}
       <div
         ref={messagesContainerRef}
@@ -151,7 +154,7 @@ export default function ChatConversation({
               disabled={isLoadingMore}
               variant="ghost"
               size="sm"
-              className="text-secondary hover:text-primary hover:bg-primary/10 font-telex"
+              className="text-[#2C3E50] hover:text-[#D4A843] hover:bg-[#F5E6C3]/40 font-sans"
             >
               {isLoadingMore ? (
                 <>
@@ -168,7 +171,7 @@ export default function ChatConversation({
         {/* Loading Indicator at Top */}
         {isLoadingMore && (
           <div className="flex justify-center py-2">
-            <Loader2 className="w-5 h-5 text-secondary animate-spin" />
+            <Loader2 className="w-5 h-5 text-[#2C3E50] animate-spin" />
           </div>
         )}
 
@@ -176,7 +179,7 @@ export default function ChatConversation({
         {messages.length === 0 && !isLoadingMore && (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <p className="text-base font-maven text-gray-600">
+              <p className="text-base font-sans text-[#2C3E50]/70">
                 No messages yet. Start the conversation!
               </p>
             </div>

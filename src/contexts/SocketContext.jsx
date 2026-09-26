@@ -61,15 +61,13 @@ export function SocketProvider({ children }) {
 
       // Handle connection state
       socketInstance.on('connect', () => {
-        console.log('[SocketContext] Socket connected:', socketInstance.id);
         setIsConnected(true);
         reconnectAttemptRef.current = 0;
         // Reload conversations on reconnect to get any missed messages
         loadConversations();
       });
 
-      socketInstance.on('disconnect', (reason) => {
-        console.log('[SocketContext] Socket disconnected:', reason);
+      socketInstance.on('disconnect', () => {
         setIsConnected(false);
       });
 
@@ -81,17 +79,14 @@ export function SocketProvider({ children }) {
 
       // Set up chat event listeners
       onMessageReceived(({ message, conversationId }) => {
-        console.log('[SocketContext] Message received:', { messageId: message._id, conversationId });
         receiveMessage(message, conversationId);
       });
 
-      onMessageDelivered(({ messageId, conversationId }) => {
-        console.log('[SocketContext] Message delivered:', { messageId, conversationId });
+      onMessageDelivered(({ messageId }) => {
         updateMessageStatus(messageId, 'deliveredTo', user._id);
       });
 
       onMessageReadReceipt(({ messageId, readBy }) => {
-        console.log('[SocketContext] Read receipt:', { messageId, readBy });
         updateMessageStatus(messageId, 'readBy', {
           userId: readBy,
           readAt: new Date(),
@@ -137,6 +132,7 @@ export function SocketProvider({ children }) {
   // Initialize socket when user is authenticated
   useEffect(() => {
     if (user && token) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing the socket connection lifecycle to auth state is the correct use of an effect here
       initSocket();
     } else {
       // Clean up when user logs out
@@ -156,7 +152,6 @@ export function SocketProvider({ children }) {
       if (document.visibilityState === 'visible' && user && token) {
         const currentSocket = getSocket();
         if (!currentSocket?.connected) {
-          console.log('[SocketContext] Page visible, reconnecting socket...');
           initSocket();
         }
       }

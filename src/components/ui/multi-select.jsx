@@ -50,21 +50,21 @@ export function MultiSelect({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between font-maven-pro"
+            className="w-full justify-between font-sans"
           >
             {value.length > 0 ? `${value.length} selected` : placeholder}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0">
           <Command>
-            <CommandInput placeholder="Search..." className="font-maven-pro" />
-            <CommandEmpty className="font-maven-pro">No option found.</CommandEmpty>
+            <CommandInput placeholder="Search..." className="font-sans" />
+            <CommandEmpty className="font-sans">No option found.</CommandEmpty>
             <CommandGroup className="max-h-64 overflow-auto">
               {options.map((option) => (
                 <CommandItem
                   key={option}
                   onSelect={() => handleSelect(option)}
-                  className="font-maven-pro"
+                  className="font-sans"
                 >
                   <Check
                     className={cn(
@@ -86,7 +86,7 @@ export function MultiSelect({
             <Badge
               key={val}
               variant="secondary"
-              className="font-telex"
+              className="font-sans"
             >
               {val}
               <button

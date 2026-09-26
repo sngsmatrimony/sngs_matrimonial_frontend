@@ -124,6 +124,13 @@ export const useAuthStore = create(
 
       // Initialize auth from localStorage
       initializeAuth: async () => {
+        // A session is already hydrated (e.g. immediately after login/register,
+        // or restored by the persist middleware on load) — don't re-fetch and
+        // risk a transient network/server error wiping a perfectly valid session.
+        if (get().token && get().user) {
+          return;
+        }
+
         // First, try to restore from localStorage
         const storedToken = localStorage.getItem('authToken');
         if (storedToken) {
@@ -144,9 +151,14 @@ export const useAuthStore = create(
             // Fetch fresh membership data from API
             await get().refreshMembership();
           } catch (error) {
-            // Token is invalid, clear it
-            localStorage.removeItem('authToken');
-            set({ token: null, user: null });
+            // Only clear the session when the token itself is actually
+            // invalid/expired. A network error, timeout, or transient 5xx
+            // from the backend is not proof the session is bad, and must
+            // not silently log the user out.
+            if (error.response?.status === 401) {
+              localStorage.removeItem('authToken');
+              set({ token: null, user: null });
+            }
           }
         }
       },
@@ -260,6 +272,41 @@ export const useAuthStore = create(
             user: {
               ...state.user,
               horoscopeDocument: undefined
+            }
+          }));
+          return { success: true };
+        } catch {
+          return { success: false, error: 'Delete failed' };
+        }
+      },
+
+      // Upload ID proof document
+      uploadIdProof: async (file) => {
+        const formData = new FormData();
+        formData.append('document', file);
+
+        try {
+          const response = await client.post('/api/auth/upload-id-proof', formData);
+          set((state) => ({
+            user: {
+              ...state.user,
+              idProof: response.data.idProof
+            }
+          }));
+          return { success: true, idProof: response.data.idProof };
+        } catch (error) {
+          return { success: false, error: error.response?.data?.message || 'Upload failed' };
+        }
+      },
+
+      // Delete ID proof document
+      deleteIdProof: async () => {
+        try {
+          const response = await client.delete('/api/auth/id-proof');
+          set((state) => ({
+            user: {
+              ...state.user,
+              idProof: undefined
             }
           }));
           return { success: true };

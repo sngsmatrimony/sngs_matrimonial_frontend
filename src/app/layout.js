@@ -1,31 +1,29 @@
-import { Maven_Pro, Viga, Telex } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import PromoBanner from '@/components/layout/PromoBanner';
-const maven = Maven_Pro({
+import Header from '@/components/layout/Header'; // <-- Restored Global Header
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
+import Preloader from '@/components/layout/Preloader';
+
+
+// Configure Inter for all standard UI and body text (sans-serif)
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
   display: "swap",
-  variable: "--font-maven",
+  variable: "--font-sans",
 });
 
-const viga = Viga({
+// Configure Playfair Display for premium headlines (serif)
+const playfair = Playfair_Display({
   subsets: ["latin"],
-  weight: ["400"],
   display: "swap",
-  variable: "--font-viga",
-});
-
-const telex = Telex({
-  subsets: ["latin"],
-  weight: ["400"],
-  display: "swap",
-  variable: "--font-telex",
+  variable: "--font-serif",
 });
 
 export const metadata = {
   title: "SNGS Matrimonial",
-  description: "Find your perfect match on SNGS Matrimonial",
+  description: "Find your perfect match within the Malayali Ezhava Community.",
   icons: {
     icon: '/icon.png',
     apple: '/apple-icon.png',
@@ -34,12 +32,27 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${maven.variable} ${viga.variable} ${telex.variable}`}>
-      <body className="antialiased">
+    /* Injecting the new Sacred Modernity font variables globally */
+    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
+      <body className="font-sans antialiased bg-[#FDF8F0] text-[#1A1A1A] flex flex-col min-h-screen">
+        <Preloader />
         <Providers>
+          
+          {/* Global Top Promo Banner */}
           <PromoBanner />
-          {/* If you have a global Header component, it would typically go right here */}
-          {children}
+
+          {/* Global Header */}
+          <Header isFixed={true} />
+          
+          {/* Main Page Content */}
+          <main className="flex-1 pb-16 md:pb-0 relative z-0">
+            {/* The pb-16 ensures content doesn't hide behind the 64px mobile bottom nav */}
+            {children}
+          </main>
+
+          {/* Mobile Bottom Nav (app routes, logged-in users only) */}
+          <MobileBottomNav />
+
         </Providers>
       </body>
     </html>

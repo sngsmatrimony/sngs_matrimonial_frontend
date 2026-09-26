@@ -22,25 +22,25 @@ export default function TypingIndicator({ typingUsers = [], typingUserDetails = 
 
   return (
     <div className="flex w-full justify-start mb-3 animate-fadeIn">
-      <div className="max-w-[70%] rounded-2xl rounded-bl-sm px-4 py-3 bg-gray-100 shadow-sm">
+      <div className="max-w-[70%] rounded-2xl rounded-bl-sm px-4 py-3 bg-[#F5E6C3]/60 shadow-sm">
         <div className="flex items-center gap-2">
           {/* Typing User Name */}
-          <span className="text-xs font-telex text-gray-600">
+          <span className="text-xs font-sans text-[#2C3E50]/70">
             {typingUserName} is typing
           </span>
 
           {/* Three Dots Animation */}
           <div className="flex items-center gap-1">
             <span
-              className="w-2 h-2 bg-gray-400 rounded-full animate-typingDot"
+              className="w-2 h-2 bg-[#2C3E50]/40 rounded-full animate-typingDot"
               style={{ animationDelay: "0ms" }}
             ></span>
             <span
-              className="w-2 h-2 bg-gray-400 rounded-full animate-typingDot"
+              className="w-2 h-2 bg-[#2C3E50]/40 rounded-full animate-typingDot"
               style={{ animationDelay: "200ms" }}
             ></span>
             <span
-              className="w-2 h-2 bg-gray-400 rounded-full animate-typingDot"
+              className="w-2 h-2 bg-[#2C3E50]/40 rounded-full animate-typingDot"
               style={{ animationDelay: "400ms" }}
             ></span>
           </div>

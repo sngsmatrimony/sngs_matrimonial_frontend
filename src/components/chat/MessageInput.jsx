@@ -108,7 +108,7 @@ export default function MessageInput({
   }, []);
 
   return (
-    <div className="border-t bg-white px-4 py-3 shrink-0 sticky bottom-0 z-20">
+    <div className="border-t border-[#D4A843]/15 bg-white px-4 py-3 shrink-0 sticky bottom-0 z-20">
       <div className="flex items-end gap-2">
         {/* Message Textarea */}
         <Textarea
@@ -119,8 +119,8 @@ export default function MessageInput({
           placeholder={placeholder}
           disabled={disabled || isLoading}
           className={cn(
-            "min-h-[40px] max-h-[120px] resize-none font-maven text-[15px] leading-relaxed",
-            "border-gray-300 focus:ring-0",
+            "min-h-[40px] max-h-[120px] resize-none font-sans text-[15px] leading-relaxed rounded-xl",
+            "border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50",
             "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
           rows={1}
@@ -132,17 +132,17 @@ export default function MessageInput({
           onClick={handleSend}
           disabled={!message.trim() || disabled || isLoading}
           className={cn(
-            "shrink-0 bg-success-alt hover:bg-success-alt/90 text-black mb-1",
+            "shrink-0 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] mb-1 px-3",
             "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
-          size="icon"
         >
-          <Send className="w-5 h-5" />
+          <Send className="w-5 h-5 sm:mr-1.5" />
+          <span className="hidden sm:inline">Send</span>
         </Button>
       </div>
 
       {/* Helper Text */}
-      <p className="text-[11px] font-telex text-gray-500 mt-2 px-1">
+      <p className="text-[11px] font-sans text-[#2C3E50]/50 mt-2 px-1">
         Press Enter to send, Shift + Enter for new line
       </p>
     </div>

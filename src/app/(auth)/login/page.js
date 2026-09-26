@@ -3,14 +3,23 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image'; // Added Next.js Image component
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import {
+  LogIn,
+  Mail,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { FormAlert } from '@/components/ui/form-alert';
 import { useAuthStore } from '@/store/authStore';
 import { toastError, toastSuccess } from '@/lib/toast';
 
@@ -23,6 +32,8 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
 
   const form = useForm({
     resolver: zodResolver(loginSchema),
@@ -34,6 +45,7 @@ export default function LoginPage() {
 
   async function onSubmit(values) {
     setIsLoading(true);
+    setError('');
 
     const result = await login(values.email, values.password);
 
@@ -41,93 +53,162 @@ export default function LoginPage() {
       toastSuccess('Sign in successful! Redirecting...');
       router.push('/');
     } else {
-      toastError(result.error || 'Sign in failed. Please try again.');
+      const errMessage = result.error || 'Sign in failed. Please check your credentials.';
+      setError(errMessage);
+      toastError(errMessage);
     }
 
     setIsLoading(false);
   }
 
   return (
-    <div className="w-full max-w-md">
-      <Card className="border-0 shadow-lg bg-white">
-      <CardHeader className="space-y-2 pb-6">
-        <div className="text-center mb-2">
-          <div className="inline-block p-3 bg-gradient-warm-subtle rounded-full mb-4">
-            <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-        </div>
-        <CardTitle className="font-viga text-3xl text-center text-primary">Welcome Back</CardTitle>
-        <CardDescription className="font-maven text-center text-secondary">Sign in to your account to continue finding your perfect match</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+    <>
+      {/* 1. FIXED BACKGROUND CONTAINER (behind everything, including portaled dropdowns) */}
+      {/* This breaks out of layout padding and stays securely visible above the body tag */}
+      <div className="fixed inset-0 w-full h-full -z-10 pointer-events-none">
+        <Image
+  src="/images/reception.png"
+  alt="SNGS Matrimonial Login Background"
+  fill
+  priority
+  sizes="100vw"
+  quality={90}
+  className="object-cover"
+/>
+        {/* Charcoal overlay with blur applied directly over the image[cite: 10] */}
+        <div className="absolute inset-0 bg-[#1A1A1A]/50" />
+      </div>
+      
+      {/* 2. CONTENT WRAPPER (z-10) */}
+      {/* Keeps the card centered and floating above the fixed background */}
+      <div className="relative z-10 flex items-center justify-center min-h-screen w-full p-4">
+        <div className="w-full max-w-md">
+          <Card className="border border-[#D4A843]/20 shadow-2xl bg-white w-full rounded-2xl overflow-hidden py-0 gap-0">
+            
+            {/* Header aligned with Sacred Modernity styling[cite: 10] */}
+            <CardHeader className="pb-6 pt-8 px-6 sm:px-10 bg-gradient-to-br from-[#2C3E50] to-[#1A2733] relative overflow-hidden">
+              <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-gradient-to-r from-[#D4A843]/0 via-[#D4A843] to-[#D4A843]/0" />
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F5E6C3] text-[#2C3E50] ring-1 ring-[#D4A843]/50 shrink-0">
+                    <LogIn className="w-5 h-5" strokeWidth={1.75} />
+                  </span>
+                  <div>
+                    <p className="font-sans text-[11px] tracking-[0.14em] uppercase text-[#D4A843] font-semibold mb-0.5">
+                      Welcome Back
+                    </p>
+                    <CardTitle className="font-serif text-2xl text-white font-bold leading-tight">
+                      Sign In
+                    </CardTitle>
+                  </div>
+                </div>
+                <div className="hidden sm:flex items-center gap-1.5 font-sans text-xs text-white/70 font-medium whitespace-nowrap">
+                  <ShieldCheck className="w-4 h-4 text-[#D4A843]" strokeWidth={1.75} />
+                  100% Verified
+                </div>
+              </div>
+            </CardHeader>
 
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="font-telex text-secondary font-semibold">Email Address</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="you@example.com"
-                      type="email"
-                      autoComplete="username"
-                      className="border-2 border-gray-200 focus:border-primary focus:ring-primary transition-colors"
-                      {...field}
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)}>
+                <CardContent className="px-6 sm:px-10">
+                  <div className="space-y-6 py-8">
+                    <FormAlert message={error} onDismiss={() => setError('')} />
+
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-sans text-[#1A1A1A] font-medium">Email Address</FormLabel>
+                          <div className="relative">
+                            <Mail className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#2C3E50]/50" strokeWidth={1.75} />
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="email"
+                                autoComplete="username"
+                                placeholder="your@email.com"
+                                className="font-sans pl-10 h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+                                suppressHydrationWarning
+                              />
+                            </FormControl>
+                          </div>
+                          <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <FormMessage className="text-destructive" />
-                </FormItem>
-              )}
-            />
 
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="flex items-center justify-between">
-                    <FormLabel className="font-telex text-secondary font-semibold">Password</FormLabel>
-                    <Link href="/forgot-password" className="font-maven text-sm text-black font-semibold hover:text-secondary/80 hover:underline">
-                      Forgot?
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center justify-between">
+                            <FormLabel className="font-sans text-[#1A1A1A] font-medium">Password</FormLabel>
+                            <Link
+                              href="/forgot-password"
+                              className="font-sans text-xs text-[#2C3E50] hover:text-[#D4A843] font-medium hover:underline transition-colors"
+                            >
+                              Forgot password?
+                            </Link>
+                          </div>
+                          <div className="relative">
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type={showPassword ? 'text' : 'password'}
+                                autoComplete="current-password"
+                                placeholder="••••••••"
+                                className="font-sans h-12 rounded-xl border-[#D4A843]/25 pr-11 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+                              />
+                            </FormControl>
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword((prev) => !prev)}
+                              aria-label={showPassword ? 'Hide password' : 'Show password'}
+                              tabIndex={-1}
+                              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#2C3E50]/50 hover:text-[#D4A843] transition-colors"
+                            >
+                              {showPassword ? (
+                                <EyeOff className="w-4.5 h-4.5" strokeWidth={1.75} />
+                              ) : (
+                                <Eye className="w-4.5 h-4.5" strokeWidth={1.75} />
+                              )}
+                            </button>
+                          </div>
+                          <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </CardContent>
+
+                <div className="flex flex-col gap-4 px-6 sm:px-10 py-6 border-t border-[#D4A843]/20 bg-[#F5E6C3]/25">
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold h-12 rounded-xl shadow-sm disabled:opacity-50 transition-all duration-200"
+                  >
+                    {isLoading ? 'Signing in...' : 'Sign In'}
+                  </Button>
+
+                  <div className="font-sans text-center text-sm text-[#2C3E50]">
+                    Don&apos;t have an account?
+                    <Link
+                      href="/register"
+                      className="text-[#1A1A1A] hover:text-[#D4A843] font-semibold hover:underline transition-colors ml-1.5"
+                    >
+                      Sign up
                     </Link>
                   </div>
-                  <FormControl>
-                    <Input
-                      placeholder="••••••••"
-                      type="password"
-                      autoComplete="current-password"
-                      className="border-2 border-gray-200 focus:border-primary focus:ring-primary transition-colors"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className="text-destructive" />
-                </FormItem>
-              )}
-            />
-
-            <Button
-              type="submit"
-              className="font-telex w-full bg-primary hover:bg-primary/90 text-primary-foreground h-12 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Signing in...' : 'Sign In'}
-            </Button>
-          </form>
-        </Form>
-
-        <div className="font-maven mt-6 pt-6 border-t border-gray-200 text-center text-sm">
-          <span className="text-secondary/70">Don&apos;t have an account? </span>
-          <Link href="/register" className="text-black hover:text-secondary/80 font-semibold hover:underline transition-colors mx-2">
-            Sign up
-          </Link>
+                </div>
+              </form>
+            </Form>
+          </Card>
         </div>
-      </CardContent>
-      </Card>
-    </div>
+      </div>
+    </>
   );
 }

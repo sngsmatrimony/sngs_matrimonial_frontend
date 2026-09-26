@@ -681,4 +681,5 @@ export const DIET_OPTIONS = [
   'Vegetarian',
   'Non-Vegetarian',
   'Eggetarian',
+  'Both (Veg & Non-Veg)',
 ];

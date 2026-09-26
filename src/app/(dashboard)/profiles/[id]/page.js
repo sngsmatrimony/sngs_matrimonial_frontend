@@ -6,7 +6,8 @@ import { client } from '@/lib/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { toastError, toastSuccess } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import ProfileDetailView from '@/components/profile/ProfileDetailView';
 
 export default function ProfileViewPage() {
@@ -31,7 +32,7 @@ export default function ProfileViewPage() {
       setProfile(response.data.data);
       setCreditsDeducted(response.data.data.creditsDeducted || false);
 
-      if (response.data.data.creditsDeducted && process.env.NEXT_PUBLIC_PROMOTIONAL_MODE !== 'true') {
+      if (response.data.data.creditsDeducted) {
         await refreshMembership();
         toastSuccess('1 credit deducted for viewing this profile');
       }
@@ -70,10 +71,19 @@ export default function ProfileViewPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-          <p className="font-maven text-secondary">Loading profile...</p>
+      <div className="min-h-screen bg-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-[#D4A843]/15 overflow-hidden p-6 space-y-4">
+            <div className="flex items-center gap-4">
+              <Skeleton className="w-24 h-24 rounded-full" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-6 w-1/2" />
+                <Skeleton className="h-4 w-1/3" />
+              </div>
+            </div>
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-40 w-full" />
+          </div>
         </div>
       </div>
     );
@@ -83,7 +93,7 @@ export default function ProfileViewPage() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center max-w-md">
-          <p className="font-maven text-lg text-secondary mb-6">
+          <p className="font-sans text-lg text-[#2C3E50] mb-6">
             {error === 'not-found' && 'Profile not found'}
             {error === 'insufficient-credits' && 'You do not have enough credits'}
             {error === 'no-membership' && 'You need an active membership'}
@@ -92,7 +102,7 @@ export default function ProfileViewPage() {
           <Button
             onClick={() => router.back()}
             variant="outline"
-            className="font-telex"
+            className="font-sans"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Go Back

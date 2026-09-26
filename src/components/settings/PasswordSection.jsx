@@ -65,11 +65,11 @@ export default function PasswordSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="font-viga flex items-center gap-2">
-          <Lock size={20} className="text-primary" />
+        <CardTitle className="font-serif flex items-center gap-2">
+          <Lock size={20} className="text-[#D4A843]" />
           Change Password
         </CardTitle>
-        <CardDescription className="font-maven">
+        <CardDescription className="font-sans">
           Update your password to keep your account secure
         </CardDescription>
       </CardHeader>
@@ -82,26 +82,26 @@ export default function PasswordSection() {
               name="currentPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-telex">Current Password</FormLabel>
+                  <FormLabel className="font-sans">Current Password</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input
                         type={showCurrentPassword ? 'text' : 'password'}
                         placeholder="Enter current password"
                         autoComplete="current-password"
-                        className="font-maven pr-10"
+                        className="font-sans pr-10"
                         {...field}
                       />
                       <button
                         type="button"
                         onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#2C3E50]/50 hover:text-[#2C3E50]"
                       >
                         {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
                   </FormControl>
-                  <FormMessage className="font-maven text-xs" />
+                  <FormMessage className="font-sans text-xs" />
                 </FormItem>
               )}
             />
@@ -112,29 +112,29 @@ export default function PasswordSection() {
               name="newPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-telex">New Password</FormLabel>
+                  <FormLabel className="font-sans">New Password</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input
                         type={showNewPassword ? 'text' : 'password'}
                         placeholder="Enter new password"
                         autoComplete="new-password"
-                        className="font-maven pr-10"
+                        className="font-sans pr-10"
                         {...field}
                       />
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#2C3E50]/50 hover:text-[#2C3E50]"
                       >
                         {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
                   </FormControl>
-                  <p className="text-xs text-gray-500 font-maven mt-1">
+                  <p className="text-xs text-[#2C3E50]/60 font-sans mt-1">
                     Must be at least 8 characters with uppercase, lowercase, and numbers
                   </p>
-                  <FormMessage className="font-maven text-xs" />
+                  <FormMessage className="font-sans text-xs" />
                 </FormItem>
               )}
             />
@@ -145,26 +145,26 @@ export default function PasswordSection() {
               name="confirmPassword"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="font-telex">Confirm New Password</FormLabel>
+                  <FormLabel className="font-sans">Confirm New Password</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Input
                         type={showConfirmPassword ? 'text' : 'password'}
                         placeholder="Confirm new password"
                         autoComplete="new-password"
-                        className="font-maven pr-10"
+                        className="font-sans pr-10"
                         {...field}
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#2C3E50]/50 hover:text-[#2C3E50]"
                       >
                         {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
                   </FormControl>
-                  <FormMessage className="font-maven text-xs" />
+                  <FormMessage className="font-sans text-xs" />
                 </FormItem>
               )}
             />
@@ -173,7 +173,7 @@ export default function PasswordSection() {
             <Button
               type="submit"
               disabled={changePasswordMutation.isPending}
-              className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-telex"
+              className="w-full sm:w-auto bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold"
             >
               {changePasswordMutation.isPending ? (
                 <>

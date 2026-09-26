@@ -157,11 +157,11 @@ export default function ChatLayout({ initialUserId = null }) {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-[calc(100vh-129px)] md:h-[calc(100vh-121px)] bg-[#FDF8F0]">
       {/* Chat List Sidebar - Hidden on mobile when conversation is shown */}
       <div
         className={cn(
-          "w-full md:w-80 lg:w-96 border-r bg-white flex flex-col min-h-0",
+          "w-full md:w-80 lg:w-96 border-r border-[#D4A843]/15 bg-white flex flex-col min-h-0",
           isMobileView && showConversationOnMobile && "hidden"
         )}
       >
@@ -183,17 +183,17 @@ export default function ChatLayout({ initialUserId = null }) {
       >
         {/* Conversation Header */}
         {activeConversation && (
-          <div className="bg-white border-b px-4 py-3 flex items-center justify-between shrink-0">
+          <div className="bg-white border-b border-[#D4A843]/15 px-4 py-3 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               {/* Back Button (Mobile Only) */}
               {isMobileView && (
                 <Button
                   variant="ghost"
-                  size="icon"
                   onClick={handleBackToList}
-                  className="shrink-0 text-secondary hover:text-primary hover:bg-primary/10"
+                  className="shrink-0 px-2 text-[#2C3E50] hover:text-[#D4A843] hover:bg-[#F5E6C3]/40"
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <ArrowLeft className="w-5 h-5 mr-1" />
+                  Back
                 </Button>
               )}
 
@@ -203,24 +203,24 @@ export default function ChatLayout({ initialUserId = null }) {
                 onClick={(e) => {
                   if (hasNoMembership) {
                     e.preventDefault();
-                    toastInfo('Get membership to view full profiles');
+                    toastInfo('Upgrade your membership to view full profiles');
                   }
                 }}
                 className="relative shrink-0 cursor-pointer group"
               >
-                <Avatar className="w-10 h-10 ring-2 ring-transparent group-hover:ring-primary transition-all">
+                <Avatar className="w-10 h-10 ring-2 ring-transparent group-hover:ring-[#D4A843] transition-all">
                   <AvatarImage
                     src={activeConversation.otherParticipant?.profilePicture?.url || activeConversation.otherParticipant?.profilePicture}
                     alt={activeConversation.otherParticipant?.fullName}
                   />
-                  <AvatarFallback className="bg-secondary text-white font-telex">
+                  <AvatarFallback className="bg-[#2C3E50] text-white font-sans">
                     {getInitials(activeConversation.otherParticipant?.fullName || 'User')}
                   </AvatarFallback>
                 </Avatar>
               </Link>
 
               <div>
-                <h3 className="font-maven font-semibold text-[15px] text-gray-900">
+                <h3 className="font-sans font-semibold text-[15px] text-[#1A1A1A]">
                   {activeConversation.otherParticipant?.fullName || 'Unknown'}
                 </h3>
               </div>

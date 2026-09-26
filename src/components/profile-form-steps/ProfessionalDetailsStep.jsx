@@ -20,7 +20,7 @@ export function ProfessionalDetailsStep({ form }) {
 
   return (
     <div className="space-y-6">
-      {/* <h2 className="font-viga text-xl text-secondary">Professional Details</h2> */}
+      {/* <h2 className="font-serif text-xl text-[#1A1A1A]">Professional Details</h2> */}
 
       {/* Education */}
       <FormField
@@ -28,10 +28,10 @@ export function ProfessionalDetailsStep({ form }) {
         name="education"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Education</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Education *</FormLabel>
             <Select value={field.value || ''} onValueChange={field.onChange}>
               <FormControl>
-                <SelectTrigger className="font-maven">
+                <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                   <SelectValue placeholder="Select education level" />
                 </SelectTrigger>
               </FormControl>
@@ -43,7 +43,7 @@ export function ProfessionalDetailsStep({ form }) {
                 ))}
               </SelectContent>
             </Select>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -54,10 +54,10 @@ export function ProfessionalDetailsStep({ form }) {
         name="employmentType"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Employment Type</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Employment Type *</FormLabel>
             <Select value={field.value || ''} onValueChange={field.onChange}>
               <FormControl>
-                <SelectTrigger className="font-maven">
+                <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                   <SelectValue placeholder="Select employment type" />
                 </SelectTrigger>
               </FormControl>
@@ -69,7 +69,7 @@ export function ProfessionalDetailsStep({ form }) {
                 ))}
               </SelectContent>
             </Select>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -80,10 +80,10 @@ export function ProfessionalDetailsStep({ form }) {
         name="occupation"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Occupation</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Occupation *</FormLabel>
             <Select value={field.value || ''} onValueChange={field.onChange}>
               <FormControl>
-                <SelectTrigger className="font-maven">
+                <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                   <SelectValue placeholder="Select occupation" />
                 </SelectTrigger>
               </FormControl>
@@ -95,7 +95,7 @@ export function ProfessionalDetailsStep({ form }) {
                 ))}
               </SelectContent>
             </Select>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -107,10 +107,10 @@ export function ProfessionalDetailsStep({ form }) {
           name="annualIncomeCurrency"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Income Currency</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Income Currency *</FormLabel>
               <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
-                  <SelectTrigger className="font-maven">
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                     <SelectValue placeholder="Select currency" />
                   </SelectTrigger>
                 </FormControl>
@@ -122,7 +122,7 @@ export function ProfessionalDetailsStep({ form }) {
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
@@ -132,11 +132,11 @@ export function ProfessionalDetailsStep({ form }) {
           name="annualIncomeAmount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Annual Income Amount</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Annual Income Amount *</FormLabel>
               {watchCurrency === 'INR' ? (
                 <Select value={field.value || ''} onValueChange={field.onChange}>
                   <FormControl>
-                    <SelectTrigger className="font-maven">
+                    <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                       <SelectValue placeholder="Select income range" />
                     </SelectTrigger>
                   </FormControl>
@@ -154,11 +154,11 @@ export function ProfessionalDetailsStep({ form }) {
                     {...field}
                     type="number"
                     placeholder="Enter annual income"
-                    className="font-maven"
+                    className="font-sans h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
                   />
                 </FormControl>
               )}
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
@@ -170,23 +170,23 @@ export function ProfessionalDetailsStep({ form }) {
         name="professionalAdditionalInfo"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Additional Information (Optional)</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Additional Information *</FormLabel>
             <FormControl>
               <Textarea
                 {...field}
                 placeholder="Any additional professional details..."
                 maxLength={500}
                 rows={4}
-                className="font-maven-pro resize-none"
+                className="font-sans-pro resize-none"
               />
             </FormControl>
-            <FormDescription className="font-telex">
+            <FormDescription className="font-sans">
               Optional field
             </FormDescription>
-            <div className="text-sm text-gray-500 font-telex">
+            <div className="text-sm text-gray-500 font-sans">
               {field.value?.length || 0}/500
             </div>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />

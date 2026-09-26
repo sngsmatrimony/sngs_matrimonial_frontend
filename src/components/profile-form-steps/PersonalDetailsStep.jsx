@@ -76,7 +76,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
 
   return (
     <div className="space-y-6">
-      <h2 className="font-viga text-xl text-secondary">Personal & Religious Details</h2>
+      <h2 className="font-serif text-xl font-semibold text-[#1A1A1A] mb-1">Personal & Religious Details</h2>
 
       {/* Date of Birth */}
       <FormField
@@ -84,7 +84,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
         name="dateOfBirth"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Date of Birth</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Date of Birth *</FormLabel>
             <div className="grid grid-cols-3 gap-2">
               <Select value={displayDate ? displayDate.getDate().toString().padStart(2, '0') : ''} onValueChange={(day) => {
                 const baseDate = displayDate || new Date(new Date().getFullYear() - 25, 0, 1);
@@ -93,7 +93,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 field.onChange(newDate);
               }}>
                 <FormControl>
-                  <SelectTrigger className="font-maven">
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                     <SelectValue placeholder="Day" />
                   </SelectTrigger>
                 </FormControl>
@@ -112,7 +112,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 field.onChange(newDate);
               }}>
                 <FormControl>
-                  <SelectTrigger className="font-maven">
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                     <SelectValue placeholder="Month" />
                   </SelectTrigger>
                 </FormControl>
@@ -131,7 +131,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 field.onChange(newDate);
               }}>
                 <FormControl>
-                  <SelectTrigger className="font-maven">
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                     <SelectValue placeholder="Year" />
                   </SelectTrigger>
                 </FormControl>
@@ -144,34 +144,37 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 </SelectContent>
               </Select>
             </div>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
 
       {/* Time of Birth */}
-      <FormItem>
-        <FormLabel className="font-maven">Time of Birth (Optional)</FormLabel>
+      <div className="space-y-2">
+        <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Time of Birth (Optional)</FormLabel>
         <div className="grid grid-cols-3 gap-2">
           {/* Hours Dropdown */}
           <FormField
             control={form.control}
             name="timeOfBirth_hours"
             render={({ field }) => (
-              <Select value={field.value || ''} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="font-maven">
-                    <SelectValue placeholder="Hour" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map(hour => (
-                    <SelectItem key={hour} value={hour.toString().padStart(2, '0')}>
-                      {hour.toString().padStart(2, '0')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormItem>
+                <Select value={field.value || ''} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                      <SelectValue placeholder="Hour" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(hour => (
+                      <SelectItem key={hour} value={hour.toString().padStart(2, '0')}>
+                        {hour.toString().padStart(2, '0')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+              </FormItem>
             )}
           />
 
@@ -180,20 +183,23 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
             control={form.control}
             name="timeOfBirth_minutes"
             render={({ field }) => (
-              <Select value={field.value || ''} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="font-maven">
-                    <SelectValue placeholder="Min" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Array.from({ length: 60 }, (_, i) => i).map(minute => (
-                    <SelectItem key={minute} value={minute.toString().padStart(2, '0')}>
-                      {minute.toString().padStart(2, '0')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormItem>
+                <Select value={field.value || ''} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                      <SelectValue placeholder="Min" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Array.from({ length: 60 }, (_, i) => i).map(minute => (
+                      <SelectItem key={minute} value={minute.toString().padStart(2, '0')}>
+                        {minute.toString().padStart(2, '0')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+              </FormItem>
             )}
           />
 
@@ -202,22 +208,24 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
             control={form.control}
             name="timeOfBirth_meridiem"
             render={({ field }) => (
-              <Select value={field.value || ''} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="font-maven">
-                    <SelectValue placeholder="AM/PM" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="AM">AM</SelectItem>
-                  <SelectItem value="PM">PM</SelectItem>
-                </SelectContent>
-              </Select>
+              <FormItem>
+                <Select value={field.value || ''} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                      <SelectValue placeholder="AM/PM" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="AM">AM</SelectItem>
+                    <SelectItem value="PM">PM</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+              </FormItem>
             )}
           />
         </div>
-        <FormMessage />
-      </FormItem>
+      </div>
 
       {/* Place of Birth */}
       <FormField
@@ -225,16 +233,16 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
         name="placeOfBirth"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Place of Birth (Optional)</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Place of Birth *</FormLabel>
             <FormControl>
               <Input
                 placeholder="Enter place of birth"
                 maxLength={100}
-                className="font-maven"
+                className="font-sans h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
                 {...field}
               />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -245,16 +253,16 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
         name="motherTongue"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Mother Tongue</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Mother Tongue *</FormLabel>
             <Select value={field.value || ''} onValueChange={field.onChange}>
               <FormControl>
-                <SelectTrigger className="font-maven">
+                <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                   <SelectValue placeholder="Select mother tongue" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
                 <SelectGroup>
-                  <SelectLabel className="font-maven font-semibold">Frequently Selected</SelectLabel>
+                  <SelectLabel className="font-sans font-semibold">Frequently Selected</SelectLabel>
                   {MOTHER_TONGUES.frequentlySelected.map(tongue => (
                     <SelectItem key={tongue} value={tongue}>
                       {tongue}
@@ -263,7 +271,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 </SelectGroup>
                 <SelectSeparator />
                 <SelectGroup>
-                  <SelectLabel className="font-maven font-semibold">More Options</SelectLabel>
+                  <SelectLabel className="font-sans font-semibold">More Options</SelectLabel>
                   {MOTHER_TONGUES.moreOptions.map(tongue => (
                     <SelectItem key={tongue} value={tongue}>
                       {tongue}
@@ -272,7 +280,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 </SelectGroup>
               </SelectContent>
             </Select>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -283,7 +291,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
         name="languagesKnown"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Languages Known (Optional)</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Languages Known *</FormLabel>
             <FormControl>
               <MultiSelect
                 options={LANGUAGES_OPTIONS}
@@ -293,7 +301,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 maxSelections={10}
               />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -304,10 +312,10 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
         name="complexion"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Complexion (Optional)</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Complexion *</FormLabel>
             <Select value={field.value || ''} onValueChange={(val) => field.onChange(val || null)}>
               <FormControl>
-                <SelectTrigger className="font-maven">
+                <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                   <SelectValue placeholder="Select complexion" />
                 </SelectTrigger>
               </FormControl>
@@ -319,7 +327,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 ))}
               </SelectContent>
             </Select>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -331,10 +339,10 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           name="gender"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Gender</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Gender *</FormLabel>
               <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
-                  <SelectTrigger className="font-maven">
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                     <SelectValue placeholder="Select gender" />
                   </SelectTrigger>
                 </FormControl>
@@ -343,7 +351,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                   <SelectItem value="female">Female</SelectItem>
                 </SelectContent>
               </Select>
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
@@ -353,10 +361,10 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           name="seekingGender"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Seeking</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Seeking *</FormLabel>
               <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
-                  <SelectTrigger className="font-maven">
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                     <SelectValue placeholder="Select preference" />
                   </SelectTrigger>
                 </FormControl>
@@ -365,7 +373,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                   <SelectItem value="female">Female</SelectItem>
                 </SelectContent>
               </Select>
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
@@ -378,10 +386,10 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           name="height"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Height</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Height *</FormLabel>
               <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
-                  <SelectTrigger className="font-maven">
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                     <SelectValue placeholder="Select height" />
                   </SelectTrigger>
                 </FormControl>
@@ -393,7 +401,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
@@ -403,18 +411,18 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           name="weight"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Weight (kg, Optional)</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Weight (kg) *</FormLabel>
               <FormControl>
                 <Input
                   {...field}
                   value={field.value ?? ''}
                   type="number"
                   placeholder="e.g., 70"
-                  className="font-maven w-24"
+                  className="font-sans w-24 h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
                   onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                 />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
@@ -427,10 +435,10 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           name="bloodGroup"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Blood Group (Optional)</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Blood Group *</FormLabel>
               <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
-                  <SelectTrigger className="font-maven">
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                     <SelectValue placeholder="Select blood group" />
                   </SelectTrigger>
                 </FormControl>
@@ -442,7 +450,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
@@ -452,10 +460,10 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           name="diet"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Diet (Optional)</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Diet *</FormLabel>
               <Select value={field.value || ''} onValueChange={(val) => field.onChange(val || undefined)}>
                 <FormControl>
-                  <SelectTrigger className="font-maven">
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                     <SelectValue placeholder="Select diet preference" />
                   </SelectTrigger>
                 </FormControl>
@@ -467,7 +475,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
@@ -479,7 +487,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
         name="physicalStatus"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Physical Status</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Physical Status *</FormLabel>
             <FormControl>
               <div className="flex flex-wrap gap-2">
                 {PHYSICAL_STATUS.map(status => (
@@ -487,10 +495,10 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                     key={status}
                     type="button"
                     onClick={() => field.onChange(status)}
-                    className={`px-4 py-2 rounded-full font-telex font-semibold transition-all ${
+                    className={`px-4 py-2 rounded-full font-sans text-sm font-medium transition-all duration-150 ${
                       field.value === status
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-gray-100 text-secondary border-2 border-gray-200 hover:border-primary'
+                        ? 'bg-[#D4A843] text-[#1A1A1A] border-2 border-[#D4A843] shadow-sm'
+                        : 'bg-white text-[#2C3E50] border-2 border-[#D4A843]/30 hover:border-[#D4A843] hover:bg-[#F5E6C3]/40'
                     }`}
                   >
                     {status}
@@ -498,7 +506,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 ))}
               </div>
             </FormControl>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -509,7 +517,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
         name="maritalStatus"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Marital Status</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Marital Status *</FormLabel>
             <FormControl>
               <div className="flex flex-wrap gap-2">
                 {MARITAL_STATUS.map(status => (
@@ -517,10 +525,10 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                     key={status}
                     type="button"
                     onClick={() => field.onChange(status)}
-                    className={`px-4 py-2 rounded-full font-telex font-semibold transition-all ${
+                    className={`px-4 py-2 rounded-full font-sans text-sm font-medium transition-all duration-150 ${
                       field.value === status
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-gray-100 text-secondary border-2 border-gray-200 hover:border-primary'
+                        ? 'bg-[#D4A843] text-[#1A1A1A] border-2 border-[#D4A843] shadow-sm'
+                        : 'bg-white text-[#2C3E50] border-2 border-[#D4A843]/30 hover:border-[#D4A843] hover:bg-[#F5E6C3]/40'
                     }`}
                   >
                     {status}
@@ -528,7 +536,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 ))}
               </div>
             </FormControl>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -539,10 +547,10 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
         name="religion"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-maven">Religion</FormLabel>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Religion *</FormLabel>
             <Select value={field.value || ''} onValueChange={field.onChange}>
               <FormControl>
-                <SelectTrigger className="font-maven">
+                <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                   <SelectValue placeholder="Select religion" />
                 </SelectTrigger>
               </FormControl>
@@ -554,7 +562,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 ))}
               </SelectContent>
             </Select>
-            <FormMessage />
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
           </FormItem>
         )}
       />
@@ -566,10 +574,10 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           name="caste"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Caste</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Caste *</FormLabel>
               <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
-                  <SelectTrigger className="font-maven">
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                     <SelectValue placeholder="Select caste" />
                   </SelectTrigger>
                 </FormControl>
@@ -581,7 +589,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
@@ -594,10 +602,10 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           name="shuddhaJathakam"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Shuddha Jathakam</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Shuddha Jathakam *</FormLabel>
               <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
-                  <SelectTrigger className="font-maven">
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
                     <SelectValue placeholder="Select shuddha jathakam option" />
                   </SelectTrigger>
                 </FormControl>
@@ -609,7 +617,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
@@ -622,7 +630,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           name="doshamTypes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-maven">Dosham Types</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Dosham Types (Optional)</FormLabel>
               <FormControl>
                 <div className="space-y-2">
                   {DOSHAM_TYPES.map(dosham => (
@@ -640,78 +648,82 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                         }}
                         className="w-4 h-4 rounded border-gray-300"
                       />
-                      <label htmlFor={dosham} className="font-maven text-secondary cursor-pointer">
+                      <label htmlFor={dosham} className="font-sans text-[#1A1A1A] cursor-pointer">
                         {dosham}
                       </label>
                     </div>
                   ))}
                 </div>
               </FormControl>
-              <FormMessage />
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
             </FormItem>
           )}
         />
       )}
 
-      {/* Nakshatra */}
-      <FormField
-        control={form.control}
-        name="nakshatra"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="font-maven">Nakshatra *</FormLabel>
-            <Select value={field.value || ''} onValueChange={field.onChange}>
-              <FormControl>
-                <SelectTrigger className="font-maven">
-                  <SelectValue placeholder="Select nakshatra" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {NAKSHATRAS.map(nakshatra => (
-                  <SelectItem key={nakshatra} value={nakshatra}>
-                    {nakshatra}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {/* Nakshatra - Only for Hindu */}
+      {watchReligion === 'Hindu' && (
+        <FormField
+          control={form.control}
+          name="nakshatra"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Nakshatra *</FormLabel>
+              <Select value={field.value || ''} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                    <SelectValue placeholder="Select nakshatra" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {NAKSHATRAS.map(nakshatra => (
+                    <SelectItem key={nakshatra} value={nakshatra}>
+                      {nakshatra}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+            </FormItem>
+          )}
+        />
+      )}
 
-      {/* Raasi */}
-      <FormField
-        control={form.control}
-        name="raasi"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="font-maven">Raasi (Optional)</FormLabel>
-            <Select value={field.value || ''} onValueChange={(val) => field.onChange(val || null)}>
-              <FormControl>
-                <SelectTrigger className="font-maven">
-                  <SelectValue placeholder="Select raasi" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {RAASIS.map(raasi => (
-                  <SelectItem key={raasi} value={raasi}>
-                    {raasi}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {/* Raasi - Only for Hindu */}
+      {watchReligion === 'Hindu' && (
+        <FormField
+          control={form.control}
+          name="raasi"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Raasi *</FormLabel>
+              <Select value={field.value || ''} onValueChange={(val) => field.onChange(val || null)}>
+                <FormControl>
+                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                    <SelectValue placeholder="Select raasi" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {RAASIS.map(raasi => (
+                    <SelectItem key={raasi} value={raasi}>
+                      {raasi}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+            </FormItem>
+          )}
+        />
+      )}
 
       {/* Horoscope Document - Hindu Only */}
       {watchReligion === 'Hindu' && (
-        <div className="col-span-2 space-y-3 p-4 border border-gray-200 rounded-lg bg-gray-50">
-          <h3 className="font-viga text-secondary text-sm">
+        <div className="col-span-2 space-y-3 p-4 border border-[#D4A843]/20 rounded-xl bg-[#FDF8F0]/60">
+          <h3 className="font-serif text-[#1A1A1A] text-sm">
             Horoscope Document (Optional)
           </h3>
-          <p className="font-maven text-xs text-gray-500">
+          <p className="font-sans text-xs text-gray-500">
             Accepted formats: PDF, JPEG, PNG. Maximum size: 5 MB
           </p>
 
@@ -720,12 +732,12 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
             type="file"
             accept=".pdf,image/jpeg,image/png"
             onChange={handleHoroscopeUpload}
-            className="font-maven cursor-pointer"
+            className="font-sans cursor-pointer"
           />
 
           {/* Show existing horoscope if uploaded */}
           {existingHoroscopeDoc && !horoscope && (
-            <div className="relative flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <div className="relative flex items-center gap-3 p-3 bg-[#FDF8F0] border border-[#D4A843]/20 rounded-xl">
               {existingHoroscopeDoc.fileType === 'pdf' ? (
                 <FileText className="text-red-500" size={32} />
               ) : (
@@ -739,10 +751,10 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 </div>
               )}
               <div className="flex-1">
-                <p className="font-maven text-sm font-medium">
+                <p className="font-sans text-sm font-medium">
                   Current Horoscope Document
                 </p>
-                <p className="font-telex text-xs text-gray-500">
+                <p className="font-sans text-xs text-gray-500">
                   Uploaded {existingHoroscopeDoc.uploadedAt ? new Date(existingHoroscopeDoc.uploadedAt).toLocaleDateString() : 'Previously'}
                 </p>
               </div>
@@ -750,10 +762,10 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 <button
                   type="button"
                   onClick={onDeleteHoroscope}
-                  className="p-1.5 hover:bg-red-50 rounded-full transition"
-                  title="Delete horoscope document"
+                  className="flex items-center gap-1 px-2 py-1.5 hover:bg-red-50 rounded-lg transition text-red-500"
                 >
-                  <X className="text-red-500" size={20} />
+                  <X size={18} />
+                  <span className="font-sans text-xs font-medium">Remove</span>
                 </button>
               )}
             </div>
@@ -774,19 +786,20 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                 </div>
               ) : null}
               <div className="flex-1">
-                <p className="font-maven text-sm font-medium truncate">
+                <p className="font-sans text-sm font-medium truncate">
                   {horoscope.fileName || 'Horoscope Document'}
                 </p>
-                <p className="font-telex text-xs text-gray-500">
+                <p className="font-sans text-xs text-gray-500">
                   {horoscope.fileSize ? `${(horoscope.fileSize / 1024 / 1024).toFixed(2)} MB` : 'Existing Upload'}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={removeHoroscope}
-                className="p-1.5 hover:bg-red-50 rounded-full transition"
+                className="flex items-center gap-1 px-2 py-1.5 hover:bg-red-50 rounded-lg transition text-red-500"
               >
-                <X className="text-red-500" size={20} />
+                <X size={18} />
+                <span className="font-sans text-xs font-medium">Remove</span>
               </button>
             </div>
           )}

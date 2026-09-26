@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Mail, Phone, Save, Loader2, Lock, Eye, EyeOff, FileText, UserPlus, Search, MessageCircle, Sparkles } from 'lucide-react';
+import { Mail, Phone, Save, Loader2, Lock, Eye, EyeOff, FileText, UserPlus, Search, MessageCircle, Sparkles, ShieldAlert, IdCard } from 'lucide-react';
 import { toastSuccess, toastError } from '@/lib/toast';
 import adminClient from '@/lib/api/adminClient';
 
@@ -47,6 +47,12 @@ export default function AdminSettingsPage() {
     subtitle: '',
   });
 
+  // Membership enforcement toggle state
+  const [enforcementEnabled, setEnforcementEnabled] = useState(false);
+
+  // ID proof required toggle state
+  const [idProofRequiredEnabled, setIdProofRequiredEnabled] = useState(false);
+
   // Fetch current settings
   const { data: contactInfo, isLoading } = useQuery({
     queryKey: ['contactInfo'],
@@ -74,9 +80,28 @@ export default function AdminSettingsPage() {
     },
   });
 
+  // Fetch membership enforcement setting
+  const { data: enforcementSettings, isLoading: isLoadingEnforcement } = useQuery({
+    queryKey: ['enforcementSettings'],
+    queryFn: async () => {
+      const response = await adminApi.getEnforcementSettings();
+      return response.data.data;
+    },
+  });
+
+  // Fetch ID proof required setting
+  const { data: idProofSettings, isLoading: isLoadingIdProof } = useQuery({
+    queryKey: ['idProofSettings'],
+    queryFn: async () => {
+      const response = await adminApi.getIdProofSettings();
+      return response.data.data;
+    },
+  });
+
   // Auto-fill form when data is loaded
   useEffect(() => {
     if (contactInfo) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- seeding editable local form state from async-loaded server data, not derivable at render time
       setFormData({
         contactEmail: contactInfo.contactEmail || '',
         contactMobile: contactInfo.contactMobile || '',
@@ -87,6 +112,7 @@ export default function AdminSettingsPage() {
   // Auto-fill How It Works form when data is loaded
   useEffect(() => {
     if (howItWorksContent) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- seeding editable local form state from async-loaded server data
       setHowItWorksData({
         sectionTitle: howItWorksContent.sectionTitle || '',
         sectionSubtitle: howItWorksContent.sectionSubtitle || '',
@@ -102,6 +128,7 @@ export default function AdminSettingsPage() {
   // Auto-fill Hero form when data is loaded
   useEffect(() => {
     if (heroContent) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- seeding editable local form state from async-loaded server data
       setHeroData({
         badge: heroContent.badge || '',
         title: heroContent.title || '',
@@ -109,6 +136,22 @@ export default function AdminSettingsPage() {
       });
     }
   }, [heroContent]);
+
+  // Auto-fill enforcement toggle when data is loaded
+  useEffect(() => {
+    if (enforcementSettings) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- seeding editable local toggle state from async-loaded server data
+      setEnforcementEnabled(!!enforcementSettings.isEnabled);
+    }
+  }, [enforcementSettings]);
+
+  // Auto-fill ID proof required toggle when data is loaded
+  useEffect(() => {
+    if (idProofSettings) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- seeding editable local toggle state from async-loaded server data
+      setIdProofRequiredEnabled(!!idProofSettings.isEnabled);
+    }
+  }, [idProofSettings]);
 
   // Update mutation
   const updateMutation = useMutation({
@@ -212,16 +255,11 @@ export default function AdminSettingsPage() {
   // How It Works update mutation
   const updateHowItWorksMutation = useMutation({
     mutationFn: (data) => adminApi.updateHowItWorksContent(data),
-    onSuccess: (response) => {
-      // DEBUG: Log response to verify data was saved
-      console.log('=== Mutation Success ===');
-      console.log('Response data:', response.data);
-
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['howItWorksContent'] });
       toastSuccess('How It Works content updated successfully');
     },
     onError: (error) => {
-      console.error('Mutation error:', error);
       const message = error.response?.data?.message || 'Failed to update How It Works content';
       toastError(message);
     },
@@ -252,6 +290,48 @@ export default function AdminSettingsPage() {
       ...howItWorksData,
       steps: newSteps,
     });
+  };
+
+  // Membership enforcement update mutation
+  const updateEnforcementMutation = useMutation({
+    mutationFn: (isEnabled) => adminApi.updateEnforcementSettings({ isEnabled }),
+    onSuccess: (_response, isEnabled) => {
+      queryClient.invalidateQueries({ queryKey: ['enforcementSettings'] });
+      toastSuccess(`Membership enforcement ${isEnabled ? 'enabled' : 'disabled'}`);
+    },
+    onError: (error) => {
+      const message = error.response?.data?.message || 'Failed to update enforcement setting';
+      toastError(message);
+      // Revert the optimistic toggle on failure
+      setEnforcementEnabled((prev) => !prev);
+    },
+  });
+
+  const handleEnforcementToggle = () => {
+    const next = !enforcementEnabled;
+    setEnforcementEnabled(next);
+    updateEnforcementMutation.mutate(next);
+  };
+
+  // ID proof required update mutation
+  const updateIdProofMutation = useMutation({
+    mutationFn: (isEnabled) => adminApi.updateIdProofSettings({ isEnabled }),
+    onSuccess: (_response, isEnabled) => {
+      queryClient.invalidateQueries({ queryKey: ['idProofSettings'] });
+      toastSuccess(`ID proof requirement ${isEnabled ? 'enabled' : 'disabled'}`);
+    },
+    onError: (error) => {
+      const message = error.response?.data?.message || 'Failed to update ID proof setting';
+      toastError(message);
+      // Revert the optimistic toggle on failure
+      setIdProofRequiredEnabled((prev) => !prev);
+    },
+  });
+
+  const handleIdProofToggle = () => {
+    const next = !idProofRequiredEnabled;
+    setIdProofRequiredEnabled(next);
+    updateIdProofMutation.mutate(next);
   };
 
   // Hero content update mutation
@@ -288,12 +368,12 @@ export default function AdminSettingsPage() {
     <MessageCircle key="step3" size={20} className="text-success" />,
   ];
 
-  if (isLoading || isLoadingHowItWorks || isLoadingHeroContent) {
+  if (isLoading || isLoadingHowItWorks || isLoadingHeroContent || isLoadingEnforcement || isLoadingIdProof) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-secondary font-maven">Loading settings...</p>
+          <p className="text-secondary font-sans">Loading settings...</p>
         </div>
       </div>
     );
@@ -302,8 +382,8 @@ export default function AdminSettingsPage() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <h1 className="font-viga text-3xl text-secondary mb-2">Settings</h1>
-        <p className="font-maven text-gray-600">
+        <h1 className="font-serif text-3xl text-secondary mb-2">Settings</h1>
+        <p className="font-sans text-gray-600">
           Manage contact information displayed in the header
         </p>
       </div>
@@ -317,8 +397,8 @@ export default function AdminSettingsPage() {
                 <Mail size={20} className="text-primary" />
               </div>
               <div className="text-left">
-                <h3 className="font-viga text-lg text-secondary">Contact Information</h3>
-                <p className="font-maven text-sm text-gray-500">Update contact details displayed in header</p>
+                <h3 className="font-serif text-lg text-secondary">Contact Information</h3>
+                <p className="font-sans text-sm text-gray-500">Update contact details displayed in header</p>
               </div>
             </div>
           </AccordionTrigger>
@@ -326,7 +406,7 @@ export default function AdminSettingsPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Contact Email */}
               <div className="space-y-2">
-                <Label htmlFor="contactEmail" className="font-telex flex items-center gap-2">
+                <Label htmlFor="contactEmail" className="font-sans flex items-center gap-2">
                   <Mail size={16} className="text-primary" />
                   Contact Email
                 </Label>
@@ -336,18 +416,18 @@ export default function AdminSettingsPage() {
                   type="email"
                   value={formData.contactEmail}
                   onChange={handleChange}
-                  placeholder="info@sngsmatrimonial.com"
+                  placeholder="info@sngsmatrimony.com"
                   required
-                  className="font-maven"
+                  className="font-sans"
                 />
-                <p className="text-xs text-gray-500 font-maven">
+                <p className="text-xs text-gray-500 font-sans">
                   Users can click this email to send messages
                 </p>
               </div>
 
               {/* Contact Mobile */}
               <div className="space-y-2">
-                <Label htmlFor="contactMobile" className="font-telex flex items-center gap-2">
+                <Label htmlFor="contactMobile" className="font-sans flex items-center gap-2">
                   <Phone size={16} className="text-primary" />
                   Contact Mobile Number
                 </Label>
@@ -360,9 +440,9 @@ export default function AdminSettingsPage() {
                   placeholder="9876543210"
                   pattern="[6-9]\d{9}"
                   required
-                  className="font-maven"
+                  className="font-sans"
                 />
-                <p className="text-xs text-gray-500 font-maven">
+                <p className="text-xs text-gray-500 font-sans">
                   10-digit Indian mobile number (without +91)
                 </p>
               </div>
@@ -371,7 +451,7 @@ export default function AdminSettingsPage() {
               <Button
                 type="submit"
                 disabled={updateMutation.isPending}
-                className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-telex"
+                className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-sans"
               >
                 {updateMutation.isPending ? (
                   <>
@@ -397,8 +477,8 @@ export default function AdminSettingsPage() {
                 <Lock size={20} className="text-primary" />
               </div>
               <div className="text-left">
-                <h3 className="font-viga text-lg text-secondary">Change Password</h3>
-                <p className="font-maven text-sm text-gray-500">Update your admin password to keep your account secure</p>
+                <h3 className="font-serif text-lg text-secondary">Change Password</h3>
+                <p className="font-sans text-sm text-gray-500">Update your admin password to keep your account secure</p>
               </div>
             </div>
           </AccordionTrigger>
@@ -406,7 +486,7 @@ export default function AdminSettingsPage() {
             <form onSubmit={handlePasswordSubmit} className="space-y-6">
               {/* Current Password */}
               <div className="space-y-2">
-                <Label htmlFor="currentPassword" className="font-telex">
+                <Label htmlFor="currentPassword" className="font-sans">
                   Current Password
                 </Label>
                 <div className="relative">
@@ -417,7 +497,7 @@ export default function AdminSettingsPage() {
                     value={passwordData.currentPassword}
                     onChange={handlePasswordChange}
                     autoComplete="current-password"
-                    className="font-maven pr-10"
+                    className="font-sans pr-10"
                   />
                   <button
                     type="button"
@@ -428,7 +508,7 @@ export default function AdminSettingsPage() {
                   </button>
                 </div>
                 {passwordErrors.currentPassword && (
-                  <p className="text-xs text-destructive font-maven">
+                  <p className="text-xs text-destructive font-sans">
                     {passwordErrors.currentPassword}
                   </p>
                 )}
@@ -436,7 +516,7 @@ export default function AdminSettingsPage() {
 
               {/* New Password */}
               <div className="space-y-2">
-                <Label htmlFor="newPassword" className="font-telex">
+                <Label htmlFor="newPassword" className="font-sans">
                   New Password
                 </Label>
                 <div className="relative">
@@ -447,7 +527,7 @@ export default function AdminSettingsPage() {
                     value={passwordData.newPassword}
                     onChange={handlePasswordChange}
                     autoComplete="new-password"
-                    className="font-maven pr-10"
+                    className="font-sans pr-10"
                   />
                   <button
                     type="button"
@@ -457,11 +537,11 @@ export default function AdminSettingsPage() {
                     {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 font-maven">
+                <p className="text-xs text-gray-500 font-sans">
                   Must be at least 8 characters with uppercase, lowercase, and numbers
                 </p>
                 {passwordErrors.newPassword && (
-                  <p className="text-xs text-destructive font-maven">
+                  <p className="text-xs text-destructive font-sans">
                     {passwordErrors.newPassword}
                   </p>
                 )}
@@ -469,7 +549,7 @@ export default function AdminSettingsPage() {
 
               {/* Confirm Password */}
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="font-telex">
+                <Label htmlFor="confirmPassword" className="font-sans">
                   Confirm New Password
                 </Label>
                 <div className="relative">
@@ -480,7 +560,7 @@ export default function AdminSettingsPage() {
                     value={passwordData.confirmPassword}
                     onChange={handlePasswordChange}
                     autoComplete="new-password"
-                    className="font-maven pr-10"
+                    className="font-sans pr-10"
                   />
                   <button
                     type="button"
@@ -491,7 +571,7 @@ export default function AdminSettingsPage() {
                   </button>
                 </div>
                 {passwordErrors.confirmPassword && (
-                  <p className="text-xs text-destructive font-maven">
+                  <p className="text-xs text-destructive font-sans">
                     {passwordErrors.confirmPassword}
                   </p>
                 )}
@@ -501,7 +581,7 @@ export default function AdminSettingsPage() {
               <Button
                 type="submit"
                 disabled={changePasswordMutation.isPending}
-                className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-telex"
+                className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-sans"
               >
                 {changePasswordMutation.isPending ? (
                   <>
@@ -527,8 +607,8 @@ export default function AdminSettingsPage() {
                 <Sparkles size={20} className="text-primary" />
               </div>
               <div className="text-left">
-                <h3 className="font-viga text-lg text-secondary">Homepage Hero Section</h3>
-                <p className="font-maven text-sm text-gray-500">Edit the main banner content displayed at the top of the homepage</p>
+                <h3 className="font-serif text-lg text-secondary">Homepage Hero Section</h3>
+                <p className="font-sans text-sm text-gray-500">Edit the main banner content displayed at the top of the homepage</p>
               </div>
             </div>
           </AccordionTrigger>
@@ -536,7 +616,7 @@ export default function AdminSettingsPage() {
             <form onSubmit={handleHeroSubmit} className="space-y-6">
               {/* Badge */}
               <div className="space-y-2">
-                <Label htmlFor="heroBadge" className="font-telex">
+                <Label htmlFor="heroBadge" className="font-sans">
                   Badge Text
                 </Label>
                 <Input
@@ -546,16 +626,16 @@ export default function AdminSettingsPage() {
                   placeholder="Welcome to SNGS Matrimonial"
                   maxLength={50}
                   required
-                  className="font-maven"
+                  className="font-sans"
                 />
-                <p className="text-xs text-gray-500 font-maven">
+                <p className="text-xs text-gray-500 font-sans">
                   Small text displayed above the title (max 50 characters)
                 </p>
               </div>
 
               {/* Title */}
               <div className="space-y-2">
-                <Label htmlFor="heroTitle" className="font-telex">
+                <Label htmlFor="heroTitle" className="font-sans">
                   Title
                 </Label>
                 <Input
@@ -565,16 +645,16 @@ export default function AdminSettingsPage() {
                   placeholder="Find Your Perfect Match"
                   maxLength={100}
                   required
-                  className="font-maven"
+                  className="font-sans"
                 />
-                <p className="text-xs text-gray-500 font-maven">
+                <p className="text-xs text-gray-500 font-sans">
                   Main heading text (max 100 characters)
                 </p>
               </div>
 
               {/* Subtitle */}
               <div className="space-y-2">
-                <Label htmlFor="heroSubtitle" className="font-telex">
+                <Label htmlFor="heroSubtitle" className="font-sans">
                   Subtitle
                 </Label>
                 <Textarea
@@ -585,9 +665,9 @@ export default function AdminSettingsPage() {
                   maxLength={500}
                   required
                   rows={4}
-                  className="font-maven resize-none"
+                  className="font-sans resize-none"
                 />
-                <p className="text-xs text-gray-500 font-maven">
+                <p className="text-xs text-gray-500 font-sans">
                   Description paragraph below the title (max 500 characters)
                 </p>
               </div>
@@ -596,7 +676,7 @@ export default function AdminSettingsPage() {
               <Button
                 type="submit"
                 disabled={updateHeroMutation.isPending}
-                className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-telex"
+                className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-sans"
               >
                 {updateHeroMutation.isPending ? (
                   <>
@@ -622,8 +702,8 @@ export default function AdminSettingsPage() {
                 <FileText size={20} className="text-primary" />
               </div>
               <div className="text-left">
-                <h3 className="font-viga text-lg text-secondary">Homepage &quot;How It Works&quot; Section</h3>
-                <p className="font-maven text-sm text-gray-500">Edit the content displayed in the &quot;Find Your Partner In Just Few Steps&quot; section</p>
+                <h3 className="font-serif text-lg text-secondary">Homepage &quot;How It Works&quot; Section</h3>
+                <p className="font-sans text-sm text-gray-500">Edit the content displayed in the &quot;Find Your Partner In Just Few Steps&quot; section</p>
               </div>
             </div>
           </AccordionTrigger>
@@ -631,7 +711,7 @@ export default function AdminSettingsPage() {
             <form onSubmit={handleHowItWorksSubmit} className="space-y-6">
               {/* Section Title */}
               <div className="space-y-2">
-                <Label htmlFor="sectionTitle" className="font-telex">
+                <Label htmlFor="sectionTitle" className="font-sans">
                   Section Title
                 </Label>
                 <Input
@@ -641,16 +721,16 @@ export default function AdminSettingsPage() {
                   placeholder="Find Your Partner In Just Few Steps"
                   maxLength={200}
                   required
-                  className="font-maven"
+                  className="font-sans"
                 />
-                <p className="text-xs text-gray-500 font-maven">
+                <p className="text-xs text-gray-500 font-sans">
                   Main heading for the section (max 200 characters)
                 </p>
               </div>
 
               {/* Section Subtitle */}
               <div className="space-y-2">
-                <Label htmlFor="sectionSubtitle" className="font-telex">
+                <Label htmlFor="sectionSubtitle" className="font-sans">
                   Section Subtitle
                 </Label>
                 <Textarea
@@ -661,16 +741,16 @@ export default function AdminSettingsPage() {
                   maxLength={500}
                   required
                   rows={3}
-                  className="font-maven resize-none"
+                  className="font-sans resize-none"
                 />
-                <p className="text-xs text-gray-500 font-maven">
+                <p className="text-xs text-gray-500 font-sans">
                   Description below the heading (max 500 characters)
                 </p>
               </div>
 
               {/* Steps */}
               <div className="space-y-4">
-                <Label className="font-telex text-base">Steps</Label>
+                <Label className="font-sans text-base">Steps</Label>
 
                 {howItWorksData.steps.map((step, index) => (
                   <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-4">
@@ -678,14 +758,14 @@ export default function AdminSettingsPage() {
                       <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100">
                         {stepIcons[index]}
                       </div>
-                      <span className="font-telex font-medium text-secondary">
+                      <span className="font-sans font-medium text-secondary">
                         Step {index + 1}
                       </span>
                     </div>
 
                     {/* Step Title */}
                     <div className="space-y-2">
-                      <Label htmlFor={`step-${index}-title`} className="font-telex text-sm">
+                      <Label htmlFor={`step-${index}-title`} className="font-sans text-sm">
                         Title
                       </Label>
                       <Input
@@ -695,13 +775,13 @@ export default function AdminSettingsPage() {
                         placeholder={`Step ${index + 1} title`}
                         maxLength={100}
                         required
-                        className="font-maven"
+                        className="font-sans"
                       />
                     </div>
 
                     {/* Step Description */}
                     <div className="space-y-2">
-                      <Label htmlFor={`step-${index}-description`} className="font-telex text-sm">
+                      <Label htmlFor={`step-${index}-description`} className="font-sans text-sm">
                         Description
                       </Label>
                       <Textarea
@@ -712,7 +792,7 @@ export default function AdminSettingsPage() {
                         maxLength={500}
                         required
                         rows={3}
-                        className="font-maven resize-none"
+                        className="font-sans resize-none"
                       />
                     </div>
                   </div>
@@ -723,7 +803,7 @@ export default function AdminSettingsPage() {
               <Button
                 type="submit"
                 disabled={updateHowItWorksMutation.isPending}
-                className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-telex"
+                className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground font-sans"
               >
                 {updateHowItWorksMutation.isPending ? (
                   <>
@@ -738,6 +818,109 @@ export default function AdminSettingsPage() {
                 )}
               </Button>
             </form>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Access Control - Membership Enforcement Toggle */}
+        <AccordionItem value="accessControl" className="border rounded-lg bg-white shadow-sm">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                <ShieldAlert size={20} className="text-primary" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-serif text-lg text-secondary">Access Control</h3>
+                <p className="font-sans text-sm text-gray-500">Control whether non-member users are restricted from premium features</p>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <div className="flex items-start justify-between gap-6 p-4 rounded-lg border border-[#D4A843]/15 bg-gradient-to-br from-[#FDF8F0] to-[#F5E6C3]/30 mb-4">
+              <div>
+                <Label className="font-sans text-[#1A1A1A]">
+                  {enforcementEnabled ? 'Restrictions enforced' : 'Promotional period (everything free)'}
+                </Label>
+                <p className="text-xs text-[#2C3E50]/60 font-sans mt-1 max-w-md">
+                  Off = promotional mode, full access for everyone regardless of membership.
+                  On = restrictions enforced for users without an active membership and credits.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={enforcementEnabled}
+                onClick={handleEnforcementToggle}
+                disabled={updateEnforcementMutation.isPending}
+                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                  enforcementEnabled ? 'bg-[#D4A843]' : 'bg-[#2C3E50]/20'
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                    enforcementEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="p-4 rounded-lg border border-[#D4A843]/25 bg-gradient-to-br from-[#F5E6C3]/50 to-[#FDF8F0]">
+              <p className="font-sans text-sm text-[#1A1A1A] mb-2">
+                When this is switched ON, users without an active membership and credits are restricted from:
+              </p>
+              <ul className="font-sans text-sm text-[#2C3E50] space-y-1 list-disc list-inside">
+                <li>Viewing another member&apos;s full profile details (contact info, horoscope, gallery)</li>
+                <li>Downloading horoscope documents</li>
+                <li>Browsing full search results (capped to a small teaser list with an upgrade prompt)</li>
+                <li>Starting a <strong>new</strong> chat conversation with a match</li>
+              </ul>
+              <p className="font-sans text-xs text-[#2C3E50]/70 mt-2">
+                Conversations already started before the toggle was switched on stay fully accessible either way.
+              </p>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* ID Proof Verification Toggle */}
+        <AccordionItem value="idProofRequired" className="border rounded-lg bg-white shadow-sm">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                <IdCard size={20} className="text-primary" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-serif text-lg text-secondary">ID Proof Verification</h3>
+                <p className="font-sans text-sm text-gray-500">Control whether every member must upload a government ID proof</p>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <div className="flex items-start justify-between gap-6 p-4 rounded-lg border border-[#D4A843]/15 bg-gradient-to-br from-[#FDF8F0] to-[#F5E6C3]/30">
+              <div>
+                <Label className="font-sans text-[#1A1A1A]">
+                  {idProofRequiredEnabled ? 'ID proof required for everyone' : 'ID proof optional'}
+                </Label>
+                <p className="text-xs text-[#2C3E50]/60 font-sans mt-1 max-w-md">
+                  On = every new registration and profile edit must include a government ID proof
+                  document. Off = ID proof upload stays optional for everyone.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={idProofRequiredEnabled}
+                onClick={handleIdProofToggle}
+                disabled={updateIdProofMutation.isPending}
+                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                  idProofRequiredEnabled ? 'bg-[#D4A843]' : 'bg-[#2C3E50]/20'
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                    idProofRequiredEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
