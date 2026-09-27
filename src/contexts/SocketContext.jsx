@@ -83,14 +83,16 @@ export function SocketProvider({ children }) {
       });
 
       onMessageDelivered(({ messageId }) => {
-        updateMessageStatus(messageId, 'deliveredTo', user._id);
+        // MessageBubble renders ticks off `isDelivered`/`isRead` booleans
+        // (that's the shape every message-fetching endpoint actually
+        // returns) — updateMessageStatus previously wrote 'deliveredTo'/
+        // 'readBy' here, fields the bubble never reads, so live delivery/
+        // read updates silently never reached the UI.
+        updateMessageStatus(messageId, 'isDelivered', true);
       });
 
-      onMessageReadReceipt(({ messageId, readBy }) => {
-        updateMessageStatus(messageId, 'readBy', {
-          userId: readBy,
-          readAt: new Date(),
-        });
+      onMessageReadReceipt(({ messageId }) => {
+        updateMessageStatus(messageId, 'isRead', true);
       });
 
       onTypingIndicator(({ userId, isTyping }) => {

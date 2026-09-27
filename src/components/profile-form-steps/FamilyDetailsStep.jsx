@@ -40,7 +40,7 @@ export function FamilyDetailsStep({ form }) {
           name="fatherOccupation"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Father&apos;s Occupation *</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Father&apos;s Occupation</FormLabel>
               <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
@@ -84,7 +84,7 @@ export function FamilyDetailsStep({ form }) {
           name="motherOccupation"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Mother&apos;s Occupation *</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Mother&apos;s Occupation</FormLabel>
               <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">

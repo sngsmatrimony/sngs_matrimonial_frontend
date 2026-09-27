@@ -42,7 +42,7 @@ export default function ChatLayout({ initialUserId = null }) {
     loadMessages,
     createConversationWithMessage,
     deleteConversation,
-    isLoadingConversations,
+    isLoading: isLoadingConversations,
     isLoadingMessages,
     isSending,
     error,
@@ -77,9 +77,15 @@ export default function ChatLayout({ initialUserId = null }) {
   // Load messages when conversation is selected
   useEffect(() => {
     if (activeConversationId) {
-      loadMessages(activeConversationId, 50, 0);
-      // Mark all messages in conversation as read
-      markConversationAsRead(activeConversationId);
+      // markConversationAsRead reads the *current* messages in the store to
+      // decide what to mark read — it must run after loadMessages resolves,
+      // not in parallel with it, or it operates on stale/empty state left
+      // over from whatever conversation (if any) was open before and finds
+      // nothing to mark, silently no-op'ing the read receipt.
+      (async () => {
+        await loadMessages(activeConversationId, 50, 0);
+        await markConversationAsRead(activeConversationId, user?._id);
+      })();
     }
     // Only re-run when activeConversationId changes
     // eslint-disable-next-line react-hooks/exhaustive-deps

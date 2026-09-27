@@ -377,10 +377,7 @@ const useChatStore = create(
             conversationId,
           });
 
-          get().updateMessageStatus(messageId, 'readBy', {
-            userId: get().currentUserKeys?.userId,
-            readAt: new Date(),
-          });
+          get().updateMessageStatus(messageId, 'isRead', true);
 
           // Update conversation unread count
           set((state) => {
@@ -401,23 +398,31 @@ const useChatStore = create(
 
       /**
        * Mark all messages in a conversation as read
+       * @param {string} conversationId
+       * @param {string} currentUserId - passed in by the caller (chatStore
+       *   doesn't otherwise know who's logged in) so messages the current
+       *   user sent themselves are never re-submitted as "read".
        */
-      markConversationAsRead: async (conversationId) => {
+      markConversationAsRead: async (conversationId, currentUserId) => {
         try {
           const state = get();
-          const unreadMessages = state.messages.filter(
-            (msg) => !msg.readBy || msg.readBy.length === 0
-          );
+          // The API returns messages with an `isRead` boolean (see
+          // getConversationMessages), not a `readBy` array — filtering on
+          // `readBy` here always matched every message (it's never present
+          // on this shape), which silently re-marked the whole history,
+          // including the current user's own messages, on every open.
+          const unreadMessages = state.messages.filter((msg) => {
+            const senderId = typeof msg.senderId === 'object' ? msg.senderId?._id : msg.senderId;
+            const isOwnMessage = currentUserId && senderId?.toString() === currentUserId.toString();
+            return !isOwnMessage && !msg.isRead;
+          });
 
           // Mark all unread messages as read
           for (const message of unreadMessages) {
             await axiosClient.patch(`/api/chat/messages/${message._id}/read`, {
               conversationId,
             });
-            get().updateMessageStatus(message._id, 'readBy', {
-              userId: get().currentUserKeys?.userId,
-              readAt: new Date(),
-            });
+            get().updateMessageStatus(message._id, 'isRead', true);
           }
 
           // Update conversation unread count to 0

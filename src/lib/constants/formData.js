@@ -386,12 +386,15 @@ export const OCCUPATIONS = {
   frequentlySelected: [
     'Software Professional',
     'Teacher',
+    'Business',
     'Business Owner',
     'Doctor',
     'Engineer',
     'Accountant',
     'Banker',
     'Government Employee',
+    'Service',
+    'Housewife',
   ],
   itSoftware: [
     'Software Engineer',
