@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api/admin';
+import { formatDateDDMMYYYY } from '@/lib/time';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -408,7 +409,7 @@ export default function AdminUsersPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-sm font-sans text-[#2C3E50]">
-                        {new Date(user.createdAt).toLocaleDateString()}
+                        {formatDateDDMMYYYY(user.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">

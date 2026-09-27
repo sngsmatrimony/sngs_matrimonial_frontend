@@ -20,6 +20,7 @@ const FIELD_LABELS = {
   complexion: 'Complexion',
   diet: 'Diet',
   professionalAdditionalInfo: 'About Your Profession',
+  'annualIncome.min': 'Annual Income',
   profileAbout: 'About Me',
   'profilePicture.url': 'Profile Picture',
   'gallery.photos': 'Gallery Photos',

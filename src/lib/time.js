@@ -1,4 +1,20 @@
 /**
+ * Format a date as dd/mm/yyyy, independent of the viewer's browser locale
+ * (plain `toLocaleDateString()` renders mm/dd/yyyy for US-locale browsers).
+ * @param {string|Date} date
+ * @returns {string} e.g. "27/09/2026", or '' if invalid/missing
+ */
+export const formatDateDDMMYYYY = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return '';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+/**
  * Convert 24-hour format time to 12-hour format with AM/PM
  * @param {string} time - Time in 24-hour format (HH:mm)
  * @returns {string} Time in 12-hour format (hh:mm AM/PM)

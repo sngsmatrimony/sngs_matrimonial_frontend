@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toastError, toastSuccess } from '@/lib/toast';
+import { formatDateDDMMYYYY } from '@/lib/time';
 import { ArrowLeft, Edit2, Trash2, Power, CheckCircle, XCircle, Clock, Upload, X, FileText, ImageIcon } from 'lucide-react';
 import {
   Dialog,
@@ -26,7 +27,12 @@ import {
 } from '@/components/ui/dialog';
 import Image from 'next/image';
 
+const FIELD_PATH_LABELS = {
+  'annualIncome.min': 'Annual Income',
+};
+
 function humanizeFieldPath(path) {
+  if (FIELD_PATH_LABELS[path]) return FIELD_PATH_LABELS[path];
   const key = path.split('.').pop();
   return key
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
@@ -1923,7 +1929,7 @@ export default function AdminUserDetailPage() {
                   <div>
                     <p className="text-sm text-gray-600">Joined Date</p>
                     <p className="text-lg font-semibold">
-                      {new Date(user.createdAt).toLocaleDateString()}
+                      {formatDateDDMMYYYY(user.createdAt)}
                     </p>
                   </div>
                   <div>

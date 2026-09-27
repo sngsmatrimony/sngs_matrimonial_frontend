@@ -134,18 +134,18 @@ const step3Schema = z.object({
 
 const step4Schema = z.object({
   education: z.string().min(1, 'Please select your education'),
-  employmentType: z.string().min(1, 'Please select your employment type'),
-  occupation: z.string().min(1, 'Please select your occupation'),
-  annualIncomeCurrency: z.string().min(1, 'Please select your currency'),
-  annualIncomeAmount: z.string().min(1, 'Please select your income amount'),
-  professionalAdditionalInfo: z.string().min(1, 'Please share some additional information').max(500, 'Maximum 500 characters'),
+  employmentType: z.string().optional(),
+  occupation: z.string().optional(),
+  annualIncomeCurrency: z.string().optional(),
+  annualIncomeAmount: z.string().optional(),
+  professionalAdditionalInfo: z.string().max(500, 'Maximum 500 characters').optional(),
 });
 
 const step5Schema = z.object({
   fatherName: z.string().min(1, "Father's name is required"),
-  fatherOccupation: z.string().min(1, "Please enter father's occupation"),
+  fatherOccupation: z.string().optional(),
   motherName: z.string().min(1, "Mother's name is required"),
-  motherOccupation: z.string().min(1, "Please enter mother's occupation"),
+  motherOccupation: z.string().optional(),
   residentialStatus: z.string().min(1, 'Please select your residential status'),
   familyStatus: z.string().min(1, 'Please select your family status'),
 });
@@ -374,6 +374,11 @@ export default function RegisterPage() {
   };
 
   const parseIncomeAmount = (currency, amount) => {
+    // Income is optional now — nothing entered means nothing to send,
+    // not a parsed "NaN" range.
+    if (!amount) {
+      return { min: undefined, max: undefined, displayText: '' };
+    }
     if (currency === 'INR') {
       const inrRanges = {
         '₹1 lakh and below': { min: 0, max: 100000 },
@@ -615,11 +620,11 @@ export default function RegisterPage() {
         presentResidentialAddress: submissionData.presentResidentialAddress || {},
         nativePlaceAddress: submissionData.nativePlaceAddress || {},
         education: submissionData.education,
-        employmentType: submissionData.employmentType,
-        occupation: submissionData.occupation,
+        employmentType: submissionData.employmentType || undefined,
+        occupation: submissionData.occupation || undefined,
         professionalAdditionalInfo: submissionData.professionalAdditionalInfo || '',
         annualIncome: {
-          currency: submissionData.annualIncomeCurrency,
+          currency: submissionData.annualIncomeCurrency || 'INR',
           min: parsedIncome.min,
           max: parsedIncome.max,
           displayText: parsedIncome.displayText,
