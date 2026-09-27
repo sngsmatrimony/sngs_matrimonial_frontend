@@ -719,7 +719,7 @@ export default function RegisterPage() {
           className="object-cover"
         />
         {/* Charcoal overlay with blur applied directly over the image */}
-        <div className="absolute inset-0 bg-[#1A1A1A]/50 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-[#1A1A1A]/50" />
       </div>
 
       {/* 2. CONTENT WRAPPER (z-10) */}
