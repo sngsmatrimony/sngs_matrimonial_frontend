@@ -41,7 +41,8 @@ export default function ImageLightbox({ images = [], index, onOpenChange, waterm
     <Dialog open={open} onOpenChange={(next) => !next && onOpenChange(null)}>
       <DialogContent
         showCloseButton
-        className="max-w-none w-screen h-screen sm:h-[90vh] sm:w-auto sm:max-w-[92vw] bg-black/95 border-none p-0 flex items-center justify-center rounded-none sm:rounded-2xl gap-0 [&_svg]:text-white"
+        overlayClassName="bg-black/50 backdrop-blur-xl"
+        className="max-w-none w-screen h-screen sm:h-[90vh] sm:w-auto sm:max-w-[92vw] bg-black/70 backdrop-blur-2xl border-none p-0 flex items-center justify-center rounded-none sm:rounded-2xl gap-0 [&_svg]:text-white"
       >
         <DialogTitle className="sr-only">{current?.alt || 'Photo viewer'}</DialogTitle>
 

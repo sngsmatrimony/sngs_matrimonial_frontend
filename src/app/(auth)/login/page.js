@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image'; // Added Next.js Image component
@@ -43,6 +43,18 @@ export default function LoginPage() {
     },
   });
 
+  // Guard against a stale error carrying over from a previous failed attempt
+  // (e.g. the browser restoring this page from cache on back/forward nav).
+  useEffect(() => {
+    setError('');
+  }, []);
+
+  const email = form.watch('email');
+  const password = form.watch('password');
+  useEffect(() => {
+    setError('');
+  }, [email, password]);
+
   async function onSubmit(values) {
     setIsLoading(true);
     setError('');
@@ -81,7 +93,11 @@ export default function LoginPage() {
       
       {/* 2. CONTENT WRAPPER (z-10) */}
       {/* Keeps the card centered and floating above the fixed background */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen w-full p-4">
+      {/* h-full (not min-h-screen) so this fills exactly whatever vertical
+          space <main> actually has left after the header/promo banner —
+          forcing a full extra 100vh here was pushing the card below the
+          visible center whenever that chrome was present. */}
+      <div className="relative z-10 flex items-center justify-center h-full min-h-[calc(100dvh-72px)] w-full p-4">
         <div className="w-full max-w-md">
           <Card className="border border-[#D4A843]/20 shadow-2xl bg-white w-full rounded-2xl overflow-hidden py-0 gap-0">
             

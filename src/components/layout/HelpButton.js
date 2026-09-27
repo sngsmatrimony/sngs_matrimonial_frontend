@@ -1,6 +1,7 @@
 'use client';
 
-import { CircleHelp, Mail, Phone } from 'lucide-react';
+import Link from 'next/link';
+import { CircleHelp, Mail, Phone, MessageSquare } from 'lucide-react';
 import { useContactInfo } from '@/hooks/useContactInfo';
 import {
   Popover,
@@ -47,6 +48,17 @@ export default function HelpButton() {
                 +91 {contactInfo?.contactMobile}
               </span>
             </a>
+
+            {/* Full Contact page — same contact form available before login */}
+            <Link
+              href="/contact"
+              className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#F5E6C3]/40 transition-colors"
+            >
+              <MessageSquare size={18} className="text-[#D4A843] shrink-0" />
+              <span className="font-sans text-sm text-[#2C3E50]">
+                Send us a message
+              </span>
+            </Link>
           </div>
         </PopoverContent>
       </Popover>

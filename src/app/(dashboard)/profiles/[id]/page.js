@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import { client } from '@/lib/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { toastError, toastSuccess } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Lock, Sparkles } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import ProfileDetailView from '@/components/profile/ProfileDetailView';
 
@@ -41,16 +42,8 @@ export default function ProfileViewPage() {
 
       if (error.response?.data?.requiresCredits) {
         setError('insufficient-credits');
-        toastError(error.response.data.message || 'Insufficient credits to view this profile');
-        setTimeout(() => {
-          router.push('/membership/purchase');
-        }, 1500);
       } else if (error.response?.data?.requiresMembership) {
         setError('no-membership');
-        toastError(error.response.data.message || 'Membership required to view profiles');
-        setTimeout(() => {
-          router.push('/membership/purchase');
-        }, 1500);
       } else if (error.response?.status === 404) {
         setError('not-found');
         toastError('Profile not found');
@@ -89,14 +82,51 @@ export default function ProfileViewPage() {
     );
   }
 
+  if (error === 'insufficient-credits' || error === 'no-membership') {
+    return (
+      <div className="min-h-screen bg-[#FDF8F0] flex items-center justify-center px-4">
+        <div className="max-w-md w-full bg-white rounded-2xl border border-[#D4A843]/20 shadow-lg p-8 text-center">
+          <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-[#F5E6C3] flex items-center justify-center ring-1 ring-[#D4A843]/40">
+            <Lock className="w-7 h-7 text-[#D4A843]" strokeWidth={1.75} />
+          </div>
+          <h2 className="font-serif text-2xl font-bold text-[#1A1A1A] mb-2">
+            Unlock This Profile
+          </h2>
+          <p className="font-sans text-[#2C3E50]/80 mb-6 leading-relaxed">
+            {error === 'insufficient-credits'
+              ? "You're out of credits. Choose a membership plan to unlock this profile and keep browsing without limits."
+              : 'An active membership is required to view full profiles. Choose a plan to unlock this profile and connect with matches.'}
+          </p>
+          <div className="flex flex-col gap-3">
+            <Button
+              asChild
+              className="w-full bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold h-12 rounded-xl shadow-sm"
+            >
+              <Link href="/membership/purchase">
+                <Sparkles className="w-4 h-4 mr-2" />
+                View Membership Plans
+              </Link>
+            </Button>
+            <Button
+              onClick={() => router.back()}
+              variant="outline"
+              className="w-full font-sans h-12 rounded-xl border-[#D4A843]/30"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Go Back
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (error || !profile) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center max-w-md">
           <p className="font-sans text-lg text-[#2C3E50] mb-6">
             {error === 'not-found' && 'Profile not found'}
-            {error === 'insufficient-credits' && 'You do not have enough credits'}
-            {error === 'no-membership' && 'You need an active membership'}
             {!error && 'Failed to load profile'}
           </p>
           <Button

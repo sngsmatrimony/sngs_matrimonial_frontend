@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { useLandingStore } from '@/store/landingStore';
+import useChatStore from '@/store/chatStore';
+import { useEnforcementStatus } from '@/hooks/useEnforcementStatus';
 import HelpButton from '@/components/layout/HelpButton';
 import ApprovalStatusBanner from '@/components/layout/ApprovalStatusBanner';
 import ApprovalGuard from '@/components/guards/ApprovalGuard';
@@ -15,6 +17,8 @@ import { SocketProvider } from '@/contexts/SocketContext';
 export default function UserLayout({ children }) {
   const { user, logout, initializeAuth, token, membership, canAccessFullApp } = useAuthStore();
   const { setActiveTab } = useLandingStore(); // Keep updating store for backward compatibility if needed, or remove later
+  const conversations = useChatStore((state) => state.conversations);
+  const unreadTotal = (conversations || []).reduce((sum, c) => sum + (c.unreadCount || 0), 0);
 
   // Check if user can access full app features
   const hasFullAccess = canAccessFullApp();
@@ -66,10 +70,14 @@ export default function UserLayout({ children }) {
 
   const isActive = (path) => pathname === path || pathname.startsWith(`${path}/`);
 
-  // PROMOTIONAL: Credits and membership display commented out during promotional period
-  // const userCredits = membership?.credits ?? user?.membership?.credits ?? 0;
-  // const showCredits = userCredits > 0 && !pathname.includes('/settings');
-  // const showGetMembership = !showCredits && user && !pathname.includes('/settings');
+  // Driven by the live, admin-controlled enforcement toggle — not a
+  // build-time "promotional mode" flag — so this always reflects whether
+  // membership actually gates anything right now.
+  const enforcementActive = useEnforcementStatus();
+  const userCredits = membership?.credits ?? 0;
+  const hasActiveMembership = membership?.isActive && !membership?.isExpired;
+  const showCredits = enforcementActive && hasActiveMembership && !pathname.includes('/settings') && !isActive('/membership');
+  const showMembershipCta = enforcementActive && !pathname.includes('/settings') && !isActive('/membership');
 
   // Show loader while initializing (unless timeout reached)
   if ((!isInitialized && !initTimeout) || !token) {
@@ -108,40 +116,36 @@ export default function UserLayout({ children }) {
               <span className="font-sans text-[#2C3E50]/70 text-sm">Welcome,</span>
               <span className="font-serif font-semibold text-[#1A1A1A]">{user?.fullName}</span>
             </div>
-            {/* PROMOTIONAL: Credits display and Get Membership button commented out during promotional period
             {showCredits && (
-              <div className="flex items-center bg-primary/10 px-3 py-1.5 rounded-full">
-                <span className="font-telex text-sm font-semibold text-secondary">
+              <div className="flex items-center bg-[#F5E6C3]/50 border border-[#D4A843]/30 px-3 py-1.5 rounded-full">
+                <span className="font-sans text-sm font-semibold text-[#1A1A1A]">
                   {userCredits} {userCredits === 1 ? 'Credit' : 'Credits'}
                 </span>
               </div>
             )}
-            {showGetMembership && (
+            {showMembershipCta && (
               <Link
                 href="/membership/purchase"
-                className="bg-primary hover:bg-primary/90 px-4 py-1.5 rounded-full font-telex text-sm font-semibold text-black transition-colors"
+                className="bg-[#D4A843] hover:bg-[#B8860B] px-4 py-1.5 rounded-full font-sans text-sm font-semibold text-[#1A1A1A] shadow-sm hover:shadow transition-all"
               >
-                Get Membership
+                {hasActiveMembership ? 'Upgrade Plan' : 'Get Membership'}
               </Link>
             )}
-            */}
           </div>
 
-          {/* PROMOTIONAL: Mobile credits and Get Membership commented out during promotional period
           {showCredits && (
-            <div className="flex md:hidden items-center bg-primary/10 px-2 py-1 rounded-full mr-2">
-              <span className="font-telex text-xs font-semibold text-secondary">{userCredits} {userCredits === 1 ? 'Credit' : 'Credits'}</span>
+            <div className="flex md:hidden items-center bg-[#F5E6C3]/50 border border-[#D4A843]/30 px-2 py-1 rounded-full mr-2">
+              <span className="font-sans text-xs font-semibold text-[#1A1A1A]">{userCredits} {userCredits === 1 ? 'Credit' : 'Credits'}</span>
             </div>
           )}
-          {showGetMembership && (
+          {showMembershipCta && (
             <Link
               href="/membership/purchase"
-              className="flex md:hidden bg-primary hover:bg-primary/90 px-3 py-1 rounded-full font-telex text-xs font-semibold text-black transition-colors mr-2"
+              className="flex md:hidden bg-[#D4A843] hover:bg-[#B8860B] px-3 py-1 rounded-full font-sans text-xs font-semibold text-[#1A1A1A] shadow-sm transition-all mr-2"
             >
-              Get Membership
+              {hasActiveMembership ? 'Upgrade' : 'Get Membership'}
             </Link>
           )}
-          */}
 
           {/* Help Button */}
           <HelpButton />
@@ -195,13 +199,20 @@ export default function UserLayout({ children }) {
             {hasFullAccess && (
               <Link
                 href="/messages"
-                className={`py-4 font-sans font-medium text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                className={`relative py-4 font-sans font-medium text-sm flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
                   isActive('/messages')
                     ? 'border-[#D4A843] text-[#D4A843]'
                     : 'border-transparent text-white/80 hover:text-white'
                 }`}
               >
-                <MessageCircle size={18} strokeWidth={1.75} />
+                <span className="relative">
+                  <MessageCircle size={18} strokeWidth={1.75} />
+                  {unreadTotal > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-[#C75B39] text-white text-[9px] font-semibold flex items-center justify-center">
+                      {unreadTotal > 9 ? '9+' : unreadTotal}
+                    </span>
+                  )}
+                </span>
                 Messages
               </Link>
             )}

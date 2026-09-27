@@ -3,6 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 import PromoBanner from '@/components/layout/PromoBanner';
 import Header from '@/components/layout/Header'; // <-- Restored Global Header
+import Footer from '@/components/layout/Footer';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import Preloader from '@/components/layout/Preloader';
 
@@ -49,6 +50,9 @@ export default function RootLayout({ children }) {
             {/* The pb-16 ensures content doesn't hide behind the 64px mobile bottom nav */}
             {children}
           </main>
+
+          {/* Global Footer (hidden on admin and app/dashboard routes) */}
+          <Footer />
 
           {/* Mobile Bottom Nav (app routes, logged-in users only) */}
           <MobileBottomNav />

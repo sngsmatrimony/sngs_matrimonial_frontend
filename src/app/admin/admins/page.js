@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toastError, toastSuccess } from '@/lib/toast';
 import { Shield, Plus } from 'lucide-react';
 
@@ -45,6 +46,18 @@ export default function AdminManagementPage() {
     },
     onError: (error) => {
       toastError(error.response?.data?.message || 'Failed to create admin');
+    },
+  });
+
+  // Toggle an individual admin's automated alert emails (new registration,
+  // resubmission, contact form, excessive downloads, phone requests)
+  const alertPreferenceMutation = useMutation({
+    mutationFn: ({ id, receiveAlertEmails }) => adminApi.updateAdminAlertPreference(id, receiveAlertEmails),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admins'] });
+    },
+    onError: (error) => {
+      toastError(error.response?.data?.message || 'Failed to update alert preference');
     },
   });
 
@@ -183,6 +196,11 @@ export default function AdminManagementPage() {
       <Card>
         <CardHeader>
           <CardTitle className="font-serif">All Admins ({total})</CardTitle>
+          <p className="text-sm text-gray-500 font-sans">
+            &quot;Receive Alert Emails&quot; controls automated notifications only (new registrations,
+            resubmissions, contact form messages, excessive downloads, phone requests) — uncheck it
+            for an admin who shouldn&apos;t be emailed on every event, e.g. during testing.
+          </p>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -192,6 +210,7 @@ export default function AdminManagementPage() {
                   <TableHead className="font-sans">Email</TableHead>
                   <TableHead className="font-sans">Created Date</TableHead>
                   <TableHead className="font-sans">Last Login</TableHead>
+                  <TableHead className="font-sans">Receive Alert Emails</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -219,11 +238,20 @@ export default function AdminManagementPage() {
                             })
                           : 'Never'}
                       </TableCell>
+                      <TableCell>
+                        <Checkbox
+                          checked={admin.receiveAlertEmails !== false}
+                          onCheckedChange={(checked) =>
+                            alertPreferenceMutation.mutate({ id: admin._id, receiveAlertEmails: checked === true })
+                          }
+                          aria-label={`Toggle alert emails for ${admin.email}`}
+                        />
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan="3" className="text-center py-8 text-gray-500 font-sans">
+                    <TableCell colSpan="4" className="text-center py-8 text-gray-500 font-sans">
                       No admins found
                     </TableCell>
                   </TableRow>

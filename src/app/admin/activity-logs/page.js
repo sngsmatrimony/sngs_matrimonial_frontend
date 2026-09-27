@@ -125,7 +125,7 @@ export default function AdminActivityLogsPage() {
                   logs.map((log) => (
                     <TableRow key={log._id} className="hover:bg-[#FDF8F0]/60">
                       <TableCell className="font-sans">
-                        <div className="font-medium text-[#1A1A1A]">{log.userId?.fullName || 'Unknown'}</div>
+                        <div className="font-medium text-[#1A1A1A]">{log.userId?.fullName || 'Deleted User'}</div>
                         <div className="text-xs text-[#2C3E50]/60">{log.userId?.email}</div>
                       </TableCell>
                       <TableCell className="font-sans text-sm text-[#2C3E50]">

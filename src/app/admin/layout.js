@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { useQuery } from "@tanstack/react-query";
 import { useAdminAuthStore } from "@/store/adminAuthStore";
 import { BarChart3, Users, Settings, Shield, LogOut, CreditCard, ScrollText, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import HelpButton from "@/components/layout/HelpButton";
+import { adminApi } from "@/lib/api/admin";
 
 export default function AdminLayout({ children }) {
     const router = useRouter();
@@ -19,6 +21,24 @@ export default function AdminLayout({ children }) {
     const isAuthRoute =
         pathname === "/admin/login" ||
         pathname.startsWith("/admin/forgot-password");
+
+    // Polled so the header badges reflect new pending activity without a
+    // manual refresh — only enabled once actually authenticated so these
+    // don't fire on the login screen.
+    const { data: pendingApprovalData } = useQuery({
+        queryKey: ["adminPendingApprovalCount"],
+        queryFn: async () => (await adminApi.getPendingApprovalCount()).data,
+        enabled: !isAuthRoute && !!admin,
+        refetchInterval: 60 * 1000,
+    });
+    const { data: pendingPhoneRequestData } = useQuery({
+        queryKey: ["adminPendingPhoneRequestCount"],
+        queryFn: async () => (await adminApi.getPendingPhoneRequestCount()).data,
+        enabled: !isAuthRoute && !!admin,
+        refetchInterval: 60 * 1000,
+    });
+    const pendingApprovalCount = pendingApprovalData?.data?.pendingCount || 0;
+    const pendingPhoneRequestCount = pendingPhoneRequestData?.data?.pendingCount || 0;
 
     // Initialize auth and determine authorization
     useEffect(() => {
@@ -118,13 +138,20 @@ export default function AdminLayout({ children }) {
                             </Link>
                             <Link
                                 href="/admin/users"
-                                className={`py-4 font-sans font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                                className={`relative py-4 font-sans font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
                                     pathname.startsWith("/admin/users")
                                         ? "border-primary text-primary"
                                         : "border-transparent text-white hover:text-gray-300"
                                 }`}
                             >
-                                <Users size={20} />
+                                <span className="relative">
+                                    <Users size={20} />
+                                    {pendingApprovalCount > 0 && (
+                                        <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[9px] font-semibold flex items-center justify-center">
+                                            {pendingApprovalCount > 9 ? "9+" : pendingApprovalCount}
+                                        </span>
+                                    )}
+                                </span>
                                 <span className="hidden sm:inline">Users</span>
                             </Link>
                             <Link
@@ -151,13 +178,20 @@ export default function AdminLayout({ children }) {
                             </Link>
                             <Link
                                 href="/admin/phone-requests"
-                                className={`py-4 font-sans font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                                className={`relative py-4 font-sans font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
                                     pathname.startsWith("/admin/phone-requests")
                                         ? "border-primary text-primary"
                                         : "border-transparent text-white hover:text-gray-300"
                                 }`}
                             >
-                                <Phone size={20} />
+                                <span className="relative">
+                                    <Phone size={20} />
+                                    {pendingPhoneRequestCount > 0 && (
+                                        <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[9px] font-semibold flex items-center justify-center">
+                                            {pendingPhoneRequestCount > 9 ? "9+" : pendingPhoneRequestCount}
+                                        </span>
+                                    )}
+                                </span>
                                 <span className="hidden sm:inline">Phone Requests</span>
                             </Link>
                             <Link

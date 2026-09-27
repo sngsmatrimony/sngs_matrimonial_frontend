@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import EditProfileForm from './EditProfileForm';
 import ProfileHeader from './ProfileHeader';
 import ProfileTabs from './ProfileTabs';
-import { Pencil, AlertTriangle, Eye, X } from 'lucide-react';
+import { Pencil, AlertTriangle, Eye, Heart, X } from 'lucide-react';
 
 // Friendly display names for the raw schema field names in `missingFields`
 const FIELD_LABELS = {
@@ -113,7 +113,7 @@ const RejectionActionCard = ({ reason, onEditProfile }) => (
   </div>
 );
 
-function ProfileInsightsCard({ completeness, profileViewCount, onDismiss }) {
+function ProfileInsightsCard({ completeness, profileViewCount, interestedCount, onDismiss }) {
   if (!completeness) return null;
   const { percent, missingFields = [] } = completeness;
   const topMissing = missingFields.slice(0, 3);
@@ -155,12 +155,20 @@ function ProfileInsightsCard({ completeness, profileViewCount, onDismiss }) {
             <h3 className="font-serif text-lg font-semibold text-[#1A1A1A]">
               {percent >= 100 ? 'Your profile is complete!' : 'Complete your profile'}
             </h3>
-            {typeof profileViewCount === 'number' && (
-              <p className="flex items-center gap-1.5 font-sans text-sm text-[#2C3E50]/70 mt-0.5">
-                <Eye className="w-3.5 h-3.5" strokeWidth={1.75} />
-                {profileViewCount} {profileViewCount === 1 ? 'person has' : 'people have'} viewed your profile
-              </p>
-            )}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-0.5">
+              {typeof profileViewCount === 'number' && (
+                <p className="flex items-center gap-1.5 font-sans text-sm text-[#2C3E50]/70">
+                  <Eye className="w-3.5 h-3.5" strokeWidth={1.75} />
+                  {profileViewCount} {profileViewCount === 1 ? 'person has' : 'people have'} viewed your profile
+                </p>
+              )}
+              {typeof interestedCount === 'number' && interestedCount > 0 && (
+                <p className="flex items-center gap-1.5 font-sans text-sm text-[#C75B39]">
+                  <Heart className="w-3.5 h-3.5 fill-[#C75B39]" strokeWidth={1.75} />
+                  {interestedCount} {interestedCount === 1 ? 'person has' : 'people have'} expressed interest in you
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
@@ -257,10 +265,11 @@ export default function UserProfileView() {
         <RejectionActionCard reason={rejectionReason} onEditProfile={() => setIsEditMode(true)} />
       )}
 
-      {!userIsRejected && !insightsDismissed && displayProfile?.completeness && displayProfile.completeness.percent < 100 && (
+      {!userIsRejected && !insightsDismissed && displayProfile?.completeness && (
         <ProfileInsightsCard
           completeness={displayProfile.completeness}
           profileViewCount={displayProfile.profileViewCount}
+          interestedCount={displayProfile.interestedCount}
           onDismiss={() => setInsightsDismissed(true)}
         />
       )}

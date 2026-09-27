@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
@@ -183,6 +183,8 @@ function FilterControls({
 
 export default function BrowseProfiles() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [country, setCountry] = useState('');
   const [state, setState] = useState('');
   const [education, setEducation] = useState('');
@@ -215,6 +217,17 @@ export default function BrowseProfiles() {
       return { profiles, likedIds, shortlistedIds, gated, totalAvailable };
     },
   });
+
+  // The mobile bottom nav's "Search" tab links here with ?openFilters=1 to
+  // jump straight into the filter sheet instead of just landing on the same
+  // browse grid "Home" already shows.
+  useEffect(() => {
+    if (searchParams.get('openFilters') === '1') {
+      setFiltersOpen(true);
+      router.replace('/browse');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   useEffect(() => {
     if (!error) return;
@@ -256,7 +269,7 @@ export default function BrowseProfiles() {
           </h2>
 
           {/* Mobile filter trigger */}
-          <Sheet>
+          <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" className="lg:hidden border-[#D4A843]/40 text-[#1A1A1A] font-sans gap-2">
                 <SlidersHorizontal size={16} />

@@ -81,6 +81,11 @@ export const adminApi = {
   getPhoneRequests: (params) => adminClient.get('/api/admin/phone-requests', { params }),
 
   /**
+   * Get count of pending phone-number requests
+   */
+  getPendingPhoneRequestCount: () => adminClient.get('/api/admin/phone-requests/pending-count'),
+
+  /**
    * Approve a phone-number request
    */
   approvePhoneRequest: (id) => adminClient.put(`/api/admin/phone-requests/${id}/approve`),
@@ -153,6 +158,12 @@ export const adminApi = {
    * Create new admin
    */
   createAdmin: (data) => adminClient.post('/api/admin/admins', data),
+
+  /**
+   * Toggle whether an admin receives automated alert emails
+   */
+  updateAdminAlertPreference: (id, receiveAlertEmails) =>
+    adminClient.patch(`/api/admin/admins/${id}/alert-preference`, { receiveAlertEmails }),
 
   // ==================== Media Upload for Users ====================
 

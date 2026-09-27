@@ -413,6 +413,17 @@ export default function AdminUserDetailPage() {
               <ArrowLeft size={20} className="mr-1.5" />
               Back
             </Button>
+            <div className="w-14 h-14 rounded-full border overflow-hidden flex items-center justify-center bg-gray-50 shrink-0">
+              {user.profilePicture?.url ? (
+                <img
+                  src={user.profilePicture.url}
+                  alt={user.fullName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-gray-400 text-[10px] text-center px-1">No photo</span>
+              )}
+            </div>
             <div>
               <h1 className="text-3xl font-bold font-serif text-secondary">{user.fullName}</h1>
               <p className="text-gray-600">{user.email}</p>

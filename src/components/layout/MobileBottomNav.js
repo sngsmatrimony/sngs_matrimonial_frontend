@@ -2,9 +2,10 @@
 
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home, Search, MessageCircle, User, Menu as MenuIcon, Heart, Settings, LogOut, HelpCircle } from 'lucide-react';
+import { Home, Search, MessageCircle, User, Menu as MenuIcon, Heart, Settings, LogOut, HelpCircle, CreditCard } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import useChatStore from '@/store/chatStore';
+import { useEnforcementStatus } from '@/hooks/useEnforcementStatus';
 import {
   Sheet,
   SheetTrigger,
@@ -29,6 +30,7 @@ export default function MobileBottomNav() {
   const pathname = usePathname();
   const { token, user, logout } = useAuthStore();
   const conversations = useChatStore((state) => state.conversations);
+  const enforcementActive = useEnforcementStatus();
 
   const isAppRoute = APP_ROUTE_PREFIXES.some(
     (prefix) => pathname === prefix || pathname?.startsWith(`${prefix}/`)
@@ -63,7 +65,7 @@ export default function MobileBottomNav() {
           Home
         </Link>
 
-        <Link href="/browse" className={navItemClass(false)}>
+        <Link href="/browse?openFilters=1" className={navItemClass(false)}>
           <Search size={22} strokeWidth={1.75} />
           Search
         </Link>
@@ -97,6 +99,17 @@ export default function MobileBottomNav() {
               <SheetTitle>Menu</SheetTitle>
             </SheetHeader>
             <div className="flex flex-col gap-1 px-4 pt-2">
+              {enforcementActive && (
+                <SheetClose asChild>
+                  <Link
+                    href="/membership/purchase"
+                    className="flex items-center gap-3 px-3 py-3 rounded-xl font-sans font-semibold text-[#1A1A1A] bg-[#F5E6C3]/50 hover:bg-[#F5E6C3]/70 transition-colors"
+                  >
+                    <CreditCard size={20} className="text-[#D4A843]" strokeWidth={1.75} />
+                    Membership Plans
+                  </Link>
+                </SheetClose>
+              )}
               <SheetClose asChild>
                 <Link
                   href="/liked"

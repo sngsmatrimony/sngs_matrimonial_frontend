@@ -54,10 +54,12 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
     router.push('/messages');
   }, [profile, setSelectedChatUserId, router]);
 
-  const handleCardClick = useCallback((e) => {
+  const handleCardClick = useCallback(() => {
+    // Deliberately not blocked here: navigating through shows the profile
+    // page's own "Unlock This Profile" upgrade card with a direct path to
+    // the plans page, which is a clearer next step than a dead-end toast.
     if (hasNoMembership) {
-      e.preventDefault();
-      toastInfo('Upgrade your membership to view full profiles');
+      toastInfo('This profile is locked — view membership plans to unlock it');
     }
   }, [hasNoMembership]);
 
@@ -76,10 +78,7 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
     <Link
       href={`/profiles/${profile._id}`}
       onClick={handleCardClick}
-      aria-disabled={hasNoMembership}
-      className={`block bg-white rounded-xl border border-[#D4A843]/15 shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden ${
-        hasNoMembership ? 'cursor-not-allowed' : 'cursor-pointer'
-      }`}
+      className="block bg-white rounded-xl border border-[#D4A843]/15 shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer"
     >
       {/* Photo */}
       <div className="relative aspect-[4/5] bg-[#F5E6C3]/40">
@@ -117,10 +116,13 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
         )}
 
         {hasNoMembership && (
-          <div className="absolute inset-0 bg-[#1A1A1A]/40 backdrop-blur-[2px] flex items-center justify-center">
+          <div className="absolute inset-0 bg-[#1A1A1A]/40 backdrop-blur-[2px] flex flex-col items-center justify-center gap-1.5">
             <div className="bg-white/95 rounded-full p-3 shadow-lg">
               <Lock className="w-5 h-5 text-[#D4A843]" />
             </div>
+            <span className="font-sans text-xs font-semibold text-white bg-[#1A1A1A]/60 px-2.5 py-1 rounded-full">
+              Tap to Unlock
+            </span>
           </div>
         )}
       </div>

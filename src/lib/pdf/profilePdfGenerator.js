@@ -268,30 +268,34 @@ const addPageBreakPadding = (element) => {
   // Get all top-level children (these are the main sections that flow vertically)
   const children = Array.from(element.children);
 
-  // Run multiple passes since adding margin shifts subsequent sections
-  for (let pass = 0; pass < 3; pass++) {
-    let cumulativeHeight = 0;
+  // Single top-to-bottom sweep. `child.offsetHeight` excludes marginTop, so
+  // each child's true start position is cumulativeHeight + its own margin —
+  // tracking that explicitly (rather than re-deriving position from
+  // offsetHeight alone across repeated passes) means a padding decision made
+  // for an earlier child is never silently lost when later children are
+  // evaluated.
+  let cumulativeHeight = 0;
 
-    for (const child of children) {
-      const childHeight = child.offsetHeight;
+  for (const child of children) {
+    const existingMarginTop = parseFloat(window.getComputedStyle(child).marginTop) || 0;
+    const childHeight = child.offsetHeight;
+    const childStart = cumulativeHeight + existingMarginTop;
 
-      // Calculate where the next page boundary is
-      const currentPage = Math.floor(cumulativeHeight / pageHeightPx);
-      const currentPageEnd = (currentPage + 1) * pageHeightPx;
+    // Calculate where the next page boundary is
+    const currentPage = Math.floor(childStart / pageHeightPx);
+    const currentPageEnd = (currentPage + 1) * pageHeightPx;
 
-      // Check if this child would be cut across the page boundary
-      const wouldBeCut = cumulativeHeight + childHeight > currentPageEnd && cumulativeHeight < currentPageEnd;
+    // Check if this child would be cut across the page boundary
+    const wouldBeCut = childStart + childHeight > currentPageEnd && childStart < currentPageEnd;
 
-      // If child would be cut and is small enough to fit on one page
-      if (wouldBeCut && childHeight < pageHeightPx * 0.85) {
-        // Add padding to push to next page
-        const paddingNeeded = currentPageEnd - cumulativeHeight + 10;
-        const currentMargin = parseInt(child.style.marginTop) || 0;
-        child.style.marginTop = `${currentMargin + paddingNeeded}px`;
-        cumulativeHeight = currentPageEnd + paddingNeeded + childHeight;
-      } else {
-        cumulativeHeight += childHeight;
-      }
+    // If child would be cut and is small enough to fit on one page
+    if (wouldBeCut && childHeight < pageHeightPx * 0.85) {
+      // Add just enough padding to push it to the start of the next page
+      const paddingNeeded = currentPageEnd - childStart + 10;
+      child.style.marginTop = `${existingMarginTop + paddingNeeded}px`;
+      cumulativeHeight = currentPageEnd + 10 + childHeight;
+    } else {
+      cumulativeHeight = childStart + childHeight;
     }
   }
 };

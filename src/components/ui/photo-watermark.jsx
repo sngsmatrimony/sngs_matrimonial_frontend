@@ -2,14 +2,14 @@
 
 /**
  * Builds the watermark text shown to a viewer looking at someone else's
- * photos: their own email + a timestamp. Shown only to that viewer (never to
- * anyone else), so this isn't a privacy leak — it's the same pattern used by
- * document viewers (Google Docs, PDF tools) to trace a leaked copy back to
- * whoever had it open.
+ * photos: their own name. Shown only to that viewer (never to anyone else),
+ * so this isn't a privacy leak — it's the same pattern used by document
+ * viewers (Google Docs, PDF tools) to trace a leaked copy back to whoever
+ * had it open.
  */
 export function buildWatermarkText(viewerUser) {
-  if (!viewerUser?.email) return null;
-  return `${viewerUser.email} • ${new Date().toLocaleString()}`;
+  if (!viewerUser?.fullName) return null;
+  return viewerUser.fullName;
 }
 
 /**
@@ -26,7 +26,7 @@ export default function PhotoWatermark({ text }) {
   return (
     <div className="absolute inset-0 pointer-events-none select-none overflow-hidden z-10">
       <div className="absolute inset-0 flex flex-wrap content-around justify-around opacity-[0.18]">
-        {Array.from({ length: 9 }).map((_, i) => (
+        {Array.from({ length: 3 }).map((_, i) => (
           <span
             key={i}
             className="text-white text-[10px] font-sans font-semibold whitespace-nowrap"
