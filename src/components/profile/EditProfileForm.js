@@ -79,9 +79,6 @@ const step1Schema = z.object({
       ctx.addIssue({ code: 'custom', message: 'Please select your raasi', path: ['raasi'] });
     }
   }
-  if (data.shuddhaJathakam === 'No' && (!data.doshamTypes || data.doshamTypes.length === 0)) {
-    ctx.addIssue({ code: 'custom', message: 'Please select at least one dosham type', path: ['doshamTypes'] });
-  }
 });
 
 // Step 2: Addresses

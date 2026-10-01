@@ -44,7 +44,12 @@ function AddressFieldset({ form, prefix, title, isOptional = false }) {
           name={`${prefix}.state`}
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">State{isOptional ? ' (Optional)' : ' *'}</FormLabel>
+              {/* State is only actually required when this is the main address AND the
+                  country is India (see the matching superRefine in both EditProfileForm.js
+                  and register/page.js) — unlike every other field here, its required-ness
+                  isn't fully determined by `isOptional` alone, so it can't just mirror the
+                  sibling fields' static isOptional-based asterisk. */}
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">State{(!isOptional && watchCountry === 'India') ? ' *' : ' (Optional)'}</FormLabel>
               <Select value={field.value || ''} onValueChange={field.onChange}>
                 <FormControl>
                   <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
