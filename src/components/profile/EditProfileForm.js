@@ -320,6 +320,22 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
         toastError('Please upload an ID proof document to continue.');
         return;
       }
+
+      // PreferencesMediaStep pre-populates formData.profilePicture/galleryPhotos
+      // from the existing profile on mount, so these are already truthy for
+      // an existing member who hasn't touched either section — this only
+      // fires when one is genuinely missing (new registrant edge cases,
+      // data anomalies, or every gallery photo having just been removed).
+      if (!formData.profilePicture) {
+        toastError('Please upload a profile photo to continue.');
+        return;
+      }
+
+      if (!formData.galleryPhotos || formData.galleryPhotos.length < 1) {
+        toastError('Please upload at least one gallery photo to continue.');
+        return;
+      }
+
       await submitUpdate();
       return;
     }

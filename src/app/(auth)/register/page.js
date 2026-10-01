@@ -519,6 +519,23 @@ export default function RegisterPage() {
         return;
       }
 
+      // The Profile Photo / Gallery Photos sections both show a "Required"
+      // badge, but nothing was actually enforcing that before this — these
+      // uploads happen as separate calls after the main form submits, so an
+      // unchecked click-through could (and did) reach admin approval with
+      // no photos at all.
+      if (!formData.profilePicture) {
+        toastError('Please upload a profile photo to continue.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!formData.galleryPhotos || formData.galleryPhotos.length < 1) {
+        toastError('Please upload at least one gallery photo to continue.');
+        setIsLoading(false);
+        return;
+      }
+
       const values = form.getValues();
       const updatedFormData = {
         ...formData,

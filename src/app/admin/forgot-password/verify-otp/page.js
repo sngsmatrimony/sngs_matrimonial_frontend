@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { toastError, toastSuccess } from '@/lib/toast';
 import adminClient from '@/lib/api/adminClient';
+import { Eye, EyeOff } from 'lucide-react';
 
 const resetSchema = z.object({
   otp: z.string().length(6, 'OTP must be 6 digits'),
@@ -29,6 +30,8 @@ export default function AdminVerifyOTPPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     const storedEmail = sessionStorage.getItem('adminResetEmail');
@@ -118,13 +121,24 @@ export default function AdminVerifyOTPPage() {
                           New Password
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder="••••••••"
-                            type="password"
-                            autoComplete="new-password"
-                            className="border-2 border-gray-200 focus:border-primary font-sans"
-                            {...field}
-                          />
+                          <div className="relative">
+                            <Input
+                              placeholder="••••••••"
+                              type={showNewPassword ? 'text' : 'password'}
+                              autoComplete="new-password"
+                              className="border-2 border-gray-200 focus:border-primary font-sans pr-10"
+                              {...field}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowNewPassword((prev) => !prev)}
+                              aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                              tabIndex={-1}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
+                            >
+                              {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                          </div>
                         </FormControl>
                         <FormMessage className="text-destructive font-sans text-xs" />
                       </FormItem>
@@ -140,13 +154,24 @@ export default function AdminVerifyOTPPage() {
                           Confirm Password
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder="••••••••"
-                            type="password"
-                            autoComplete="new-password"
-                            className="border-2 border-gray-200 focus:border-primary font-sans"
-                            {...field}
-                          />
+                          <div className="relative">
+                            <Input
+                              placeholder="••••••••"
+                              type={showConfirmPassword ? 'text' : 'password'}
+                              autoComplete="new-password"
+                              className="border-2 border-gray-200 focus:border-primary font-sans pr-10"
+                              {...field}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword((prev) => !prev)}
+                              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                              tabIndex={-1}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
+                            >
+                              {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                          </div>
                         </FormControl>
                         <FormMessage className="text-destructive font-sans" />
                       </FormItem>

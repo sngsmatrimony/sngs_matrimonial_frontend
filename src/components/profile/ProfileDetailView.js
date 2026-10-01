@@ -175,7 +175,7 @@ export default function ProfileDetailView({ profileId }) {
           <button
             onClick={handleLike}
             disabled={isLikeLoading}
-            className={`flex-1 inline-flex items-center justify-center gap-2 font-sans text-sm font-semibold px-3 py-2.5 rounded-lg border transition-colors disabled:opacity-50 ${
+            className={`flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 sm:gap-2 font-sans text-sm font-semibold px-2 sm:px-3 py-2.5 rounded-lg border transition-colors disabled:opacity-50 ${
               liked
                 ? 'bg-[#C75B39]/10 border-[#C75B39]/40 text-[#C75B39]'
                 : 'bg-white border-[#D4A843]/40 text-[#1A1A1A] hover:bg-[#F5E6C3]/40'
@@ -201,7 +201,7 @@ export default function ProfileDetailView({ profileId }) {
 
           <button
             onClick={handleChat}
-            className="flex-1 inline-flex items-center justify-center gap-2 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans text-sm font-semibold px-3 py-2.5 rounded-lg transition-colors"
+            className="flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 sm:gap-2 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans text-sm font-semibold px-2 sm:px-3 py-2.5 rounded-lg transition-colors"
           >
             <MessageCircle size={16} />
             Chat
@@ -210,7 +210,7 @@ export default function ProfileDetailView({ profileId }) {
           <button
             onClick={() => downloadPDF(profile?.fullName, profile?.horoscopeDocument, profileId)}
             disabled={isGenerating}
-            className="flex-1 inline-flex items-center justify-center gap-2 bg-white border border-[#D4A843]/40 text-[#1A1A1A] hover:bg-[#F5E6C3]/40 font-sans text-sm font-semibold px-3 py-2.5 rounded-lg transition-colors disabled:opacity-50"
+            className="flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 sm:gap-2 bg-white border border-[#D4A843]/40 text-[#1A1A1A] hover:bg-[#F5E6C3]/40 font-sans text-sm font-semibold px-2 sm:px-3 py-2.5 rounded-lg transition-colors disabled:opacity-50"
           >
             {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
             <span className="hidden sm:inline">Share Profile</span>

@@ -26,7 +26,12 @@ adminClient.interceptors.request.use((config) => {
 adminClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isLoginRequest = error.config?.url?.includes('/api/admin-auth/login');
+
+    // A 401 from the login request itself just means "wrong email/password" -
+    // that's a normal rejected-login response, not an expired session, so let
+    // the login page's own error handling show it instead of hard-redirecting.
+    if (error.response?.status === 401 && !isLoginRequest) {
       // Only access browser APIs in browser environment
       if (typeof window !== 'undefined') {
         localStorage.removeItem('adminAuthToken');

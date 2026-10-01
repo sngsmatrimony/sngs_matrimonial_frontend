@@ -4,6 +4,19 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axiosClient from '@/lib/api/client';
 
+// ChatList reads conversation.lastMessage.preview (that's the shape
+// GET /api/chat/conversations returns, built server-side from
+// content.substring(0, 100) - see chat.controller.js). A message object
+// from the send/receive path only has `.content`, not `.preview`, so
+// writing it straight into lastMessage silently breaks the sidebar preview
+// ("No messages yet") until the next full conversation-list reload.
+function toListPreview(message) {
+  return {
+    ...message,
+    preview: (message?.content || '').substring(0, 100),
+  };
+}
+
 const useChatStore = create(
   persist(
     (set, get) => ({
@@ -51,9 +64,24 @@ const useChatStore = create(
             return true;
           });
 
-          set({
-            conversations: deduplicatedConversations,
-            isLoading: false,
+          set((state) => {
+            // This runs on every socket reconnect (SocketContext.jsx), which
+            // can fire seconds after a conversation was already opened via
+            // getOrCreateConversation. A blind replace here can race with
+            // that: if this fetch's snapshot predates the conversation
+            // becoming query-able server-side, it silently drops the one
+            // conversation the user is actively looking at, kicking their
+            // open chat back to the empty "select a conversation" state.
+            // Keep the actively-open conversation even if this particular
+            // fetch didn't return it.
+            const merged = deduplicatedConversations.some((c) => c._id === state.activeConversationId)
+              ? deduplicatedConversations
+              : (() => {
+                  const stillActive = state.conversations.find((c) => c._id === state.activeConversationId);
+                  return stillActive ? [stillActive, ...deduplicatedConversations] : deduplicatedConversations;
+                })();
+
+            return { conversations: merged, isLoading: false };
           });
           return deduplicatedConversations;
         } catch (error) {
@@ -261,7 +289,7 @@ const useChatStore = create(
             conv._id === conversationId
               ? {
                   ...conv,
-                  lastMessage: message,
+                  lastMessage: toListPreview(message),
                   unreadCount: isActiveConversation ? 0 : (conv.unreadCount || 0) + 1,
                 }
               : conv
@@ -269,8 +297,8 @@ const useChatStore = create(
 
           // Sort conversations to put most recent at top
           updatedConversations.sort((a, b) => {
-            const aTime = a.lastMessage?.createdAt || a.createdAt;
-            const bTime = b.lastMessage?.createdAt || b.createdAt;
+            const aTime = a.lastMessage?.timestamp || a.createdAt;
+            const bTime = b.lastMessage?.timestamp || b.createdAt;
             return new Date(bTime) - new Date(aTime);
           });
 
@@ -305,7 +333,7 @@ const useChatStore = create(
               conv._id === conversationId
                 ? {
                     ...conv,
-                    lastMessage: newMessage,
+                    lastMessage: toListPreview(newMessage),
                   }
                 : conv
             ),

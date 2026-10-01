@@ -6,7 +6,13 @@ import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/button';
 import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
 
-export default function ApprovalStatusBanner() {
+// The My Profile page (UserProfileView's RejectionActionCard) already shows
+// the full admin feedback text with an "Edit Profile Now" CTA right in the
+// page content — repeating that same feedback text up here too just stacked
+// two near-identical red boxes on top of each other. hideRejectionDetail
+// keeps this banner as a slim status strip with the Recheck button there,
+// and lets the in-page card be the one place the actual feedback text lives.
+export default function ApprovalStatusBanner({ hideRejectionDetail = false }) {
   const { isPending, isRejected, getLatestRejectionReason, refreshUser } = useAuthStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -99,7 +105,7 @@ export default function ApprovalStatusBanner() {
               </Button>
             </div>
 
-            {rejectionReason && (
+            {rejectionReason && !hideRejectionDetail && (
               <div className="ml-8 p-3 bg-white rounded-lg border border-[#E8B4A0]">
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-[#C75B39] mt-0.5 flex-shrink-0" />
