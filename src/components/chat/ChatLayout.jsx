@@ -13,6 +13,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useLandingStore } from "@/store/landingStore";
 import Link from "next/link";
 import { toastInfo } from "@/lib/toast";
+import { broadcastTypingStart, broadcastTypingStop } from "@/lib/socket";
 
 /**
  * ChatLayout Component
@@ -33,6 +34,7 @@ export default function ChatLayout({ initialUserId = null }) {
     activeConversationId,
     messages,
     onlineUsers,
+    typingUsers,
     setActiveConversationId,
     loadConversations,
     getOrCreateConversation,
@@ -55,6 +57,23 @@ export default function ChatLayout({ initialUserId = null }) {
   const activeConversation = conversations.find(
     (conv) => conv._id === activeConversationId
   );
+
+  const otherParticipantId = activeConversation?.otherParticipant?._id;
+  const typingUserId = activeConversationId ? typingUsers.get(activeConversationId) : null;
+  const typingUserIds = typingUserId ? [typingUserId] : [];
+  const typingUserDetails = otherParticipantId
+    ? { [otherParticipantId]: { name: activeConversation.otherParticipant.fullName } }
+    : {};
+
+  const handleTyping = (isTyping) => {
+    if (!activeConversationId || !otherParticipantId) return;
+    const payload = { conversationId: activeConversationId, recipientId: otherParticipantId };
+    if (isTyping) {
+      broadcastTypingStart(payload);
+    } else {
+      broadcastTypingStop(payload);
+    }
+  };
 
   // Load conversations on mount - empty dependency array to run once
   useEffect(() => {
@@ -90,6 +109,25 @@ export default function ChatLayout({ initialUserId = null }) {
     // Only re-run when activeConversationId changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeConversationId]);
+
+  // Once the Messages page is gone, nothing is "open" to the user anymore.
+  // Left set, receiveMessage treats the last-opened conversation as being
+  // read and zeroes its unread badge on every other screen.
+  useEffect(() => {
+    return () => setActiveConversationId(null);
+  }, [setActiveConversationId]);
+
+  // Messages that arrived while this tab was hidden were not seen; catch up
+  // as soon as the user comes back to the open conversation.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && activeConversationId && user?._id) {
+        markConversationAsRead(activeConversationId, user._id);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [activeConversationId, markConversationAsRead, user?._id]);
 
   // Clean up empty conversations when navigating away from Messages tab
   // Store reference to current empty conversations to delete on unmount
@@ -245,6 +283,9 @@ export default function ChatLayout({ initialUserId = null }) {
           isLoadingMore={isLoadingMessages}
           isSending={isSending}
           error={error}
+          typingUsers={typingUserIds}
+          typingUserDetails={typingUserDetails}
+          onTyping={handleTyping}
         />
       </div>
     </div>

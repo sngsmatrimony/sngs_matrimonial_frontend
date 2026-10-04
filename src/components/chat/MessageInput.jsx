@@ -49,6 +49,8 @@ function EmojiPicker({ onSelect, disabled }) {
   );
 }
 
+const TYPING_REFRESH_MS = 2000;
+
 /**
  * MessageInput Component
  *
@@ -72,16 +74,20 @@ export default function MessageInput({
   const [isTyping, setIsTyping] = useState(false);
   const textareaRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const lastTypingStartRef = useRef(0);
 
   // Handle message change and typing indicator
   const handleChange = (e) => {
     const value = e.target.value;
     setMessage(value);
 
-    // Trigger typing indicator
+    // Trigger typing indicator. The server drops a typing state after 5s without
+    // a refresh, so re-announce during long bursts instead of only on the first key.
     if (onTyping && value.trim()) {
-      if (!isTyping) {
+      const now = Date.now();
+      if (!isTyping || now - lastTypingStartRef.current > TYPING_REFRESH_MS) {
         setIsTyping(true);
+        lastTypingStartRef.current = now;
         onTyping(true);
       }
 

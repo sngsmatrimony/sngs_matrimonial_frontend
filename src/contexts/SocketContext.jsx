@@ -80,6 +80,14 @@ export function SocketProvider({ children }) {
       // Set up chat event listeners
       onMessageReceived(({ message, conversationId }) => {
         receiveMessage(message, conversationId);
+
+        // The conversation is open on screen, so the message is seen the moment
+        // it arrives. Mark it read now so the server count and the sender's read
+        // receipt match what the user is looking at.
+        const { activeConversationId, markMessageAsRead } = useChatStore.getState();
+        if (activeConversationId === conversationId && document.visibilityState === 'visible') {
+          markMessageAsRead(message._id, conversationId);
+        }
       });
 
       onMessageDelivered(({ messageId }) => {
@@ -95,8 +103,8 @@ export function SocketProvider({ children }) {
         updateMessageStatus(messageId, 'isRead', true);
       });
 
-      onTypingIndicator(({ userId, isTyping }) => {
-        setUserTyping(userId, isTyping);
+      onTypingIndicator(({ userId, isTyping, conversationId }) => {
+        setUserTyping(userId, isTyping, conversationId);
       });
 
       onUserOnline(({ userId }) => {

@@ -382,15 +382,17 @@ const useChatStore = create(
       },
 
       /**
-       * Add typing user to set
+       * Track who is typing in each conversation (conversationId -> userId),
+       * so a typing indicator never leaks into a different open chat.
        */
-      setUserTyping: (userId, isTyping) => {
+      setUserTyping: (userId, isTyping, conversationId) => {
+        if (!conversationId) return;
         set((state) => {
           const typingUsers = new Map(state.typingUsers);
           if (isTyping) {
-            typingUsers.set(userId, true);
-          } else {
-            typingUsers.delete(userId);
+            typingUsers.set(conversationId, userId);
+          } else if (typingUsers.get(conversationId) === userId) {
+            typingUsers.delete(conversationId);
           }
           return { typingUsers };
         });
