@@ -1,11 +1,19 @@
 'use client';
 
-import { LogOut, Coins } from 'lucide-react';
+import { LogOut, Coins, Menu as MenuIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetClose,
+} from '@/components/ui/sheet';
 
 // Routes where a Logout button should replace the default My Account/Sign-in CTA.
 const LOGOUT_ROUTE_PREFIXES = ['/chat', '/profiles/'];
@@ -81,9 +89,15 @@ export default function Header({ showLogout = false, isFixed = false }) {
             className="h-10 w-auto rounded shadow-sm group-hover:shadow transition-all"
             style={{ width: 'auto', height: 'auto' }}
           />
-          {/* Changed color to Navy (#2C3E50) and enforced the Serif typography */}
+          {/* Changed color to Navy (#2C3E50) and enforced the Serif typography.
+              Full name from sm: up; a short mobile label keeps the header from
+              reading as blank branding on narrow screens where the full name
+              and a menu button together wouldn't fit comfortably. */}
           <h1 className="font-serif text-2xl font-bold text-[#2C3E50] hidden sm:block tracking-wide">
             SNGS Matrimonial
+          </h1>
+          <h1 className="font-serif text-xl font-bold text-[#2C3E50] sm:hidden tracking-wide">
+            SNGS
           </h1>
         </Link>
 
@@ -133,14 +147,104 @@ export default function Header({ showLogout = false, isFixed = false }) {
               >
                 Sign In
               </Link>
-              <Link 
-                href="/register" 
+              <Link
+                href="/register"
                 className="bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] px-6 py-2.5 rounded-lg font-sans text-sm font-bold transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
               >
                 Sign Up
               </Link>
             </div>
           )}
+
+          {/* Mobile menu — below sm, Home/About/Contact nav and the Sign In/Sign
+              Up (or My Account) actions above all disappear with no replacement.
+              This is the only way to navigate or reach auth on a phone before
+              login. */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                aria-label="Open menu"
+                className="sm:hidden flex items-center justify-center w-10 h-10 rounded-lg border border-[#D4A843]/30 text-[#2C3E50] hover:bg-[#F5E6C3] transition-colors"
+              >
+                <MenuIcon size={20} strokeWidth={1.75} />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[280px]">
+              <SheetHeader>
+                <SheetTitle className="font-serif text-[#2C3E50]">SNGS Matrimonial</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col gap-1 px-4 pt-4">
+                <SheetClose asChild>
+                  <Link href="/" className="px-3 py-3 rounded-xl font-sans text-[#1A1A1A] hover:bg-[#F5E6C3]/40 transition-colors">
+                    Home
+                  </Link>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Link href="/about-us" className="px-3 py-3 rounded-xl font-sans text-[#1A1A1A] hover:bg-[#F5E6C3]/40 transition-colors">
+                    About Us
+                  </Link>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Link href="/contact" className="px-3 py-3 rounded-xl font-sans text-[#1A1A1A] hover:bg-[#F5E6C3]/40 transition-colors">
+                    Contact
+                  </Link>
+                </SheetClose>
+                {user && token && user?.role !== 'admin' && (
+                  <SheetClose asChild>
+                    <Link href="/browse" className="px-3 py-3 rounded-xl font-sans text-[#1A1A1A] hover:bg-[#F5E6C3]/40 transition-colors">
+                      Search Matches
+                    </Link>
+                  </SheetClose>
+                )}
+
+                <div className="h-px bg-[#D4A843]/20 my-2" />
+
+                {effectiveShowLogout ? (
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 px-3 py-3 rounded-xl font-sans text-[#C75B39] hover:bg-[#FBEAE5] transition-colors text-left"
+                  >
+                    <LogOut size={18} />
+                    Logout
+                  </button>
+                ) : token && user ? (
+                  <>
+                    <SheetClose asChild>
+                      <Link href="/profile" className="px-3 py-3 rounded-xl font-sans font-medium text-[#1A1A1A] hover:bg-[#F5E6C3]/40 transition-colors">
+                        My Account
+                      </Link>
+                    </SheetClose>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 px-3 py-3 rounded-xl font-sans text-[#C75B39] hover:bg-[#FBEAE5] transition-colors text-left"
+                    >
+                      <LogOut size={18} />
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <SheetClose asChild>
+                      <Link href="/login" className="px-3 py-3 rounded-xl font-sans font-medium text-[#1A1A1A] hover:bg-[#F5E6C3]/40 transition-colors">
+                        Sign In
+                      </Link>
+                    </SheetClose>
+                    <SheetClose asChild>
+                      <Link
+                        href="/register"
+                        className="mx-3 mt-1 text-center bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] px-6 py-2.5 rounded-lg font-sans text-sm font-bold transition-all duration-300"
+                      >
+                        Sign Up
+                      </Link>
+                    </SheetClose>
+                  </>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>
