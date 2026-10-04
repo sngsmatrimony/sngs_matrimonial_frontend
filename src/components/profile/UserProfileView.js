@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useLandingStore } from '@/store/landingStore';
 import { useAuthStore } from '@/store/authStore';
@@ -11,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import EditProfileForm from './EditProfileForm';
 import ProfileHeader from './ProfileHeader';
 import ProfileTabs from './ProfileTabs';
-import { Pencil, AlertTriangle, Eye, Heart, X } from 'lucide-react';
+import { Pencil, AlertTriangle, Eye, Heart, X, Lock } from 'lucide-react';
 
 // Friendly display names for the raw schema field names in `missingFields`
 const FIELD_LABELS = {
@@ -114,7 +115,8 @@ const RejectionActionCard = ({ reason, onEditProfile }) => (
   </div>
 );
 
-function ProfileInsightsCard({ completeness, profileViewCount, interestedCount, onDismiss }) {
+function ProfileInsightsCard({ completeness, profileViewCount, interestedCount, insightsLocked, onDismiss }) {
+  const router = useRouter();
   if (!completeness) return null;
   const { percent, missingFields = [] } = completeness;
   const topMissing = missingFields.slice(0, 3);
@@ -157,17 +159,30 @@ function ProfileInsightsCard({ completeness, profileViewCount, interestedCount, 
               {percent >= 100 ? 'Your profile is complete!' : 'Complete your profile'}
             </h3>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-0.5">
-              {typeof profileViewCount === 'number' && (
-                <p className="flex items-center gap-1.5 font-sans text-sm text-[#2C3E50]/70">
-                  <Eye className="w-3.5 h-3.5" strokeWidth={1.75} />
-                  {profileViewCount} {profileViewCount === 1 ? 'person has' : 'people have'} viewed your profile
-                </p>
-              )}
-              {typeof interestedCount === 'number' && interestedCount > 0 && (
-                <p className="flex items-center gap-1.5 font-sans text-sm text-[#C75B39]">
-                  <Heart className="w-3.5 h-3.5 fill-[#C75B39]" strokeWidth={1.75} />
-                  {interestedCount} {interestedCount === 1 ? 'person has' : 'people have'} expressed interest in you
-                </p>
+              {insightsLocked ? (
+                <button
+                  type="button"
+                  onClick={() => router.push('/membership/purchase')}
+                  className="flex items-center gap-1.5 font-sans text-sm text-[#B8860B] hover:text-[#8A6A1A] underline underline-offset-2"
+                >
+                  <Lock className="w-3.5 h-3.5" strokeWidth={1.75} />
+                  Get a membership to see who viewed &amp; liked your profile
+                </button>
+              ) : (
+                <>
+                  {typeof profileViewCount === 'number' && (
+                    <p className="flex items-center gap-1.5 font-sans text-sm text-[#2C3E50]/70">
+                      <Eye className="w-3.5 h-3.5" strokeWidth={1.75} />
+                      {profileViewCount} {profileViewCount === 1 ? 'person has' : 'people have'} viewed your profile
+                    </p>
+                  )}
+                  {typeof interestedCount === 'number' && interestedCount > 0 && (
+                    <p className="flex items-center gap-1.5 font-sans text-sm text-[#C75B39]">
+                      <Heart className="w-3.5 h-3.5 fill-[#C75B39]" strokeWidth={1.75} />
+                      {interestedCount} {interestedCount === 1 ? 'person has' : 'people have'} expressed interest in you
+                    </p>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -271,6 +286,7 @@ export default function UserProfileView() {
           completeness={displayProfile.completeness}
           profileViewCount={displayProfile.profileViewCount}
           interestedCount={displayProfile.interestedCount}
+          insightsLocked={displayProfile.insightsLocked}
           onDismiss={() => setInsightsDismissed(true)}
         />
       )}

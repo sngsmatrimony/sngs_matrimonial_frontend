@@ -844,9 +844,12 @@ export default function RegisterPage() {
                                     setVerificationToken('');
                                     setEmailVerificationStep('input');
                                   }
-                                  if (form.formState.errors.email) {
-                                    form.trigger('email');
-                                  }
+                                  // field.onChange() above already re-validates this field —
+                                  // the form uses mode: 'onChange', so the Zod resolver reruns
+                                  // automatically on every keystroke. This manual trigger('email')
+                                  // just repeated that same validation a second time in the same
+                                  // tick, doubling the render work on every character typed here
+                                  // for no behavioral difference.
                                 }}
                               />
                             </FormControl>

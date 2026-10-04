@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { SlidersHorizontal, X } from 'lucide-react';
+import Image from 'next/image';
+import { SlidersHorizontal, X, Search as SearchIcon, User as UserIcon } from 'lucide-react';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
 import {
@@ -22,6 +23,15 @@ import ProfileCard from './ProfileCard';
 
 const EDUCATION_OPTIONS = getAllEducationOptions();
 
+function useDebouncedValue(value, delayMs) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(timeout);
+  }, [value, delayMs]);
+  return debounced;
+}
+
 function FilterControls({
   country, setCountry,
   state, setState,
@@ -37,6 +47,20 @@ function FilterControls({
 
   return (
     <div className="space-y-5">
+      <div className="pb-1 border-b border-[#D4A843]/15">
+        <label className="flex items-start gap-2.5 pb-4 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={ignoreAge}
+            onChange={(e) => setIgnoreAge(e.target.checked)}
+            className="mt-0.5 w-4 h-4 rounded border-[#D4A843]/40 accent-[#D4A843]"
+          />
+          <span className="font-sans text-sm text-[#1A1A1A]">
+            Show profiles outside my preferred age range
+          </span>
+        </label>
+      </div>
+
       <div>
         <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-2">Location</label>
         <Select value={country || 'all'} onValueChange={(v) => { setCountry(v === 'all' ? '' : v); if (v !== 'India') setState(''); }}>
@@ -154,20 +178,6 @@ function FilterControls({
         </Select>
       </div>
 
-      <div className="pt-1 border-t border-[#D4A843]/15">
-        <label className="flex items-start gap-2.5 pt-4 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={ignoreAge}
-            onChange={(e) => setIgnoreAge(e.target.checked)}
-            className="mt-0.5 w-4 h-4 rounded border-[#D4A843]/40 accent-[#D4A843]"
-          />
-          <span className="font-sans text-sm text-[#1A1A1A]">
-            Show profiles outside my preferred age range
-          </span>
-        </label>
-      </div>
-
       {hasActiveFilters && (
         <button
           type="button"
@@ -193,15 +203,20 @@ export default function BrowseProfiles() {
   const [motherTongue, setMotherTongue] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [ignoreAge, setIgnoreAge] = useState(false);
+  const [searchInput, setSearchInput] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchInputRef = useRef(null);
+  const debouncedSearch = useDebouncedValue(searchInput.trim(), 350);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['browseProfiles', country, state, education, caste, maritalStatus, motherTongue, sortBy, ignoreAge],
+    queryKey: ['browseProfiles', country, state, education, caste, maritalStatus, motherTongue, sortBy, ignoreAge, debouncedSearch],
     queryFn: async () => {
       const [profilesRes, likedRes, shortlistedRes] = await Promise.all([
         client.get('/api/profiles/discover', {
           params: {
             country, state, education, caste, maritalStatus, motherTongue, sortBy,
             ignoreAgePreference: ignoreAge ? 'true' : 'false',
+            search: debouncedSearch || undefined,
           },
         }),
         client.get('/api/profiles/liked'),
@@ -218,12 +233,11 @@ export default function BrowseProfiles() {
     },
   });
 
-  // The mobile bottom nav's "Search" tab links here with ?openFilters=1 to
-  // jump straight into the filter sheet instead of just landing on the same
-  // browse grid "Home" already shows.
+  // The mobile bottom nav's "Search" tab links here with ?focusSearch=1 to
+  // jump straight into the text search box instead of the filter sheet.
   useEffect(() => {
-    if (searchParams.get('openFilters') === '1') {
-      setFiltersOpen(true);
+    if (searchParams.get('focusSearch') === '1') {
+      searchInputRef.current?.focus();
       router.replace('/browse');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -256,6 +270,7 @@ export default function BrowseProfiles() {
     setMotherTongue('');
     setSortBy('newest');
     setIgnoreAge(false);
+    setSearchInput('');
   };
 
   const activeFilterCount = [country, state, education, caste, maritalStatus, motherTongue, ignoreAge].filter(Boolean).length;
@@ -300,6 +315,70 @@ export default function BrowseProfiles() {
               </div>
             </SheetContent>
           </Sheet>
+        </div>
+
+        {/* Text search — matches on name, occupation, and city. Suggestions
+            dropdown surfaces the top few matches while typing; the full grid
+            below updates to the same filtered set once the debounce settles. */}
+        <div className="relative mb-6">
+          <div className="relative">
+            <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#2C3E50]/40" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
+              placeholder="Search by name, occupation, or city..."
+              className="w-full h-12 pl-10 pr-10 rounded-xl border border-[#D4A843]/25 bg-white font-sans text-[15px] text-[#1A1A1A] placeholder:text-[#2C3E50]/40 focus:outline-none focus:ring-2 focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50"
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => setSearchInput('')}
+                aria-label="Clear search"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#2C3E50]/40 hover:text-[#2C3E50]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {isSearchFocused && debouncedSearch.length >= 2 && debouncedSearch === searchInput.trim() && !isLoading && (
+            <div className="absolute z-30 top-full left-0 right-0 mt-1.5 bg-white border border-[#D4A843]/20 rounded-xl shadow-lg max-h-80 overflow-y-auto">
+              {profilesData.length === 0 ? (
+                <p className="font-sans text-sm text-[#2C3E50]/60 px-4 py-3">
+                  No profiles found for &quot;{debouncedSearch}&quot;
+                </p>
+              ) : (
+                profilesData.slice(0, 6).map((p) => (
+                  <button
+                    key={p._id}
+                    type="button"
+                    onMouseDown={() => router.push(`/profiles/${p._id}`)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[#F5E6C3]/40 text-left transition-colors"
+                  >
+                    {p.profilePicture?.url ? (
+                      <span className="relative w-9 h-9 rounded-full overflow-hidden shrink-0">
+                        <Image src={p.profilePicture.url} alt="" fill sizes="36px" unoptimized className="object-cover" />
+                      </span>
+                    ) : (
+                      <span className="w-9 h-9 rounded-full bg-[#F5E6C3] flex items-center justify-center shrink-0">
+                        <UserIcon className="w-4 h-4 text-[#B8860B]" />
+                      </span>
+                    )}
+                    <span className="min-w-0">
+                      <span className="block font-sans text-sm font-medium text-[#1A1A1A] truncate">{p.fullName}</span>
+                      <span className="block font-sans text-xs text-[#2C3E50]/60 truncate">
+                        {[p.occupation, p.presentResidentialAddress?.city].filter(Boolean).join(' · ')}
+                      </span>
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
@@ -359,17 +438,21 @@ export default function BrowseProfiles() {
               <div className="flex items-center justify-center py-24">
                 <div className="text-center max-w-sm">
                   <p className="font-sans text-lg text-[#1A1A1A] font-medium mb-2">
-                    No profiles found matching your preferences
+                    {debouncedSearch
+                      ? <>No profiles found for &quot;{debouncedSearch}&quot;</>
+                      : 'No profiles found matching your preferences'}
                   </p>
                   <p className="font-sans text-sm text-[#2C3E50]/70">
-                    Try adjusting your filters, or check back soon as new members join.
+                    {debouncedSearch
+                      ? 'Try a different name, occupation, or city.'
+                      : 'Try adjusting your filters, or check back soon as new members join.'}
                   </p>
-                  {activeFilterCount > 0 && (
+                  {(activeFilterCount > 0 || debouncedSearch) && (
                     <button
                       onClick={resetFilters}
                       className="mt-4 text-[#D4A843] hover:text-[#B8860B] font-sans font-medium text-sm underline"
                     >
-                      Reset filters
+                      {debouncedSearch ? 'Clear search' : 'Reset filters'}
                     </button>
                   )}
                 </div>

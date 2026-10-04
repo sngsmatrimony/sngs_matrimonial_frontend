@@ -54,6 +54,18 @@ export const adminApi = {
   bulkEmailUsers: (userIds, subject, message) =>
     adminClient.post('/api/admin/users/bulk-email', { userIds, subject, message }),
 
+  /**
+   * Preview how many users a re-engagement blast would reach
+   */
+  getInactiveUserCount: (inactiveDays) =>
+    adminClient.get('/api/admin/users/inactive-count', { params: { inactiveDays } }),
+
+  /**
+   * Re-engagement blast to every user inactive for N+ days
+   */
+  bulkEmailInactiveUsers: (inactiveDays, subject, message) =>
+    adminClient.post('/api/admin/users/bulk-email-inactive', { inactiveDays, subject, message }),
+
   // ==================== Analytics ====================
 
   /**
@@ -146,6 +158,17 @@ export const adminApi = {
    * Update "ID proof required" toggle state
    */
   updateIdProofSettings: (data) => adminClient.put('/api/admin/settings/id-proof-required', data),
+
+  /**
+   * Get the automated 7-day inactivity reminder email toggle state
+   */
+  getAutomatedInactivityEmailSettings: () => adminClient.get('/api/admin/settings/automated-inactivity-emails'),
+
+  /**
+   * Pause/resume the automated 7-day inactivity reminder job
+   */
+  updateAutomatedInactivityEmailSettings: (data) =>
+    adminClient.put('/api/admin/settings/automated-inactivity-emails', data),
 
   // ==================== Admin Management ====================
 

@@ -3,8 +3,51 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Send, Smile } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Curated, non-cartoonish set appropriate for a matrimony chat context —
+// everyday reactions and affection, not a full emoji keyboard.
+const EMOJI_OPTIONS = [
+  "😊", "😄", "🙂", "😍", "🥰", "😘", "😂", "🙏",
+  "❤️", "💛", "💐", "🌸", "✨", "🎉", "🎊", "👍",
+  "👏", "🤝", "😎", "😇", "☺️", "💍", "💑", "🙌",
+];
+
+function EmojiPicker({ onSelect, disabled }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          disabled={disabled}
+          className="hidden sm:inline-flex shrink-0 mb-1 text-[#2C3E50]/60 hover:text-[#D4A843] hover:bg-[#F5E6C3]/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Insert emoji"
+        >
+          <Smile className="w-5 h-5" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-2" align="start" side="top">
+        <div className="grid grid-cols-8 gap-1">
+          {EMOJI_OPTIONS.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => onSelect(emoji)}
+              className="text-xl leading-none rounded-md p-1.5 hover:bg-[#F5E6C3]/60 transition-colors"
+              aria-label={`Insert ${emoji}`}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 /**
  * MessageInput Component
@@ -87,6 +130,24 @@ export default function MessageInput({
     }
   };
 
+  // Insert an emoji at the current cursor position rather than always
+  // appending to the end, so it works naturally mid-sentence too.
+  const handleEmojiSelect = (emoji) => {
+    const textarea = textareaRef.current;
+    const start = textarea?.selectionStart ?? message.length;
+    const end = textarea?.selectionEnd ?? message.length;
+    const nextMessage = message.slice(0, start) + emoji + message.slice(end);
+    setMessage(nextMessage);
+
+    requestAnimationFrame(() => {
+      if (textarea) {
+        const cursorPos = start + emoji.length;
+        textarea.focus();
+        textarea.setSelectionRange(cursorPos, cursorPos);
+      }
+    });
+  };
+
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
@@ -110,6 +171,9 @@ export default function MessageInput({
   return (
     <div className="border-t border-[#D4A843]/15 bg-white px-4 py-3 shrink-0 sticky bottom-0 z-20">
       <div className="flex items-end gap-2">
+        {/* Emoji Picker (desktop only) */}
+        <EmojiPicker onSelect={handleEmojiSelect} disabled={disabled || isLoading} />
+
         {/* Message Textarea */}
         <Textarea
           ref={textareaRef}

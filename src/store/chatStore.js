@@ -280,6 +280,21 @@ const useChatStore = create(
        * @param {string} conversationId - The conversation ID
        */
       receiveMessage: (message, conversationId) => {
+        const conversationExists = get().conversations.some((c) => c._id === conversationId);
+
+        // The socket payload only ever carries { message, conversationId } —
+        // never the full conversation (otherParticipant, createdAt, etc.), so
+        // a brand-new conversation's first message has nothing to merge into
+        // the list here. Without this, the badge/preview silently stayed
+        // stale until the next manual reload re-fetched the list from the API.
+        if (!conversationExists) {
+          get().loadConversations();
+          if (get().activeConversationId === conversationId) {
+            set((state) => ({ messages: [...state.messages, message] }));
+          }
+          return;
+        }
+
         set((state) => {
           // Only add to messages if this is the active conversation
           const isActiveConversation = state.activeConversationId === conversationId;

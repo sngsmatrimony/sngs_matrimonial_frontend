@@ -75,6 +75,12 @@ export default function AdminUsersPage() {
   const [bulkEmailSubject, setBulkEmailSubject] = useState('');
   const [bulkEmailMessage, setBulkEmailMessage] = useState('');
   const [isBulkEmailSubmitting, setIsBulkEmailSubmitting] = useState(false);
+  const [showReengageDialog, setShowReengageDialog] = useState(false);
+  const [showReengageConfirm, setShowReengageConfirm] = useState(false);
+  const [reengageInactiveDays, setReengageInactiveDays] = useState(30);
+  const [reengageSubject, setReengageSubject] = useState('');
+  const [reengageMessage, setReengageMessage] = useState('');
+  const [isReengageSubmitting, setIsReengageSubmitting] = useState(false);
 
   // Debounce the search box so we don't fire a request on every keystroke
   useEffect(() => {
@@ -232,6 +238,48 @@ export default function AdminUsersPage() {
     }
   };
 
+  const openReengageDialog = () => {
+    setReengageSubject("We'd love to have you back");
+    setReengageMessage("We noticed you haven't been active on SNGS Matrimonial in a while. Your matches are waiting — log in and continue your search for the perfect partner whenever you're ready.");
+    setShowReengageDialog(true);
+  };
+
+  const { data: inactiveCountData, isFetching: isInactiveCountLoading } = useQuery({
+    queryKey: ['inactiveUserCount', reengageInactiveDays],
+    queryFn: async () => {
+      const response = await adminApi.getInactiveUserCount(reengageInactiveDays);
+      return response.data.data;
+    },
+    enabled: showReengageDialog && reengageInactiveDays > 0,
+    staleTime: 30 * 1000,
+  });
+
+  const handleSendReengageEmail = () => {
+    if (!reengageSubject.trim() || !reengageMessage.trim()) {
+      toastError('Please provide a subject and message');
+      return;
+    }
+    setShowReengageConfirm(true);
+  };
+
+  const confirmSendReengageEmail = async () => {
+    setIsReengageSubmitting(true);
+    try {
+      const response = await adminApi.bulkEmailInactiveUsers(
+        reengageInactiveDays,
+        reengageSubject.trim(),
+        reengageMessage.trim()
+      );
+      toastSuccess(response.data.message || 'Emails sent');
+      setShowReengageConfirm(false);
+      setShowReengageDialog(false);
+    } catch (error) {
+      toastError(error.response?.data?.message || 'Failed to send emails');
+    } finally {
+      setIsReengageSubmitting(false);
+    }
+  };
+
   const completionColor = (percent) =>
     percent >= 80 ? '#2E7D32' : percent >= 50 ? '#D4A843' : '#C75B39';
 
@@ -310,6 +358,15 @@ export default function AdminUsersPage() {
             {label}
           </button>
         ))}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={openReengageDialog}
+          className="ml-auto gap-1.5 border-[#D4A843]/40 text-[#1A1A1A]"
+        >
+          <Mail size={14} />
+          Re-engage Inactive Users
+        </Button>
       </div>
 
       {/* Bulk actions bar */}
@@ -613,6 +670,100 @@ export default function AdminUsersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Re-engage Inactive Users Dialog */}
+      <Dialog open={showReengageDialog} onOpenChange={setShowReengageDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-serif">Re-engage Inactive Users</DialogTitle>
+            <DialogDescription>
+              Sends an individual email to every approved user who hasn&apos;t been active in the given window — using the same activity data shown as &quot;Last Active&quot; on their profiles.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 space-y-4">
+            <div>
+              <label className="block text-sm font-medium font-sans text-[#2C3E50] mb-2">
+                Inactive for at least (days)
+              </label>
+              <Input
+                type="number"
+                min={1}
+                value={reengageInactiveDays}
+                onChange={(e) => setReengageInactiveDays(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                className="font-sans w-32"
+              />
+              <p className="text-xs font-sans text-[#2C3E50]/60 mt-2">
+                {isInactiveCountLoading
+                  ? 'Counting matching users...'
+                  : inactiveCountData
+                    ? `${inactiveCountData.count} user${inactiveCountData.count === 1 ? '' : 's'} will receive this email${inactiveCountData.willBeCapped ? ' (capped at 500 per send — run again for the rest)' : ''}.`
+                    : ''}
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium font-sans text-[#2C3E50] mb-2">
+                Subject <span className="text-destructive">*</span>
+              </label>
+              <Input
+                value={reengageSubject}
+                onChange={(e) => setReengageSubject(e.target.value)}
+                placeholder="Email subject"
+                maxLength={150}
+                className="font-sans"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium font-sans text-[#2C3E50] mb-2">
+                Message <span className="text-destructive">*</span>
+              </label>
+              <Textarea
+                value={reengageMessage}
+                onChange={(e) => setReengageMessage(e.target.value)}
+                placeholder="Write your message..."
+                className="min-h-[160px] font-sans"
+                maxLength={2000}
+              />
+              <p className="text-xs font-sans text-[#2C3E50]/50 mt-1">{reengageMessage.length}/2000 characters</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReengageDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendReengageEmail}
+              disabled={!reengageSubject.trim() || !reengageMessage.trim() || !inactiveCountData?.count}
+              className="bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A]"
+            >
+              Review &amp; Send
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Re-engage confirmation — a mass, irreversible send to real users deserves an explicit second step */}
+      <AlertDialog open={showReengageConfirm} onOpenChange={setShowReengageConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-serif">
+              Send to {inactiveCountData?.count || 0} Inactive User{inactiveCountData?.count === 1 ? '' : 's'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will immediately email every approved user inactive for {reengageInactiveDays}+ days. This can&apos;t be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isReengageSubmitting}>Cancel</AlertDialogCancel>
+            <Button
+              onClick={confirmSendReengageEmail}
+              disabled={isReengageSubmitting}
+              className="bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A]"
+            >
+              {isReengageSubmitting ? 'Sending...' : 'Send Now'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

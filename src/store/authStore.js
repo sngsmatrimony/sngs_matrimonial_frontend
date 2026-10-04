@@ -11,6 +11,11 @@ export const useAuthStore = create(
       token: null,
       isLoading: false,
       error: null,
+      // True when a stored token exists but fetching the user failed for a
+      // non-auth reason (network/timeout) after a retry — lets the dashboard
+      // show a "couldn't load your account, retry" state instead of an
+      // indefinite spinner. See initializeAuth.
+      authInitError: false,
       membership: {
         isActive: false,
         credits: 0,
@@ -134,32 +139,53 @@ export const useAuthStore = create(
         // First, try to restore from localStorage
         const storedToken = localStorage.getItem('authToken');
         if (storedToken) {
-          set({ token: storedToken });
-          // Try to get current user from API
-          try {
-            const response = await client.get('/api/auth/me');
-            const userData = response.data.user;
-            set({
-              user: userData,
-              membership: userData.membership || {
-                isActive: false,
-                credits: 0,
-                expiryDate: null,
-                isExpired: false,
+          set({ token: storedToken, authInitError: false });
+
+          // One retry on top of the request's own 15s timeout — mobile
+          // connections drop requests far more often than a wired one, and
+          // a single blip here used to leave token set but user null
+          // forever: the dashboard's ApprovalGuard waits on `user` before
+          // rendering anything, so that left mobile users on a permanent
+          // "Verifying access..." spinner with no way out. Trying twice
+          // fixes the common transient case for free.
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+              const response = await client.get('/api/auth/me');
+              const userData = response.data.user;
+              set({
+                user: userData,
+                authInitError: false,
+                membership: userData.membership || {
+                  isActive: false,
+                  credits: 0,
+                  expiryDate: null,
+                  isExpired: false,
+                }
+              });
+              // Fetch fresh membership data from API
+              await get().refreshMembership();
+              return;
+            } catch (error) {
+              // Only clear the session when the token itself is actually
+              // invalid/expired. A network error, timeout, or transient 5xx
+              // from the backend is not proof the session is bad, and must
+              // not silently log the user out.
+              if (error.response?.status === 401) {
+                localStorage.removeItem('authToken');
+                set({ token: null, user: null, authInitError: false });
+                return;
               }
-            });
-            // Fetch fresh membership data from API
-            await get().refreshMembership();
-          } catch (error) {
-            // Only clear the session when the token itself is actually
-            // invalid/expired. A network error, timeout, or transient 5xx
-            // from the backend is not proof the session is bad, and must
-            // not silently log the user out.
-            if (error.response?.status === 401) {
-              localStorage.removeItem('authToken');
-              set({ token: null, user: null });
+              if (attempt === 0) {
+                await new Promise((resolve) => setTimeout(resolve, 1500));
+              }
             }
           }
+
+          // Both attempts failed for a non-auth reason (network/timeout/5xx).
+          // Keep the session intact (don't punish a bad connection with a
+          // logout) but flag it so the UI can show a real "couldn't load
+          // your account, retry" state instead of spinning indefinitely.
+          set({ authInitError: true });
         }
       },
 

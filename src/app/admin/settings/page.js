@@ -53,6 +53,11 @@ export default function AdminSettingsPage() {
   // ID proof required toggle state
   const [idProofRequiredEnabled, setIdProofRequiredEnabled] = useState(false);
 
+  // Automated inactivity email toggle state — defaults to true (active)
+  // until the fetched setting says otherwise, matching the job's own
+  // "no settings doc yet means active" default.
+  const [inactivityEmailsEnabled, setInactivityEmailsEnabled] = useState(true);
+
   // Fetch current settings
   const { data: contactInfo, isLoading } = useQuery({
     queryKey: ['contactInfo'],
@@ -94,6 +99,15 @@ export default function AdminSettingsPage() {
     queryKey: ['idProofSettings'],
     queryFn: async () => {
       const response = await adminApi.getIdProofSettings();
+      return response.data.data;
+    },
+  });
+
+  // Fetch automated inactivity email setting
+  const { data: inactivityEmailSettings, isLoading: isLoadingInactivityEmails } = useQuery({
+    queryKey: ['inactivityEmailSettings'],
+    queryFn: async () => {
+      const response = await adminApi.getAutomatedInactivityEmailSettings();
       return response.data.data;
     },
   });
@@ -152,6 +166,14 @@ export default function AdminSettingsPage() {
       setIdProofRequiredEnabled(!!idProofSettings.isEnabled);
     }
   }, [idProofSettings]);
+
+  // Auto-fill automated inactivity email toggle when data is loaded
+  useEffect(() => {
+    if (inactivityEmailSettings) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- seeding editable local toggle state from async-loaded server data
+      setInactivityEmailsEnabled(!!inactivityEmailSettings.isEnabled);
+    }
+  }, [inactivityEmailSettings]);
 
   // Update mutation
   const updateMutation = useMutation({
@@ -332,6 +354,27 @@ export default function AdminSettingsPage() {
     const next = !idProofRequiredEnabled;
     setIdProofRequiredEnabled(next);
     updateIdProofMutation.mutate(next);
+  };
+
+  // Automated inactivity email update mutation
+  const updateInactivityEmailsMutation = useMutation({
+    mutationFn: (isEnabled) => adminApi.updateAutomatedInactivityEmailSettings({ isEnabled }),
+    onSuccess: (_response, isEnabled) => {
+      queryClient.invalidateQueries({ queryKey: ['inactivityEmailSettings'] });
+      toastSuccess(`Automated inactivity emails ${isEnabled ? 'resumed' : 'paused'}`);
+    },
+    onError: (error) => {
+      const message = error.response?.data?.message || 'Failed to update inactivity email setting';
+      toastError(message);
+      // Revert the optimistic toggle on failure
+      setInactivityEmailsEnabled((prev) => !prev);
+    },
+  });
+
+  const handleInactivityEmailsToggle = () => {
+    const next = !inactivityEmailsEnabled;
+    setInactivityEmailsEnabled(next);
+    updateInactivityEmailsMutation.mutate(next);
   };
 
   // Hero content update mutation
@@ -917,6 +960,50 @@ export default function AdminSettingsPage() {
                 <span
                   className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
                     idProofRequiredEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Automated Inactivity Email Pause Toggle */}
+        <AccordionItem value="inactivityEmails" className="border rounded-lg bg-white shadow-sm">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                <Mail size={20} className="text-primary" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-serif text-lg text-secondary">Automated Inactivity Emails</h3>
+                <p className="font-sans text-sm text-gray-500">Pause or resume the automatic &quot;we miss you&quot; email sent to users inactive 7+ days</p>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <div className="flex items-start justify-between gap-6 p-4 rounded-lg border border-[#D4A843]/15 bg-gradient-to-br from-[#FDF8F0] to-[#F5E6C3]/30">
+              <div>
+                <Label className="font-sans text-[#1A1A1A]">
+                  {inactivityEmailsEnabled ? 'Automated emails active' : 'Automated emails paused'}
+                </Label>
+                <p className="text-xs text-[#2C3E50]/60 font-sans mt-1 max-w-md">
+                  On = a daily background job emails every approved user who&apos;s been inactive 7+ days,
+                  once per inactive streak. Off = the job runs but sends nothing until resumed.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={inactivityEmailsEnabled}
+                onClick={handleInactivityEmailsToggle}
+                disabled={updateInactivityEmailsMutation.isPending || isLoadingInactivityEmails}
+                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                  inactivityEmailsEnabled ? 'bg-[#D4A843]' : 'bg-[#2C3E50]/20'
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                    inactivityEmailsEnabled ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
               </button>

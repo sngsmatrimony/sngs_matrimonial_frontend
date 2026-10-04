@@ -65,7 +65,7 @@ export default function MobileBottomNav() {
           Home
         </Link>
 
-        <Link href="/browse?openFilters=1" className={navItemClass(false)}>
+        <Link href="/browse?focusSearch=1" className={navItemClass(false)}>
           <Search size={22} strokeWidth={1.75} />
           Search
         </Link>

@@ -55,7 +55,7 @@ export default function ApprovalStatusBanner({ hideRejectionDetail = false }) {
                   Profile Under Review
                 </p>
                 <p className="font-sans text-[#8A6A1A]/90 text-xs sm:text-sm mt-1">
-                  Your profile is being reviewed by our team. You can access your Profile and Settings while we verify your information.
+                  Your profile is being reviewed by our team. You can access your Profile and Settings while we verify your information. You&apos;ll receive an email as soon as your account is approved.
                 </p>
               </div>
             </div>
