@@ -10,12 +10,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { Progress } from '@/components/ui/progress';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 import { toastSuccess, toastError } from '@/lib/toast';
 import { convertTo24Hour, buildTimeFromDropdowns, parseTimeToDropdowns } from '@/lib/time';
 import { client } from '@/lib/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { useLandingStore } from '@/store/landingStore';
 import { useIdProofRequired } from '@/hooks/useIdProofRequired';
+import EmailChangeDialog from './EmailChangeDialog';
 import {
   PersonalDetailsStep,
   LocationAddressStep,
@@ -38,13 +49,13 @@ const step1Schema = z.object({
   seekingGender: z.string().min(1, 'Please select who you are seeking'),
   placeOfBirth: z.string().min(1, 'Please enter your place of birth').max(100, 'Maximum 100 characters'),
   complexion: z.enum(['Very Fair', 'Fair', 'Wheatish', 'Wheatish Brown', 'Dark', 'Very Dark'], {
-    errorMap: () => ({ message: 'Please select your complexion' })
+    error: 'Please select your complexion',
   }),
   languagesKnown: z.array(z.string()).min(1, 'Please select at least one language').max(10, 'Maximum 10 languages'),
-  weight: z.number({ required_error: 'Please enter your weight', invalid_type_error: 'Please enter your weight' }).min(30, 'Weight must be at least 30 kg').max(200, 'Weight must be at most 200 kg'),
+  weight: z.number({ error: 'Please enter your weight' }).min(30, 'Weight must be at least 30 kg').max(200, 'Weight must be at most 200 kg'),
   bloodGroup: z.string().min(1, 'Please select your blood group'),
   diet: z.enum(['Vegetarian', 'Non-Vegetarian', 'Eggetarian', 'Both (Veg & Non-Veg)'], {
-    errorMap: () => ({ message: 'Please select your diet preference' })
+    error: 'Please select your diet preference',
   }),
   religion: z.string().min(1, 'Please select your religion'),
   caste: z.string().optional(),
@@ -75,9 +86,7 @@ const step1Schema = z.object({
     if (!data.nakshatra) {
       ctx.addIssue({ code: 'custom', message: 'Please select your nakshatra', path: ['nakshatra'] });
     }
-    if (!data.raasi) {
-      ctx.addIssue({ code: 'custom', message: 'Please select your raasi', path: ['raasi'] });
-    }
+    // Raasi is deliberately optional even for Hindu members — see User.js.
   }
 });
 
@@ -133,6 +142,7 @@ const step5Schema = z.object({
   ageTo: z.string().min(1, 'Please select maximum age'),
   interests: z.array(z.string()).min(1, 'Please select at least one interest'),
   profileAbout: z.string().min(1, 'Please tell us about yourself').max(1000, 'About must be at most 1000 characters'),
+  partnerPreferenceDescription: z.string().max(1000, 'Partner preference description must be at most 1000 characters').optional(),
   profileBannerColor: z.string().optional(),
 }).refine(data => {
   const from = parseInt(data.ageFrom);
@@ -150,6 +160,15 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
   const { uploadProfilePicture, setProfileBannerColor, deleteHoroscopeDocument, deleteIdProof } = useAuthStore();
   const { setUserProfile } = useLandingStore();
   const idProofRequired = useIdProofRequired();
+
+  // Full name and email live outside the step wizard's react-hook-form state:
+  // both carry consequences (re-approval, OTP verification) that don't fit
+  // the "every step's fields always resubmit together" pattern the rest of
+  // this form uses, so they're handled as their own small, explicit flows.
+  const [fullNameValue, setFullNameValue] = useState(user?.fullName || userProfile?.fullName || '');
+  const [showNameChangeConfirm, setShowNameChangeConfirm] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const originalFullName = (user?.fullName || userProfile?.fullName || '').trim();
 
   // Parse existing timeOfBirth (24-hour format) to dropdown values (12-hour format)
   const existingTimeDropdowns = user?.timeOfBirth ? parseTimeToDropdowns(user.timeOfBirth) : { hours: '', minutes: '', meridiem: '' };
@@ -206,6 +225,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     ageTo: user?.ageTo?.toString() || '',
     interests: user?.interests || [],
     profileAbout: user?.profileAbout || '',
+    partnerPreferenceDescription: user?.partnerPreferenceDescription || '',
     profileBannerColor: user?.profileBanner?.bannerColor || userProfile?.profileBanner?.bannerColor || '#FFB3BA',
     // File uploads
     profilePicture: null,
@@ -333,6 +353,19 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
         return;
       }
 
+      if (!fullNameValue.trim() || fullNameValue.trim().length < 2) {
+        toastError('Please enter your full name.');
+        return;
+      }
+
+      // A name change is identity-relevant the same way the original approval
+      // was, so it needs a fresh review — warn before it's submitted, same as
+      // the email-change flow's own warning before it sends an OTP.
+      if (fullNameValue.trim() !== originalFullName) {
+        setShowNameChangeConfirm(true);
+        return;
+      }
+
       await submitUpdate();
       return;
     }
@@ -413,6 +446,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
       const timeOfBirth24 = timeOfBirthString ? convertTo24Hour(timeOfBirthString) : '';
 
       const updateData = {
+        fullName: fullNameValue.trim(),
         mobileNumber: formValues.mobileNumber,
         alternateMobileNumber: formValues.alternateMobileNumber,
         dateOfBirth: formValues.dateOfBirth,
@@ -463,6 +497,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
         ageTo: parseInt(formValues.ageTo),
         interests: formValues.interests,
         profileAbout: formValues.profileAbout,
+        partnerPreferenceDescription: formValues.partnerPreferenceDescription || '',
       };
 
       const response = await client.put('/api/profiles/update', updateData);
@@ -594,14 +629,46 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
             )}
 
             {currentStep === 1 && (
-              <PersonalDetailsStep
-                form={form}
-                user={user}
-                userProfile={userProfile}
-                horoscope={formData.horoscope}
-                onFileUpdate={handleFileUpdate}
-                onDeleteHoroscope={handleDeleteHoroscope}
-              />
+              <>
+                <div className="rounded-xl border border-[#D4A843]/20 bg-[#FDF8F0] p-5 space-y-4">
+                  <h3 className="font-serif text-base font-semibold text-[#1A1A1A]">Account Details</h3>
+
+                  <div>
+                    <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-2">Full Name</label>
+                    <input
+                      type="text"
+                      value={fullNameValue}
+                      onChange={(e) => setFullNameValue(e.target.value)}
+                      maxLength={100}
+                      className="w-full h-12 px-4 rounded-xl border border-[#D4A843]/25 bg-white font-sans text-[15px] text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50"
+                    />
+                    <p className="text-xs text-[#2C3E50]/60 font-sans mt-1.5">
+                      Changing your name will send your profile for re-approval.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-2">Email Address</label>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-12 px-4 rounded-xl border border-[#D4A843]/15 bg-white/60 flex items-center font-sans text-[15px] text-[#2C3E50]/80 truncate">
+                        {user?.email}
+                      </div>
+                      <Button type="button" variant="outline" onClick={() => setShowEmailDialog(true)}>
+                        Change Email
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <PersonalDetailsStep
+                  form={form}
+                  user={user}
+                  userProfile={userProfile}
+                  horoscope={formData.horoscope}
+                  onFileUpdate={handleFileUpdate}
+                  onDeleteHoroscope={handleDeleteHoroscope}
+                />
+              </>
             )}
             {currentStep === 2 && <LocationAddressStep form={form} />}
             {currentStep === 3 && <ProfessionalDetailsStep form={form} />}
@@ -648,6 +715,41 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
           {!isLoading && currentStep < 5 && <ChevronRight className="ml-2 w-4 h-4" />}
         </Button>
       </div>
+
+      <AlertDialog open={showNameChangeConfirm} onOpenChange={setShowNameChangeConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-serif">Your Profile Will Be Sent for Re-Approval</AlertDialogTitle>
+            <AlertDialogDescription className="font-sans">
+              Changing your name requires our team to review your profile again. Until it&apos;s re-approved,
+              your profile will be restricted the same way it was before your very first approval.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="font-sans">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="font-sans bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A]"
+              onClick={() => {
+                setShowNameChangeConfirm(false);
+                submitUpdate();
+              }}
+            >
+              Continue &amp; Save
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <EmailChangeDialog
+        open={showEmailDialog}
+        onOpenChange={setShowEmailDialog}
+        currentEmail={user?.email}
+        onEmailChanged={async () => {
+          const profileResponse = await client.get('/api/profiles/me/view');
+          setUserProfile(profileResponse.data.data);
+          await useAuthStore.getState().refreshUser();
+        }}
+      />
     </Card>
   );
 }

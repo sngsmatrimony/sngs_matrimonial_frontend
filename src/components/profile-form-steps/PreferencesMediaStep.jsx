@@ -325,6 +325,29 @@ export function PreferencesMediaStep({
         )}
       />
 
+      {/* Partner Preference Description */}
+      <FormField
+        control={form.control}
+        name="partnerPreferenceDescription"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">What Are You Looking For? (Optional)</FormLabel>
+            <FormControl>
+              <Textarea
+                {...field}
+                placeholder="Describe the kind of partner you're looking for"
+                className="font-sans min-h-32"
+                maxLength={1000}
+              />
+            </FormControl>
+            <div className="text-sm mt-2 text-muted-foreground">
+              {field.value?.length || 0}/1000 characters
+            </div>
+            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+          </FormItem>
+        )}
+      />
+
       {/* Profile Picture */}
       <div className="space-y-3 p-5 border border-[#D4A843]/20 rounded-xl bg-[#FDF8F0]/60">
         <div className="flex items-center gap-2">

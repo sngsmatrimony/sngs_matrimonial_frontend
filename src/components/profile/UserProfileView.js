@@ -23,6 +23,7 @@ const FIELD_LABELS = {
   professionalAdditionalInfo: 'About Your Profession',
   'annualIncome.min': 'Annual Income',
   profileAbout: 'About Me',
+  partnerPreferenceDescription: 'Partner Preference',
   'profilePicture.url': 'Profile Picture',
   'gallery.photos': 'Gallery Photos',
   'presentResidentialAddress.state': 'State',

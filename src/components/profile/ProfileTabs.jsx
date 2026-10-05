@@ -242,6 +242,12 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
         <Section title="Looking For">
           <Field label="Seeking" value={profile?.seekingGender} />
           <Field label="Age Range" value={profile?.ageFrom && profile?.ageTo ? `${profile.ageFrom} - ${profile.ageTo} years` : null} />
+          {profile?.partnerPreferenceDescription && (
+            <div className="pt-3 mt-1 border-t border-[#D4A843]/10">
+              <span className="font-sans text-[#2C3E50]/70 text-sm block mb-1">Partner Preference</span>
+              <p className="font-sans text-[#1A1A1A] text-sm whitespace-pre-line">{profile.partnerPreferenceDescription}</p>
+            </div>
+          )}
         </Section>
         {profile?.interests?.length > 0 && (
           <Section title="Interests">

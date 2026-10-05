@@ -61,10 +61,7 @@ const step1Schema = z.object({
 
 // Reuse schemas from EditProfileForm
 const step2Schema = z.object({
-  dateOfBirth: z.date({
-    required_error: 'Please select your date of birth',
-    invalid_type_error: 'Please select a valid date of birth',
-  }),
+  dateOfBirth: z.date({ error: 'Please select your date of birth' }),
   timeOfBirth_hours: z.string().optional(),
   timeOfBirth_minutes: z.string().optional(),
   timeOfBirth_meridiem: z.string().optional(),
@@ -83,12 +80,12 @@ const step2Schema = z.object({
   languagesKnown: z.array(z.string()).min(1, 'Please select at least one language').max(10, 'Maximum 10 languages'),
   placeOfBirth: z.string().min(1, 'Please enter your place of birth').max(100, 'Maximum 100 characters'),
   complexion: z.enum(['Very Fair', 'Fair', 'Wheatish', 'Wheatish Brown', 'Dark', 'Very Dark'], {
-    errorMap: () => ({ message: 'Please select your complexion' })
+    error: 'Please select your complexion',
   }),
-  weight: z.number({ required_error: 'Please enter your weight', invalid_type_error: 'Please enter your weight' }).positive('Please enter a valid weight'),
+  weight: z.number({ error: 'Please enter your weight' }).positive('Please enter a valid weight'),
   bloodGroup: z.string().min(1, 'Please select your blood group'),
   diet: z.enum(['Vegetarian', 'Non-Vegetarian', 'Eggetarian', 'Both (Veg & Non-Veg)'], {
-    errorMap: () => ({ message: 'Please select your diet preference' })
+    error: 'Please select your diet preference',
   }),
 }).superRefine((data, ctx) => {
   if (data.religion === 'Hindu') {
@@ -101,9 +98,7 @@ const step2Schema = z.object({
     if (!data.nakshatra) {
       ctx.addIssue({ code: 'custom', message: 'Please select your nakshatra', path: ['nakshatra'] });
     }
-    if (!data.raasi) {
-      ctx.addIssue({ code: 'custom', message: 'Please select your raasi', path: ['raasi'] });
-    }
+    // Raasi is deliberately optional even for Hindu members — see User.js.
   }
 });
 
@@ -165,6 +160,7 @@ const step6Schema = z.object({
     }, 'Age to must be between 18 and 90'),
   interests: z.array(z.string()).min(1, 'Please select at least one interest'),
   profileAbout: z.string().min(1, 'Please tell us about yourself').max(1000, 'About must be at most 1000 characters'),
+  partnerPreferenceDescription: z.string().max(1000, 'Partner preference description must be at most 1000 characters').optional(),
   profileBannerColor: z.string().optional(),
 }).refine(data => {
   const from = parseInt(data.ageFrom, 10);
@@ -313,6 +309,7 @@ export default function RegisterPage() {
     ageTo: '',
     interests: [],
     profileAbout: '',
+    partnerPreferenceDescription: '',
     profileBannerColor: '#FFB3BA',
     // File uploads
     profilePicture: null,
@@ -659,6 +656,7 @@ export default function RegisterPage() {
         ageTo: ageToValue,
         interests: submissionData.interests,
         profileAbout: submissionData.profileAbout,
+        partnerPreferenceDescription: submissionData.partnerPreferenceDescription || '',
         profileBanner: {
           bannerType: 'color',
           bannerColor: submissionData.profileBannerColor,

@@ -696,11 +696,11 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
           name="raasi"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Raasi *</FormLabel>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Raasi (Optional)</FormLabel>
               <Select value={field.value || ''} onValueChange={(val) => field.onChange(val || null)}>
                 <FormControl>
                   <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
-                    <SelectValue placeholder="Select raasi" />
+                    <SelectValue placeholder="Select raasi (optional)" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
