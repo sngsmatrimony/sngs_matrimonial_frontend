@@ -1,15 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState } from 'react';
 import { Heart, MessageCircle, Download, Loader2, Bookmark, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLandingStore } from '@/store/landingStore';
 import { useLikeMutation } from '@/hooks/useLikeMutation';
 import { useShortlistMutation } from '@/hooks/useShortlistMutation';
-import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
 import { useProfilePdf } from '@/hooks/useProfilePdf';
-import { Skeleton } from '@/components/ui/skeleton';
 import ProfilePrintView from '@/components/profile/ProfilePrintView';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import ProfileTabs from '@/components/profile/ProfileTabs';
@@ -60,41 +58,20 @@ const handleDownloadHoroscope = async (userId) => {
   }
 };
 
-export default function ProfileDetailView({ profileId }) {
+// profile is fetched once by the parent page (profiles/[id]/page.js), which
+// also owns the loading/error/credit-deduction states — this component is
+// the only consumer of that data, so it renders from the prop instead of
+// re-fetching the same profile a second time. A duplicate fetch here used to
+// race the parent's: both requests could see the profile as not-yet-viewed
+// and each deduct a credit, double-charging the member for one view.
+export default function ProfileDetailView({ profileId, profile }) {
   const router = useRouter();
   const { setSelectedChatUserId } = useLandingStore();
   const { toggleLike, isLoading: isLikeLoading } = useLikeMutation();
   const { toggleShortlist, isLoading: isShortlistLoading } = useShortlistMutation();
   const { printRef, isGenerating, downloadPDF } = useProfilePdf();
-  const [profile, setProfile] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [liked, setLiked] = useState(false);
-  const [shortlisted, setShortlisted] = useState(false);
-
-  const fetchProfile = useCallback(async () => {
-    if (!profileId || profileId === 'undefined' || profileId === 'null') {
-      toastError('Invalid profile ID');
-      router.push('/browse');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const response = await client.get(`/api/profiles/${profileId}`);
-      setProfile(response.data.data);
-      setLiked(response.data.data?.isLiked || false);
-      setShortlisted(response.data.data?.isShortlisted || false);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      toastError('Failed to load profile');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [profileId, router]);
-
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+  const [liked, setLiked] = useState(profile?.isLiked || false);
+  const [shortlisted, setShortlisted] = useState(profile?.isShortlisted || false);
 
   const handleLike = () => {
     toggleLike(profileId, profile, liked);
@@ -110,26 +87,6 @@ export default function ProfileDetailView({ profileId }) {
     setSelectedChatUserId(profileId);
     router.push('/messages');
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#FDF8F0] pb-24">
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden mt-4 p-6 space-y-4">
-            <div className="flex items-center gap-4">
-              <Skeleton className="w-24 h-24 rounded-full" />
-              <div className="space-y-2 flex-1">
-                <Skeleton className="h-6 w-1/2" />
-                <Skeleton className="h-4 w-1/3" />
-              </div>
-            </div>
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-40 w-full" />
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (!profile) {
     return (

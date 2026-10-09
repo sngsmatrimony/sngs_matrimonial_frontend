@@ -154,6 +154,19 @@ export default function Footer() {
             Serving the Malayali Ezhava community since inception
           </p>
         </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-5 flex justify-center">
+          <p className="text-xs text-white/40">
+            Rearchitected by{' '}
+            <a
+              href="https://www.linkedin.com/in/rohitanish"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/60 hover:text-[#D4A843] transition-colors"
+            >
+              Rohit Anish
+            </a>
+          </p>
+        </div>
       </div>
     </footer>
   );

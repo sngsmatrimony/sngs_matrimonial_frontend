@@ -57,7 +57,7 @@ export function useLikeMutation() {
       toastError(err.response?.data?.message || 'Error liking profile');
     },
     onSuccess: () => {
-      toastSuccess('Profile liked!');
+      toastSuccess('Profile liked.');
     },
     onSettled: () => {
       // Always refetch to ensure cache is in sync with server

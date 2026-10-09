@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { toastError, toastSuccess } from '@/lib/toast';
-import { Eye, Trash2, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, Search, Mail, ImageOff } from 'lucide-react';
+import { Eye, Trash2, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, Search, Mail, ImageOff, Crown } from 'lucide-react';
 
 const MISSING_DATA_FILTERS = [
   { key: 'missingProfilePicture', label: 'Missing Profile Picture' },
@@ -64,6 +64,7 @@ export default function AdminUsersPage() {
     missingGalleryPhotos: false,
     missingHoroscope: false,
   });
+  const [premiumOnly, setPremiumOnly] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectingUserId, setRejectingUserId] = useState(null);
@@ -94,7 +95,7 @@ export default function AdminUsersPage() {
   // Clear the current selection whenever the underlying result set changes
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [page, approvalFilter, search, missingFilters]);
+  }, [page, approvalFilter, search, missingFilters, premiumOnly]);
 
   // Build query params
   const queryParams = {
@@ -105,6 +106,7 @@ export default function AdminUsersPage() {
     ...(missingFilters.missingProfilePicture && { missingProfilePicture: 'true' }),
     ...(missingFilters.missingGalleryPhotos && { missingGalleryPhotos: 'true' }),
     ...(missingFilters.missingHoroscope && { missingHoroscope: 'true' }),
+    ...(premiumOnly && { premium: 'true' }),
   };
 
   const queryClient = useQueryClient();
@@ -340,6 +342,23 @@ export default function AdminUsersPage() {
         </div>
       </div>
 
+      {/* Premium Filter */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-sans text-xs text-[#2C3E50]/60 uppercase tracking-wide mr-1">Membership:</span>
+        <button
+          type="button"
+          onClick={() => { setPremiumOnly((prev) => !prev); setPage(1); }}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium border transition-colors ${
+            premiumOnly
+              ? 'bg-[#D4A843] border-[#D4A843] text-[#1A1A1A]'
+              : 'bg-white border-[#D4A843]/30 text-[#2C3E50] hover:border-[#D4A843]'
+          }`}
+        >
+          <Crown size={13} />
+          Premium (bought any plan)
+        </button>
+      </div>
+
       {/* Missing Data Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-sans text-xs text-[#2C3E50]/60 uppercase tracking-wide mr-1">Missing data:</span>
@@ -404,6 +423,7 @@ export default function AdminUsersPage() {
                   <TableHead>Email</TableHead>
                   <TableHead>Mobile</TableHead>
                   <TableHead>Gender</TableHead>
+                  <TableHead>Plan</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Approval</TableHead>
                   <TableHead>Completion</TableHead>
@@ -426,6 +446,21 @@ export default function AdminUsersPage() {
                       <TableCell className="text-sm font-sans text-[#2C3E50]">{user.email}</TableCell>
                       <TableCell className="text-sm font-sans text-[#2C3E50]">{user.mobileNumber}</TableCell>
                       <TableCell className="font-sans text-[#2C3E50]">{user.gender || '-'}</TableCell>
+                      <TableCell>
+                        {(() => {
+                          const m = user.membership;
+                          const isCurrentlyValid = m?.isActive && (!m?.expiryDate || new Date(m.expiryDate) > new Date());
+                          if (!isCurrentlyValid) {
+                            return <span className="text-xs font-sans text-[#2C3E50]/40">No plan</span>;
+                          }
+                          return (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-xs font-sans font-medium text-[#1A1A1A]">{m.planId?.name || 'Plan'}</span>
+                              <span className="text-[10px] font-sans text-[#2C3E50]/60">{m.credits} credits</span>
+                            </div>
+                          );
+                        })()}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={user.isActive ? 'default' : 'secondary'}>
                           {user.isActive ? 'Active' : 'Inactive'}
@@ -518,7 +553,7 @@ export default function AdminUsersPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan="10" className="text-center py-8 font-sans text-[#2C3E50]/60">
+                    <TableCell colSpan="11" className="text-center py-8 font-sans text-[#2C3E50]/60">
                       No users found
                     </TableCell>
                   </TableRow>

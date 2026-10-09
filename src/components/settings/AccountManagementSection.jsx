@@ -95,7 +95,7 @@ export default function AccountManagementSection() {
                   Permanently Delete Your Account?
                 </AlertDialogTitle>
                 <AlertDialogDescription className="font-sans">
-                  <strong className="text-[#C75B39]">Warning: This action cannot be undone!</strong>
+                  <strong className="text-[#C75B39]">This action cannot be undone.</strong>
                   <br />
                   <br />
                   Deleting your account will:

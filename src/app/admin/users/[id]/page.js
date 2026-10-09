@@ -667,6 +667,64 @@ export default function AdminUserDetailPage() {
           </CardContent>
         </Card>
 
+        {/* Membership */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Membership</span>
+              {(() => {
+                const m = user.membership;
+                const isCurrentlyValid = m?.isActive && (!m?.expiryDate || new Date(m.expiryDate) > new Date());
+                if (!isCurrentlyValid) {
+                  return <Badge variant="secondary">{m?.isActive ? 'Expired' : 'No Plan'}</Badge>;
+                }
+                return <Badge className="bg-green-100 text-green-800 border-green-300">Active</Badge>;
+              })()}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {user.membership?.planId ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Plan</p>
+                    <p className="text-sm font-medium">{user.membership.planId.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Credits Remaining</p>
+                    <p className="text-sm font-medium">{user.membership.credits}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Expiry</p>
+                    <p className="text-sm font-medium">
+                      {user.membership.expiryDate
+                        ? formatDateDDMMYYYY(user.membership.expiryDate)
+                        : 'Never expires'}
+                    </p>
+                  </div>
+                </div>
+                {user.membership.planId.features && Object.values(user.membership.planId.features).some(Boolean) && (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2">Plan grants (beyond credits)</p>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(user.membership.planId.features)
+                        .filter(([, enabled]) => enabled)
+                        .map(([key]) => (
+                          <Badge key={key} variant="outline" className="text-xs">
+                            {key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase())}
+                          </Badge>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">This member has never had an active membership plan.</p>
+            )}
+
+          </CardContent>
+        </Card>
+
         {/* Edit Mode */}
         {isEditMode ? (
           <Card className="border-primary bg-white">

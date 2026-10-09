@@ -385,8 +385,8 @@ export default function AdminMembershipPlansPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="max-w-md max-h-[85vh] flex flex-col">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="font-serif">
               {editingPlan ? 'Edit Plan' : 'Create New Plan'}
             </DialogTitle>
@@ -397,7 +397,13 @@ export default function AdminMembershipPlansPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          {/* display:contents keeps this transparent to the DialogContent
+              flex layout (the scroll area below still needs flex-1 from its
+              direct parent) while giving every single-line Input in the
+              dialog native Enter-to-submit — a <textarea> like Description
+              is unaffected, Enter there still just inserts a newline. */}
+          <form onSubmit={(e) => { e.preventDefault(); handleSavePlan(); }} className="contents">
+          <div className="space-y-4 overflow-y-auto flex-1 pr-1 -mr-1">
             {/* Name */}
             <div>
               <Label className="font-sans text-sm">Plan Name *</Label>
@@ -525,8 +531,9 @@ export default function AdminMembershipPlansPage() {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="shrink-0">
             <Button
+              type="button"
               variant="outline"
               onClick={() => setIsDialogOpen(false)}
               disabled={isSaving}
@@ -535,7 +542,7 @@ export default function AdminMembershipPlansPage() {
               Cancel
             </Button>
             <Button
-              onClick={handleSavePlan}
+              type="submit"
               disabled={isSaving}
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-sans"
             >
@@ -549,6 +556,7 @@ export default function AdminMembershipPlansPage() {
               )}
             </Button>
           </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

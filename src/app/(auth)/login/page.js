@@ -62,7 +62,7 @@ export default function LoginPage() {
     const result = await login(values.email, values.password);
 
     if (result.success) {
-      toastSuccess('Sign in successful! Redirecting...');
+      toastSuccess('Signed in successfully. Redirecting...');
       router.push('/');
     } else {
       const errMessage = result.error || 'Sign in failed. Please check your credentials.';

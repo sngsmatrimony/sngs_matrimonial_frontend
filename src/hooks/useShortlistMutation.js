@@ -49,7 +49,7 @@ export function useShortlistMutation() {
       toastError(err.response?.data?.message || 'Error shortlisting profile');
     },
     onSuccess: () => {
-      toastSuccess('Profile shortlisted!');
+      toastSuccess('Profile shortlisted.');
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['shortlistedProfiles'] });

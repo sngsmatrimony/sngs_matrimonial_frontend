@@ -61,7 +61,7 @@ export default function VerifyOTPPage() {
       });
 
       if (response.data.success) {
-        toastSuccess('Password reset successful!');
+        toastSuccess('Password reset successfully.');
         sessionStorage.removeItem('resetEmail');
         router.push('/login');
       }

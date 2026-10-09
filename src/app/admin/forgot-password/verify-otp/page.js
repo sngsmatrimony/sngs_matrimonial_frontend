@@ -59,7 +59,7 @@ export default function AdminVerifyOTPPage() {
       });
 
       if (response.data.success) {
-        toastSuccess('Admin password reset successful!');
+        toastSuccess('Password reset successfully.');
         sessionStorage.removeItem('adminResetEmail');
         router.push('/admin/login');
       }

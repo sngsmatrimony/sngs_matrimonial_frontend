@@ -51,9 +51,9 @@ export const useProfilePdf = () => {
       await generateProfilePDF(printRef.current, fullName, horoscopeData);
 
       if (horoscopeData) {
-        toastSuccess('Profile PDF with horoscope downloaded successfully!');
+        toastSuccess('Profile PDF with horoscope downloaded successfully.');
       } else {
-        toastSuccess('Profile PDF downloaded successfully!');
+        toastSuccess('Profile PDF downloaded successfully.');
       }
     } catch (error) {
       console.error('PDF generation failed:', error);

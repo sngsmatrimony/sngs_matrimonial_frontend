@@ -464,7 +464,7 @@ export default function RegisterPage() {
       });
 
       if (response.data.success) {
-        toastSuccess('Email verified successfully!');
+        toastSuccess('Email verified successfully.');
         setVerificationToken(response.data.verificationToken);
         setEmailVerified(true);
         setEmailVerificationStep('verified');
@@ -666,7 +666,7 @@ export default function RegisterPage() {
       const result = await register(registrationData);
 
       if (result.success) {
-        toastSuccess('Registration successful! Logging you in...');
+        toastSuccess('Registration successful. Logging you in...');
 
         try {
           if (submissionData.profilePicture?.file) {
@@ -776,6 +776,7 @@ export default function RegisterPage() {
               </div>
             </CardHeader>
 
+            <form onSubmit={(e) => { e.preventDefault(); validateAndProceed(); }}>
             <CardContent className="px-6 sm:px-10">
               <Form {...form}>
                 <div className="space-y-6 py-8">
@@ -888,6 +889,14 @@ export default function RegisterPage() {
                         onChange={(e) => {
                           const cleaned = e.target.value.replace(/\D/g, '').slice(0, 6);
                           setOtpValue(cleaned);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (!otpLoading && otpValue.length === 6) {
+                              verifyOTP();
+                            }
+                          }
                         }}
                         className="text-center text-2xl tracking-[0.5em] font-sans h-14 rounded-xl bg-white border-[#D4A843]/40 focus-visible:ring-[#D4A843]/40"
                       />
@@ -1050,6 +1059,7 @@ export default function RegisterPage() {
 
             <div className="flex gap-3 px-6 sm:px-10 py-6 border-t border-[#D4A843]/15 bg-gradient-to-b from-[#F5E6C3]/30 to-[#F5E6C3]/10">
               <Button
+                type="button"
                 variant="outline"
                 className="flex-1 font-sans h-12 rounded-xl border-[#D4A843]/30 text-[#2C3E50] font-medium hover:bg-[#F5E6C3]/40 hover:border-[#D4A843]/50 transition-all duration-200"
                 onClick={() => router.push('/login')}
@@ -1057,7 +1067,7 @@ export default function RegisterPage() {
                 Back to Login
               </Button>
               <Button
-                onClick={validateAndProceed}
+                type="submit"
                 disabled={isLoading || !emailVerified}
                 className="flex-1 bg-gradient-to-r from-[#D4A843] to-[#C99A3A] hover:from-[#C99A3A] hover:to-[#B8860B] text-[#1A1A1A] font-sans font-semibold h-12 rounded-xl shadow-md hover:shadow-lg disabled:opacity-50 transition-all duration-200"
               >
@@ -1065,6 +1075,7 @@ export default function RegisterPage() {
                 {!isLoading && emailVerified && <ChevronRight className="ml-2 w-4 h-4" />}
               </Button>
             </div>
+            </form>
           </Card>
         ) : (
           
@@ -1100,6 +1111,7 @@ export default function RegisterPage() {
               <Progress value={progressValue} className="h-1.5 bg-white/15 rounded-full [&>div]:bg-gradient-to-r [&>div]:from-[#D4A843] [&>div]:to-[#F0C868] [&>div]:rounded-full" />
             </CardHeader>
 
+            <form onSubmit={(e) => { e.preventDefault(); validateAndProceed(); }}>
             <CardContent className="px-6 sm:px-10">
               <Form {...form}>
                 <div className="space-y-6 py-8">
@@ -1134,7 +1146,7 @@ export default function RegisterPage() {
               </Button>
 
               <Button
-                onClick={validateAndProceed}
+                type="submit"
                 disabled={isLoading}
                 className="flex-1 bg-gradient-to-r from-[#D4A843] to-[#C99A3A] hover:from-[#C99A3A] hover:to-[#B8860B] text-[#1A1A1A] font-sans font-semibold h-12 rounded-xl shadow-md hover:shadow-lg disabled:opacity-50 transition-all duration-200"
               >
@@ -1142,6 +1154,7 @@ export default function RegisterPage() {
                 {!isLoading && currentStep < 6 && <ChevronRight className="ml-2 w-4 h-4" />}
               </Button>
             </div>
+            </form>
           </Card>
         )}
       </div>

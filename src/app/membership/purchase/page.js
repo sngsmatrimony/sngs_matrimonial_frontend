@@ -15,17 +15,45 @@ import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
 // Real, plan-specific feature bullets — matches exactly what each toggle in
 // the admin membership-plans page actually grants (see checkMembership.js's
 // hasPlanFeature), instead of the same 3 hardcoded claims on every plan.
+//
+// Credits aren't just "profile views" — once a member has an active plan
+// with at least 1 credit remaining, that same credit balance is also what
+// keeps chat, contact numbers, horoscope downloads, and full search unlocked
+// (see checkMembership.js's hasActiveMembership). A plan with no "Unlimited
+// X" toggles still grants all of that, it just stops once credits hit 0 — so
+// the card needs to say so, instead of only listing profile views and
+// leaving everything else unmentioned.
 function buildFeatureBullets(plan) {
   const features = plan.features || {};
   const bullets = [
-    features.unlimitedProfileViews ? 'Unlimited profile views' : `View ${plan.credits} profiles`,
+    features.unlimitedProfileViews ? 'Unlimited profile views' : `${plan.credits} profile views included`,
     'Re-view any profile anytime, free',
   ];
-  if (features.unlimitedBrowsing) bullets.push('Full search results, no teaser limit');
-  if (features.unlimitedContactAccess) bullets.push('See phone numbers directly, no approval needed');
-  if (features.unlimitedChat) bullets.push('Start unlimited new chats');
-  if (features.unlimitedHoroscopeDownload) bullets.push('Unlimited horoscope downloads');
+  const stillCreditGated = !features.unlimitedContactAccess || !features.unlimitedChat || !features.unlimitedHoroscopeDownload;
+  if (stillCreditGated) {
+    bullets.push('Credits also unlock chat, contact numbers & horoscope downloads');
+  }
+  if (features.unlimitedBrowsing) bullets.push('Unlimited search — never capped, even at 0 credits');
+  if (features.unlimitedContactAccess) bullets.push('Phone numbers always visible, even at 0 credits');
+  if (features.unlimitedChat) bullets.push('Start unlimited new chats, even at 0 credits');
+  if (features.unlimitedHoroscopeDownload) bullets.push('Unlimited horoscope downloads, even at 0 credits');
   return bullets;
+}
+
+// What a plan the member already owns actually grants — same semantics as
+// buildFeatureBullets above, phrased for an existing plan rather than one
+// being considered for purchase.
+function buildCurrentPlanPerks(features) {
+  const perks = [];
+  if (features?.unlimitedProfileViews) perks.push('Unlimited profile views');
+  if (features?.unlimitedBrowsing) perks.push('Unlimited search — never capped, even at 0 credits');
+  if (features?.unlimitedContactAccess) perks.push('Phone numbers always visible, even at 0 credits');
+  if (features?.unlimitedChat) perks.push('Unlimited new chats, even at 0 credits');
+  if (features?.unlimitedHoroscopeDownload) perks.push('Unlimited horoscope downloads, even at 0 credits');
+  if (perks.length === 0) {
+    perks.push('Your credit balance also covers chat, contact numbers & horoscope downloads');
+  }
+  return perks;
 }
 
 export default function PurchaseMembershipPage() {
@@ -55,6 +83,15 @@ export default function PurchaseMembershipPage() {
     };
 
     fetchPlans();
+  }, []);
+
+  // This page's `membership` otherwise comes from whatever was last set in
+  // the store (e.g. the lightweight shape from login, with a bare planId and
+  // no name/features) — refetch the fully-populated version so the current
+  // plan's name and perks below are actually accurate, not stale or blank.
+  useEffect(() => {
+    refreshMembership();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Check if user just registered
@@ -152,13 +189,42 @@ export default function PurchaseMembershipPage() {
       {/* Main Content - Add pt-24 for fixed header spacing */}
       <div className="min-h-screen bg-[#FDF8F0] pt-24 py-12 px-4">
         <div className="max-w-6xl mx-auto">
-          {/* Active Membership Status - Subtle */}
-          {membership?.isActive && !membership?.isExpired && (
+          {/* Your Current Plan — shown regardless of active/expired/none, so
+              this page always answers "what do I already have?" before
+              asking the member to buy anything else. */}
+          {membership?.isActive && !membership?.isExpired ? (
             <div className="max-w-xl mx-auto mb-8">
-              <div className="flex items-center justify-center gap-2 p-3 bg-[#2E7D32]/10 border border-[#2E7D32]/30 rounded-lg">
-                <CheckCircle2 className="w-5 h-5 text-[#2E7D32]" />
+              <div className="p-4 bg-[#2E7D32]/10 border border-[#2E7D32]/30 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle2 className="w-5 h-5 text-[#2E7D32] shrink-0" />
+                  <p className="font-sans text-sm text-[#2C3E50]">
+                    <span className="font-semibold">{membership.planId?.name || 'Your plan'}</span> — {membership.credits} credits remaining
+                    {membership.expiryDate ? ` (expires ${new Date(membership.expiryDate).toLocaleDateString()})` : ' (never expires)'}
+                  </p>
+                </div>
+                {membership.planId?.features && (
+                  <ul className="pl-7 space-y-1">
+                    {buildCurrentPlanPerks(membership.planId.features).map((perk) => (
+                      <li key={perk} className="font-sans text-xs text-[#2C3E50]/70">{perk}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          ) : membership?.isActive && membership?.isExpired ? (
+            <div className="max-w-xl mx-auto mb-8">
+              <div className="flex items-center justify-center gap-2 p-3 bg-[#C75B39]/10 border border-[#C75B39]/30 rounded-lg">
+                <Lock className="w-5 h-5 text-[#C75B39] shrink-0" />
                 <p className="font-sans text-sm text-[#2C3E50]">
-                  You have <span className="font-semibold">{membership.credits} credits</span> remaining {membership.expiryDate ? `(expires ${new Date(membership.expiryDate).toLocaleDateString()})` : '(never expires)'}
+                  Your <span className="font-semibold">{membership.planId?.name || 'membership'}</span> has expired — renew below to keep browsing without limits.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="max-w-xl mx-auto mb-8">
+              <div className="flex items-center justify-center gap-2 p-3 bg-[#F5E6C3]/40 border border-[#D4A843]/20 rounded-lg">
+                <p className="font-sans text-sm text-[#2C3E50]/70">
+                  You don&apos;t have an active plan yet — choose one below to get started.
                 </p>
               </div>
             </div>
@@ -185,7 +251,7 @@ export default function PurchaseMembershipPage() {
                 {plans.map((plan) => (
                   <Card
                     key={plan._id}
-                    className={`border-2 transition-all hover:shadow-xl ${
+                    className={`h-full flex flex-col border-2 transition-all hover:shadow-xl ${
                       plan.isDefault
                         ? 'border-[#D4A843] shadow-2xl relative'
                         : 'border-[#D4A843]/15 hover:border-[#D4A843]/50'
@@ -203,12 +269,14 @@ export default function PurchaseMembershipPage() {
                       <CardTitle className="font-serif text-2xl font-bold text-[#1A1A1A] mb-2">
                         {plan.name}
                       </CardTitle>
-                      <CardDescription className="font-sans text-sm text-[#2C3E50]/70">
-                        {plan.description}
-                      </CardDescription>
+                      {plan.description && (
+                        <CardDescription className="font-sans text-sm text-[#2C3E50]/70">
+                          {plan.description}
+                        </CardDescription>
+                      )}
                     </CardHeader>
 
-                    <CardContent className="space-y-6">
+                    <CardContent className="flex-1 flex flex-col space-y-6">
                       {/* Pricing */}
                       <div className="text-center py-4 bg-[#F5E6C3]/40 rounded-lg">
                         <div className="font-serif text-5xl font-bold text-[#1A1A1A] mb-1">
@@ -221,6 +289,8 @@ export default function PurchaseMembershipPage() {
                           {plan.validityDays === null || plan.validityDays === undefined
                             ? 'Unlimited validity'
                             : `Valid for ${plan.validityDays} days`}
+                          {' · '}
+                          {`₹${(plan.price.amount / plan.credits).toFixed(2)}/credit`}
                         </p>
                       </div>
 
@@ -238,7 +308,7 @@ export default function PurchaseMembershipPage() {
                       <Button
                         onClick={() => handlePurchase(plan)}
                         disabled={processingPlanId !== null}
-                        className={`w-full h-12 font-sans font-semibold transition-all ${
+                        className={`w-full h-12 font-sans font-semibold transition-all mt-auto ${
                           plan.isDefault
                             ? 'bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] shadow-lg'
                             : 'bg-[#2C3E50] hover:bg-[#1A1A1A] text-white'

@@ -229,4 +229,16 @@ export const adminApi = {
    * Delete horoscope document for a specific user
    */
   deleteUserHoroscope: (userId) => adminClient.delete(`/api/admin/users/${userId}/horoscope`),
+
+  // ==================== Transactions ====================
+
+  /**
+   * Get all membership transactions, optionally filtered by status/userId
+   */
+  getAllTransactions: (params) => adminClient.get('/api/admin/transactions', { params }),
+
+  /**
+   * Initiate a refund for a transaction
+   */
+  refundTransaction: (transactionId, data) => adminClient.post(`/api/membership/refund/${transactionId}`, data),
 };

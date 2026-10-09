@@ -83,7 +83,7 @@ export default function PaymentPage() {
         razorpay_signature: response.razorpay_signature,
       });
 
-      toastSuccess('🎉 Payment successful! Membership activated.');
+      toastSuccess('Payment successful — membership activated.');
       await refreshMembership();
 
       // Set success state with transaction details
@@ -228,7 +228,7 @@ export default function PaymentPage() {
 
               {/* Success Message */}
               <h1 className="font-serif text-3xl font-bold text-[#1A1A1A] mb-3">
-                Payment Successful!
+                Payment Successful
               </h1>
 
               <p className="font-sans text-[#2C3E50]/70 mb-6">

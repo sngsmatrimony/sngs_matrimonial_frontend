@@ -619,6 +619,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
         <Progress value={progressValue} className="h-1.5 bg-white/15 rounded-full [&>div]:bg-gradient-to-r [&>div]:from-[#D4A843] [&>div]:to-[#F0C868] [&>div]:rounded-full" />
       </CardHeader>
 
+      <form onSubmit={(e) => { e.preventDefault(); validateAndProceed(); }}>
       <CardContent>
         <Form {...form}>
           <div className="space-y-6 py-6">
@@ -707,7 +708,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
         </Button>
 
         <Button
-          onClick={validateAndProceed}
+          type="submit"
           disabled={isLoading}
           className="flex-1 bg-primary text-primary-foreground font-sans font-semibold"
         >
@@ -715,6 +716,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
           {!isLoading && currentStep < 5 && <ChevronRight className="ml-2 w-4 h-4" />}
         </Button>
       </div>
+      </form>
 
       <AlertDialog open={showNameChangeConfirm} onOpenChange={setShowNameChangeConfirm}>
         <AlertDialogContent>

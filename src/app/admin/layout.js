@@ -7,7 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { useAdminAuthStore } from "@/store/adminAuthStore";
-import { BarChart3, Users, Settings, Shield, LogOut, CreditCard, ScrollText, Phone } from "lucide-react";
+import { BarChart3, Users, Settings, Shield, LogOut, CreditCard, ScrollText, Phone, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import HelpButton from "@/components/layout/HelpButton";
 import { adminApi } from "@/lib/api/admin";
@@ -164,6 +164,17 @@ export default function AdminLayout({ children }) {
                             >
                                 <CreditCard size={20} />
                                 <span className="hidden sm:inline">Plans</span>
+                            </Link>
+                            <Link
+                                href="/admin/transactions"
+                                className={`py-4 font-sans font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                                    pathname.startsWith("/admin/transactions")
+                                        ? "border-primary text-primary"
+                                        : "border-transparent text-white hover:text-gray-300"
+                                }`}
+                            >
+                                <Receipt size={20} />
+                                <span className="hidden sm:inline">Transactions</span>
                             </Link>
                             <Link
                                 href="/admin/activity-logs"

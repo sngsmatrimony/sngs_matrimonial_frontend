@@ -26,7 +26,6 @@ const useChatStore = create(
       messages: [],
       typingUsers: new Map(),
       onlineUsers: new Set(),
-      unreadCounts: new Map(),
       isLoading: false,
       isLoadingMessages: false,
       isSending: false,
@@ -574,7 +573,6 @@ const useChatStore = create(
           messages: [],
           typingUsers: new Map(),
           onlineUsers: new Set(),
-          unreadCounts: new Map(),
           currentUserKeys: null,
           otherUsersKeys: new Map(),
         });
@@ -584,14 +582,10 @@ const useChatStore = create(
       name: 'chat-storage',
       partialize: (state) => ({
         conversations: state.conversations,
-        // Convert Map to Object for serialization
-        unreadCounts: Object.fromEntries(state.unreadCounts),
       }),
       merge: (persistedState, currentState) => ({
         ...currentState,
         ...persistedState,
-        // Convert Object back to Map on hydration
-        unreadCounts: new Map(Object.entries(persistedState?.unreadCounts || {})),
       }),
     }
   )

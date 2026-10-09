@@ -146,7 +146,7 @@ export default function ProfileViewPage() {
     <div className="min-h-screen bg-white">
       {/* Profile Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ProfileDetailView profileId={params.id} />
+        <ProfileDetailView profileId={params.id} profile={profile} />
       </div>
     </div>
   );

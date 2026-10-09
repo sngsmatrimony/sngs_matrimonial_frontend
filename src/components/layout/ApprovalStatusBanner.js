@@ -21,7 +21,7 @@ export default function ApprovalStatusBanner({ hideRejectionDetail = false }) {
     try {
       const user = await refreshUser();
       if (user?.approvalStatus === 'approved') {
-        toastSuccess('Your profile has been approved! You now have full access.');
+        toastSuccess('Your profile has been approved — you now have full access.');
         window.location.reload();
       } else if (user?.approvalStatus === 'pending') {
         toastInfo('Status checked. Your profile is still under review.');

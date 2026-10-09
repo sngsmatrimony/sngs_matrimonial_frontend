@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api/admin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Users, User, Clock, ArrowRight } from 'lucide-react';
+import { Users, User, Clock, ArrowRight, IndianRupee, CreditCard } from 'lucide-react';
 
 function StatsCard({ icon: Icon, label, value, subtitle, color = 'text-primary' }) {
   return (
@@ -60,7 +60,7 @@ export default function AdminDashboard() {
     return <div className="font-sans text-[#2C3E50]">No analytics data available</div>;
   }
 
-  const { counts, newUsersToday, newUsersThisWeek, newUsersThisMonth, pendingApprovals, averageAge, genderBreakdown, maritalStatusBreakdown, topCities, topStates, growthChart } = analyticsData;
+  const { counts, newUsersToday, newUsersThisWeek, newUsersThisMonth, pendingApprovals, averageAge, genderBreakdown, maritalStatusBreakdown, topCities, topStates, growthChart, revenue, activeMembersCount, membersByPlan } = analyticsData;
 
   const genderChartData = genderBreakdown.map((item) => ({
     name: item._id || 'Unknown',
@@ -87,6 +87,11 @@ export default function AdminDashboard() {
   }));
 
   const COLORS = ['#D4A843', '#2C3E50', '#C75B39', '#2E7D32', '#B8860B'];
+
+  const membersByPlanData = (membersByPlan || []).map((item) => ({
+    name: item.planName,
+    count: item.count,
+  }));
 
   return (
     <div className="space-y-6">
@@ -173,6 +178,24 @@ export default function AdminDashboard() {
             <p className="text-4xl font-bold font-serif text-[#2E7D32]">{newUsersThisMonth}</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Revenue & Membership Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <StatsCard
+          icon={IndianRupee}
+          label="Total Revenue"
+          value={`₹${(revenue?.total || 0).toLocaleString('en-IN')}`}
+          subtitle={`₹${(revenue?.thisMonth || 0).toLocaleString('en-IN')} this month`}
+          color="text-secondary"
+        />
+        <StatsCard
+          icon={CreditCard}
+          label="Active Members"
+          value={activeMembersCount || 0}
+          subtitle={`of ${counts?.total || 0} total users`}
+          color="text-primary"
+        />
       </div>
 
       {/* User Growth Chart */}
@@ -293,6 +316,26 @@ export default function AdminDashboard() {
           </Card>
         )}
       </div>
+
+      {/* Members by Plan */}
+      {membersByPlanData.length > 0 && (
+        <Card className="border-[#D4A843]/15">
+          <CardHeader>
+            <CardTitle className="font-serif text-[#1A1A1A]">Members by Plan</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={Math.max(120, membersByPlanData.length * 50)}>
+              <BarChart data={membersByPlanData} layout="vertical" margin={{ left: 24 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#D4A843" strokeOpacity={0.15} />
+                <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={120} />
+                <Tooltip />
+                <Bar dataKey="count" fill="#D4A843" radius={[0, 6, 6, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
     </div>
   );

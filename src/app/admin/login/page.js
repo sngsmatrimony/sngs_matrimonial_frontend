@@ -29,7 +29,7 @@ export default function AdminLoginPage() {
     const result = await login(email, password);
 
     if (result.success) {
-      toastSuccess('Admin login successful!');
+      toastSuccess('Signed in successfully.');
       router.push('/admin');
     } else {
       toastError(result.error || 'Login failed. Please try again.');
