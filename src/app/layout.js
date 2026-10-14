@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header'; // <-- Restored Global Header
 import Footer from '@/components/layout/Footer';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import Preloader from '@/components/layout/Preloader';
+import { Analytics } from "@vercel/analytics/next";
 
 
 // Configure Inter for all standard UI and body text (sans-serif)
@@ -58,6 +59,9 @@ export default function RootLayout({ children }) {
           <MobileBottomNav />
 
         </Providers>
+
+        {/* Vercel Web Analytics — page views only, no cookies */}
+        <Analytics />
       </body>
     </html>
   );
