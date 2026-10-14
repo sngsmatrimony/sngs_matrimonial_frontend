@@ -28,7 +28,7 @@ import {
 } from '@/lib/constants/formData';
 import { MultiSelect } from '@/components/ui/multi-select';
 
-export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFileUpdate, onDeleteHoroscope }) {
+export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFileUpdate, onDeleteHoroscope, hideDateOfBirth = false, hideGender = false }) {
   const watchReligion = useWatch({ control: form.control, name: 'religion' });
   const watchShuddhaJathakam = useWatch({ control: form.control, name: 'shuddhaJathakam' });
   const displayDate = form.watch('dateOfBirth');
@@ -78,76 +78,79 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
     <div className="space-y-6">
       <h2 className="font-serif text-xl font-semibold text-[#1A1A1A] mb-1">Personal & Religious Details</h2>
 
-      {/* Date of Birth */}
-      <FormField
-        control={form.control}
-        name="dateOfBirth"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Date of Birth *</FormLabel>
-            <div className="grid grid-cols-3 gap-2">
-              <Select value={displayDate ? displayDate.getDate().toString().padStart(2, '0') : ''} onValueChange={(day) => {
-                const baseDate = displayDate || new Date(new Date().getFullYear() - 25, 0, 1);
-                const newDate = new Date(baseDate);
-                newDate.setDate(parseInt(day, 10));
-                field.onChange(newDate);
-              }}>
-                <FormControl>
-                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
-                    <SelectValue placeholder="Day" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                    <SelectItem key={day} value={day.toString().padStart(2, '0')}>
-                      {day}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      {/* Date of Birth — hidden when captured earlier (registration's
+          quick-start step already asks for this, framed as "age") */}
+      {!hideDateOfBirth && (
+        <FormField
+          control={form.control}
+          name="dateOfBirth"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Date of Birth *</FormLabel>
+              <div className="grid grid-cols-3 gap-2">
+                <Select value={displayDate ? displayDate.getDate().toString().padStart(2, '0') : ''} onValueChange={(day) => {
+                  const baseDate = displayDate || new Date(new Date().getFullYear() - 25, 0, 1);
+                  const newDate = new Date(baseDate);
+                  newDate.setDate(parseInt(day, 10));
+                  field.onChange(newDate);
+                }}>
+                  <FormControl>
+                    <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                      <SelectValue placeholder="Day" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                      <SelectItem key={day} value={day.toString().padStart(2, '0')}>
+                        {day}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <Select value={displayDate ? (displayDate.getMonth() + 1).toString().padStart(2, '0') : ''} onValueChange={(month) => {
-                const baseDate = displayDate || new Date(new Date().getFullYear() - 25, 0, 1);
-                const newDate = setMonth(baseDate, parseInt(month, 10) - 1);
-                field.onChange(newDate);
-              }}>
-                <FormControl>
-                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
-                    <SelectValue placeholder="Month" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => (
-                    <SelectItem key={month} value={(idx + 1).toString().padStart(2, '0')}>
-                      {month}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Select value={displayDate ? (displayDate.getMonth() + 1).toString().padStart(2, '0') : ''} onValueChange={(month) => {
+                  const baseDate = displayDate || new Date(new Date().getFullYear() - 25, 0, 1);
+                  const newDate = setMonth(baseDate, parseInt(month, 10) - 1);
+                  field.onChange(newDate);
+                }}>
+                  <FormControl>
+                    <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                      <SelectValue placeholder="Month" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => (
+                      <SelectItem key={month} value={(idx + 1).toString().padStart(2, '0')}>
+                        {month}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <Select value={displayDate ? displayDate.getFullYear().toString() : ''} onValueChange={(year) => {
-                const baseDate = displayDate || new Date(parseInt(year, 10), 0, 1);
-                const newDate = setYear(baseDate, parseInt(year, 10));
-                field.onChange(newDate);
-              }}>
-                <FormControl>
-                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
-                    <SelectValue placeholder="Year" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Array.from({ length: 73 }, (_, i) => 2024 - i).map(year => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
-          </FormItem>
-        )}
-      />
+                <Select value={displayDate ? displayDate.getFullYear().toString() : ''} onValueChange={(year) => {
+                  const baseDate = displayDate || new Date(parseInt(year, 10), 0, 1);
+                  const newDate = setYear(baseDate, parseInt(year, 10));
+                  field.onChange(newDate);
+                }}>
+                  <FormControl>
+                    <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                      <SelectValue placeholder="Year" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Array.from({ length: 73 }, (_, i) => 2024 - i).map(year => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+            </FormItem>
+          )}
+        />
+      )}
 
       {/* Time of Birth */}
       <div className="space-y-2">
@@ -332,52 +335,55 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
         )}
       />
 
-      {/* Gender and Seeking */}
-      <div className="grid grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name="gender"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Gender *</FormLabel>
-              <Select value={field.value || ''} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
-                    <SelectValue placeholder="Select gender" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
-            </FormItem>
-          )}
-        />
+      {/* Gender and Seeking — hidden when captured earlier (registration's
+          quick-start step already asks for both) */}
+      {!hideGender && (
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="gender"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Gender *</FormLabel>
+                <Select value={field.value || ''} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="seekingGender"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Seeking *</FormLabel>
-              <Select value={field.value || ''} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
-                    <SelectValue placeholder="Select preference" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
-            </FormItem>
-          )}
-        />
-      </div>
+          <FormField
+            control={form.control}
+            name="seekingGender"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Seeking *</FormLabel>
+                <Select value={field.value || ''} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                      <SelectValue placeholder="Select preference" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+              </FormItem>
+            )}
+          />
+        </div>
+      )}
 
       {/* Height and Weight */}
       <div className="grid grid-cols-2 gap-4">
@@ -755,7 +761,7 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
                   Current Horoscope Document
                 </p>
                 <p className="font-sans text-xs text-gray-500">
-                  Uploaded {existingHoroscopeDoc.uploadedAt ? new Date(existingHoroscopeDoc.uploadedAt).toLocaleDateString() : 'Previously'}
+                  Uploaded {existingHoroscopeDoc.uploadedAt ? new Date(existingHoroscopeDoc.uploadedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Previously'}
                 </p>
               </div>
               {onDeleteHoroscope && (

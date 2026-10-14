@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toastError, toastSuccess } from '@/lib/toast';
+import { noPasteHandlers } from '@/lib/noPasteHandlers';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 
 export default function AdminLoginPage() {
@@ -98,6 +99,7 @@ export default function AdminLoginPage() {
                   autoComplete="current-password"
                   className="pl-10 pr-10 font-sans"
                   required
+                  {...noPasteHandlers}
                 />
                 <button
                   type="button"

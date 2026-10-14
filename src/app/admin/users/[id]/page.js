@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toastError, toastSuccess } from '@/lib/toast';
 import { formatDateDDMMYYYY } from '@/lib/time';
-import { ArrowLeft, Edit2, Trash2, Power, CheckCircle, XCircle, Clock, Upload, X, FileText, ImageIcon } from 'lucide-react';
+import { ArrowLeft, Edit2, Trash2, Power, CheckCircle, XCircle, Clock, Upload, X, FileText, ImageIcon, FileDown } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -26,10 +26,19 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import Image from 'next/image';
+import { DOSHAM_TYPES, LANGUAGES_OPTIONS } from '@/lib/constants/formData';
 
 const FIELD_PATH_LABELS = {
   'annualIncome.min': 'Annual Income',
 };
+
+// e.g. "14 Oct 2026, 5:59 PM" — same day-month order as formatDateDDMMYYYY.
+function formatDateTime(value) {
+  if (!value) return '';
+  return new Date(value).toLocaleString('en-IN', {
+    day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true,
+  });
+}
 
 function humanizeFieldPath(path) {
   if (FIELD_PATH_LABELS[path]) return FIELD_PATH_LABELS[path];
@@ -62,6 +71,33 @@ const INTERESTS = [
   'Meditation', 'Gaming', 'Movies', 'Theater', 'Volunteering', 'Fashion'
 ];
 
+// Mirrors ADMIN_EDITABLE_FIELDS in the backend admin controller.
+const EDITABLE_FIELDS = [
+  'fullName', 'email', 'mobileNumber', 'alternateMobileNumber',
+  'gender', 'seekingGender', 'dateOfBirth', 'timeOfBirth', 'motherTongue', 'languagesKnown',
+  'placeOfBirth', 'complexion', 'height', 'physicalStatus', 'maritalStatus', 'religion', 'caste',
+  'shuddhaJathakam', 'doshamTypes', 'nakshatra', 'raasi',
+  'presentResidentialAddress', 'nativePlaceAddress',
+  'weight', 'bloodGroup', 'diet', 'fatherName', 'fatherOccupation', 'motherName', 'motherOccupation',
+  'residentialStatus', 'education', 'employmentType', 'occupation', 'annualIncome',
+  'professionalAdditionalInfo', 'familyStatus', 'ageFrom', 'ageTo',
+  'partnerPreferenceDescription', 'profileAbout', 'interests', 'profileBanner',
+];
+
+const PHOTO_TYPES = ['image/jpeg', 'image/png'];
+
+// Must match the User schema's profileBanner.bannerColor enum — any other
+// colour fails validation on save.
+const BANNER_COLORS = ['#FFB3BA', '#FFFFBA', '#BAE1FF', '#BAFFC9', '#E0BBE4', '#FFDFD3', '#D4F1F4', '#F8B4D8', '#C7CEEA', '#FFEAA7'];
+
+// yyyy-mm-dd for <input type="date">, or '' when the value isn't a real date.
+function toDateInputValue(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
+}
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+
 export default function AdminUserDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -80,7 +116,9 @@ export default function AdminUserDetailPage() {
   const [uploadingGalleryPhoto, setUploadingGalleryPhoto] = useState(false);
   const [uploadingHoroscope, setUploadingHoroscope] = useState(false);
   const [deletingPhotoIndex, setDeletingPhotoIndex] = useState(null);
+  const [photoToDelete, setPhotoToDelete] = useState(null);
   const [deletingHoroscope, setDeletingHoroscope] = useState(false);
+  const [isExportingPptx, setIsExportingPptx] = useState(false);
 
   // Download handler for horoscope with authentication
   const handleDownloadHoroscope = async (userId) => {
@@ -198,6 +236,29 @@ export default function AdminUserDetailPage() {
     },
   });
 
+  const handleExportPptx = async () => {
+    setIsExportingPptx(true);
+    try {
+      const response = await adminApi.exportUserProfilePptx(userId);
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      }));
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      const safeName = (user?.fullName || 'profile').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+      link.download = `${safeName}_profile.pptx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      toastSuccess('Profile exported as PPTX.');
+    } catch (error) {
+      toastError('Failed to export profile as PPTX');
+    } finally {
+      setIsExportingPptx(false);
+    }
+  };
+
   const approveMutation = useMutation({
     mutationFn: () => adminApi.approveUser(userId),
     onSuccess: () => {
@@ -206,6 +267,17 @@ export default function AdminUserDetailPage() {
     },
     onError: (error) => {
       toastError(error.response?.data?.message || 'Failed to approve user');
+    },
+  });
+
+  const verifyIdProofMutation = useMutation({
+    mutationFn: () => adminApi.verifyIdProof(userId),
+    onSuccess: () => {
+      toastSuccess('ID proof verified — the member now has the Verified tick.');
+      refetch();
+    },
+    onError: (error) => {
+      toastError(error.response?.data?.message || 'Failed to verify ID proof');
     },
   });
 
@@ -240,15 +312,14 @@ export default function AdminUserDetailPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toastError('Profile picture must be under 5 MB');
+    if (!PHOTO_TYPES.includes(file.type)) {
+      toastError('Please choose a JPEG or PNG photo');
+      e.target.value = '';
       return;
     }
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toastError('Please upload an image file');
+    if (file.size > MAX_PHOTO_BYTES) {
+      toastError('Profile picture must be under 10 MB');
+      e.target.value = '';
       return;
     }
 
@@ -269,21 +340,19 @@ export default function AdminUserDetailPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toastError('Photo must be under 5 MB');
+    if (!PHOTO_TYPES.includes(file.type)) {
+      toastError('Please choose a JPEG or PNG photo');
+      e.target.value = '';
       return;
     }
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toastError('Please upload an image file');
+    if (file.size > MAX_PHOTO_BYTES) {
+      toastError('Photo must be under 10 MB');
+      e.target.value = '';
       return;
     }
-
-    // Check photo limit
     if (data?.gallery?.photos?.length >= 10) {
       toastError('Maximum 10 photos allowed');
+      e.target.value = '';
       return;
     }
 
@@ -317,16 +386,14 @@ export default function AdminUserDetailPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       toastError('Horoscope document must be under 5 MB');
+      e.target.value = '';
       return;
     }
-
-    // Validate file type (PDF or image)
-    const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-    if (!validTypes.includes(file.type)) {
-      toastError('Please upload a PDF or image file');
+    if (!['application/pdf', ...PHOTO_TYPES].includes(file.type)) {
+      toastError('Please choose a PDF, JPEG or PNG file');
+      e.target.value = '';
       return;
     }
 
@@ -378,8 +445,22 @@ export default function AdminUserDetailPage() {
   const user = data;
   if (!user) return null;
 
+  // Send only the profile fields the admin actually changed. Sending the
+  // whole snapshot taken when Edit was clicked overwrote photos uploaded in
+  // the Media tab (and anything else that changed meanwhile) with stale data.
   const handleSaveEdit = () => {
-    updateMutation.mutate(editData);
+    const changes = {};
+    for (const field of EDITABLE_FIELDS) {
+      if (JSON.stringify(editData?.[field] ?? null) !== JSON.stringify(user?.[field] ?? null)) {
+        changes[field] = editData[field];
+      }
+    }
+    if (Object.keys(changes).length === 0) {
+      toastSuccess('No changes to save');
+      setIsEditMode(false);
+      return;
+    }
+    updateMutation.mutate(changes);
   };
 
   const handleInputChange = (field, value) => {
@@ -437,16 +518,26 @@ export default function AdminUserDetailPage() {
           </div>
           <div className="flex gap-2">
             {!isEditMode && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setEditData({...user});
-                  setIsEditMode(true);
-                }}
-              >
-                <Edit2 size={16} className="mr-2" />
-                Edit
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={handleExportPptx}
+                  disabled={isExportingPptx}
+                >
+                  <FileDown size={16} className="mr-2" />
+                  {isExportingPptx ? 'Exporting...' : 'Export as PPTX'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditData({...user});
+                    setIsEditMode(true);
+                  }}
+                >
+                  <Edit2 size={16} className="mr-2" />
+                  Edit
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -493,6 +584,54 @@ export default function AdminUserDetailPage() {
                   Delete User
                 </Button>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ID Proof — drives the member's Verified tick; never affects approval or visibility */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">ID Proof</p>
+                {!user.idProof?.url ? (
+                  <Badge variant="secondary" className="w-fit">Not submitted</Badge>
+                ) : user.idProofVerified ? (
+                  <Badge className="w-fit bg-[#2E7D32] text-white">
+                    <CheckCircle size={12} className="mr-1" />
+                    Verified{user.idProof.verifiedAt ? ` on ${formatDateDDMMYYYY(user.idProof.verifiedAt)}` : ''}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="w-fit text-amber-700 border-amber-300">
+                    <Clock size={12} className="mr-1" />
+                    Awaiting verification
+                  </Badge>
+                )}
+                {user.idProof?.url && user.idProof?.uploadedAt && (
+                  <p className="text-xs text-gray-500">Uploaded {formatDateDDMMYYYY(user.idProof.uploadedAt)}</p>
+                )}
+              </div>
+
+              {user.idProof?.url && (
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="outline" asChild>
+                    <a href={user.idProof.url} target="_blank" rel="noopener noreferrer">
+                      <FileText size={16} className="mr-2" />
+                      View Document
+                    </a>
+                  </Button>
+                  {!user.idProofVerified && (
+                    <Button
+                      className="bg-[#2E7D32] hover:bg-[#256628] text-white"
+                      onClick={() => verifyIdProofMutation.mutate()}
+                      disabled={verifyIdProofMutation.isPending}
+                    >
+                      <CheckCircle size={16} className="mr-2" />
+                      {verifyIdProofMutation.isPending ? 'Verifying...' : 'Mark ID as Verified'}
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -574,6 +713,21 @@ export default function AdminUserDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* A rejected member can still be approved (e.g. after a phone call
+                sorts out the issue) without waiting for them to resubmit. */}
+            {user.approvalStatus === 'rejected' && (
+              <div className="flex gap-3 mb-6 pb-6 border-b">
+                <Button
+                  className="bg-green-600 text-white hover:bg-green-700"
+                  onClick={handleApproveUser}
+                  disabled={approveMutation.isPending}
+                >
+                  <CheckCircle size={16} className="mr-2" />
+                  {approveMutation.isPending ? 'Approving...' : 'Approve User'}
+                </Button>
+              </div>
+            )}
+
             {/* Quick Actions for Pending Users */}
             {user.approvalStatus === 'pending' && (
               <div className="flex gap-3 mb-6 pb-6 border-b">
@@ -602,7 +756,7 @@ export default function AdminUserDetailPage() {
                 <div>
                   <p className="text-sm text-gray-600">Approved On</p>
                   <p className="font-medium text-green-600">
-                    {new Date(user.approvedAt).toLocaleString()}
+                    {formatDateTime(user.approvedAt)}
                   </p>
                 </div>
               )}
@@ -610,7 +764,7 @@ export default function AdminUserDetailPage() {
                 <div>
                   <p className="text-sm text-gray-600">Rejected On</p>
                   <p className="font-medium text-destructive">
-                    {new Date(user.rejectedAt).toLocaleString()}
+                    {formatDateTime(user.rejectedAt)}
                   </p>
                 </div>
               )}
@@ -650,10 +804,10 @@ export default function AdminUserDetailPage() {
                           {history.status.charAt(0).toUpperCase() + history.status.slice(1)}
                         </Badge>
                         <span className="text-xs text-gray-500">
-                          {new Date(history.actionAt).toLocaleString()}
+                          {formatDateTime(history.actionAt)}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600">By: {history.adminEmail}</p>
+                      <p className="text-sm text-gray-600">By: {history.adminEmail || 'Member (profile update)'}</p>
                       {history.reason && (
                         <p className="text-sm mt-2 text-gray-700">
                           <span className="font-medium">Reason:</span> {history.reason}
@@ -739,7 +893,7 @@ export default function AdminUserDetailPage() {
                     className={`rounded-full px-4 py-2 font-medium transition-all duration-200 ease-in-out ${
                       activeTab === 'basic'
                         ? 'bg-primary text-black'
-                        : 'bg-white text-black border-2 border-black shadow-md'
+                        : 'bg-white text-[#1A1A1A] border border-[#D4A843]/40 hover:bg-[#F5E6C3]/40'
                     }`}
                   >
                     Basic
@@ -749,7 +903,7 @@ export default function AdminUserDetailPage() {
                     className={`rounded-full px-4 py-2 font-medium transition-all duration-200 ease-in-out ${
                       activeTab === 'profile'
                         ? 'bg-primary text-black'
-                        : 'bg-white text-black border-2 border-black shadow-md'
+                        : 'bg-white text-[#1A1A1A] border border-[#D4A843]/40 hover:bg-[#F5E6C3]/40'
                     }`}
                   >
                     Profile
@@ -759,7 +913,7 @@ export default function AdminUserDetailPage() {
                     className={`rounded-full px-4 py-2 font-medium transition-all duration-200 ease-in-out ${
                       activeTab === 'professional'
                         ? 'bg-primary text-black'
-                        : 'bg-white text-black border-2 border-black shadow-md'
+                        : 'bg-white text-[#1A1A1A] border border-[#D4A843]/40 hover:bg-[#F5E6C3]/40'
                     }`}
                   >
                     Professional
@@ -769,7 +923,7 @@ export default function AdminUserDetailPage() {
                     className={`rounded-full px-4 py-2 font-medium transition-all duration-200 ease-in-out ${
                       activeTab === 'family'
                         ? 'bg-primary text-black'
-                        : 'bg-white text-black border-2 border-black shadow-md'
+                        : 'bg-white text-[#1A1A1A] border border-[#D4A843]/40 hover:bg-[#F5E6C3]/40'
                     }`}
                   >
                     Family & Misc
@@ -779,7 +933,7 @@ export default function AdminUserDetailPage() {
                     className={`rounded-full px-4 py-2 font-medium transition-all duration-200 ease-in-out ${
                       activeTab === 'location'
                         ? 'bg-primary text-black'
-                        : 'bg-white text-black border-2 border-black shadow-md'
+                        : 'bg-white text-[#1A1A1A] border border-[#D4A843]/40 hover:bg-[#F5E6C3]/40'
                     }`}
                   >
                     Location
@@ -789,7 +943,7 @@ export default function AdminUserDetailPage() {
                     className={`rounded-full px-4 py-2 font-medium transition-all duration-200 ease-in-out ${
                       activeTab === 'media'
                         ? 'bg-primary text-black'
-                        : 'bg-white text-black border-2 border-black shadow-md'
+                        : 'bg-white text-[#1A1A1A] border border-[#D4A843]/40 hover:bg-[#F5E6C3]/40'
                     }`}
                   >
                     Media
@@ -837,8 +991,8 @@ export default function AdminUserDetailPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
                       <Input
                         type="date"
-                        value={editData?.dateOfBirth ? new Date(editData.dateOfBirth).toISOString().split('T')[0] : ''}
-                        onChange={(e) => handleInputChange('dateOfBirth', new Date(e.target.value))}
+                        value={toDateInputValue(editData?.dateOfBirth)}
+                        onChange={(e) => handleInputChange('dateOfBirth', e.target.value || null)}
                       />
                     </div>
 
@@ -906,6 +1060,16 @@ export default function AdminUserDetailPage() {
                           <SelectItem value="female">Female</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Partner Preference</label>
+                      <Textarea
+                        value={editData?.partnerPreferenceDescription || ''}
+                        onChange={(e) => handleInputChange('partnerPreferenceDescription', e.target.value)}
+                        className="min-h-20"
+                        maxLength={1000}
+                      />
                     </div>
                   </div>
                 </TabsContent>
@@ -1090,7 +1254,7 @@ export default function AdminUserDetailPage() {
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Dosham Types</label>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                          {['Chevvai', 'Rahu', 'Ketu', 'Naga', 'Kaal Sarpa'].map(dosham => (
+                          {DOSHAM_TYPES.map(dosham => (
                             <label key={dosham} className="flex items-center gap-2">
                               <Checkbox
                                 checked={(editData?.doshamTypes || []).includes(dosham)}
@@ -1106,7 +1270,7 @@ export default function AdminUserDetailPage() {
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-2">Languages Known</label>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        {['English', 'Hindi', 'Malayalam', 'Tamil', 'Telugu', 'Kannada', 'Marathi', 'Gujarati', 'Bengali', 'Punjabi', 'Urdu', 'Sanskrit'].map(language => (
+                        {LANGUAGES_OPTIONS.map(language => (
                           <label key={language} className="flex items-center gap-2">
                             <Checkbox
                               checked={(editData?.languagesKnown || []).includes(language)}
@@ -1120,16 +1284,21 @@ export default function AdminUserDetailPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Profile Banner Color</label>
-                      <div className="flex items-center gap-3">
-                        <Input
-                          type="color"
-                          value={editData?.profileBanner?.bannerColor || '#FFB3BA'}
-                          onChange={(e) => handleNestedChange('profileBanner', 'bannerColor', e.target.value)}
-                          className="w-16 h-10 p-1 cursor-pointer"
-                        />
-                        <span className="text-sm text-gray-600">
-                          {editData?.profileBanner?.bannerColor || '#FFB3BA'}
-                        </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {BANNER_COLORS.map((color) => {
+                          const selected = (editData?.profileBanner?.bannerColor || '#FFB3BA') === color;
+                          return (
+                            <button
+                              key={color}
+                              type="button"
+                              aria-label={`Banner colour ${color}`}
+                              aria-pressed={selected}
+                              onClick={() => handleNestedChange('profileBanner', 'bannerColor', color)}
+                              className={`w-8 h-8 rounded-full border-2 ${selected ? 'border-gray-900 ring-2 ring-offset-1 ring-gray-900' : 'border-gray-300'}`}
+                              style={{ backgroundColor: color }}
+                            />
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -1186,6 +1355,7 @@ export default function AdminUserDetailPage() {
                           <SelectItem value="SGD">SGD</SelectItem>
                           <SelectItem value="AUD">AUD</SelectItem>
                           <SelectItem value="CAD">CAD</SelectItem>
+                          <SelectItem value="Others">Others</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1194,8 +1364,8 @@ export default function AdminUserDetailPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">Annual Income (Min)</label>
                       <Input
                         type="number"
-                        value={editData?.annualIncome?.min || ''}
-                        onChange={(e) => handleNestedChange('annualIncome', 'min', parseInt(e.target.value))}
+                        value={editData?.annualIncome?.min ?? ''}
+                        onChange={(e) => handleNestedChange('annualIncome', 'min', e.target.value === '' ? null : Number(e.target.value))}
                       />
                     </div>
 
@@ -1203,8 +1373,8 @@ export default function AdminUserDetailPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">Annual Income (Max)</label>
                       <Input
                         type="number"
-                        value={editData?.annualIncome?.max || ''}
-                        onChange={(e) => handleNestedChange('annualIncome', 'max', parseInt(e.target.value))}
+                        value={editData?.annualIncome?.max ?? ''}
+                        onChange={(e) => handleNestedChange('annualIncome', 'max', e.target.value === '' ? null : Number(e.target.value))}
                       />
                     </div>
 
@@ -1447,7 +1617,7 @@ export default function AdminUserDetailPage() {
                       </div>
                       <div className="flex-1">
                         <p className="text-sm text-gray-600 mb-3">
-                          Upload a profile picture for this user. Max size: 5MB. Supported formats: JPG, PNG.
+                          Upload a profile picture for this user. Max size: 10 MB. Supported formats: JPG, PNG.
                         </p>
                         <label className="cursor-pointer">
                           <Button
@@ -1463,16 +1633,16 @@ export default function AdminUserDetailPage() {
                               <input
                                 type="file"
                                 className="absolute inset-0 opacity-0 cursor-pointer"
-                                accept="image/*"
+                                accept="image/jpeg,image/png"
                                 onChange={handleProfilePictureUpload}
                                 disabled={uploadingProfilePicture}
                               />
                             </span>
                           </Button>
                         </label>
-                        {data?.profilePicture?.uploadedAt && (
+                        {data?.profilePicture?.url && data?.profilePicture?.uploadedAt && (
                           <p className="text-xs text-gray-500 mt-2">
-                            Uploaded: {new Date(data.profilePicture.uploadedAt).toLocaleDateString()}
+                            Uploaded: {formatDateDDMMYYYY(data.profilePicture.uploadedAt)}
                           </p>
                         )}
                       </div>
@@ -1486,7 +1656,7 @@ export default function AdminUserDetailPage() {
                       Gallery Photos ({data?.gallery?.photos?.length || 0}/10)
                     </h3>
                     <p className="text-sm text-gray-600 mb-4">
-                      Manage gallery photos for this user. Maximum 10 photos allowed. Max size: 5MB each.
+                      Manage gallery photos for this user. Maximum 10 photos allowed. Max size: 10 MB each (JPG, PNG).
                     </p>
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4">
@@ -1499,18 +1669,17 @@ export default function AdminUserDetailPage() {
                               className="w-full h-full object-cover"
                             />
                           </div>
-                          <button
-                            onClick={() => handleDeleteGalleryPhoto(index)}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPhotoToDelete(index)}
                             disabled={deletingPhotoIndex === index}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
-                            title="Delete photo"
+                            className="mt-2 w-full text-destructive hover:text-white"
                           >
-                            {deletingPhotoIndex === index ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                            ) : (
-                              <X className="h-4 w-4" />
-                            )}
-                          </button>
+                            <Trash2 className="h-3.5 w-3.5 mr-1" />
+                            {deletingPhotoIndex === index ? 'Deleting...' : 'Delete photo'}
+                          </Button>
                         </div>
                       ))}
 
@@ -1530,7 +1699,7 @@ export default function AdminUserDetailPage() {
                           <input
                             type="file"
                             className="hidden"
-                            accept="image/*"
+                            accept="image/jpeg,image/png"
                             onChange={handleGalleryPhotoUpload}
                             disabled={uploadingGalleryPhoto}
                           />
@@ -1583,7 +1752,7 @@ export default function AdminUserDetailPage() {
                                 <input
                                   type="file"
                                   className="absolute inset-0 opacity-0 cursor-pointer"
-                                  accept="image/*,.pdf"
+                                  accept="application/pdf,image/jpeg,image/png"
                                   onChange={handleHoroscopeUpload}
                                   disabled={uploadingHoroscope}
                                 />
@@ -1610,9 +1779,9 @@ export default function AdminUserDetailPage() {
                             </>
                           )}
                         </div>
-                        {data?.horoscopeDocument?.uploadedAt && (
+                        {data?.horoscopeDocument?.url && data?.horoscopeDocument?.uploadedAt && (
                           <p className="text-xs text-gray-500 mt-2">
-                            Uploaded: {new Date(data.horoscopeDocument.uploadedAt).toLocaleDateString()}
+                            Uploaded: {formatDateDDMMYYYY(data.horoscopeDocument.uploadedAt)}
                           </p>
                         )}
                       </div>
@@ -1669,6 +1838,10 @@ export default function AdminUserDetailPage() {
                     <p className="text-gray-900">
                       {user.ageFrom && user.ageTo ? `${user.ageFrom} - ${user.ageTo} years` : '-'}
                     </p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Partner Preference</label>
+                    <p className="text-gray-900 whitespace-pre-line">{displayValue(user.partnerPreferenceDescription)}</p>
                   </div>
                 </div>
               </CardContent>
@@ -1861,7 +2034,10 @@ export default function AdminUserDetailPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Annual Income</label>
                     <p className="text-gray-900">
-                      {user.annualIncome?.displayText || `${user.annualIncome?.currency || 'INR'} ${user.annualIncome?.min || 0} - ${user.annualIncome?.max || 0}` || '-'}
+                      {user.annualIncome?.displayText
+                        || (user.annualIncome?.min != null
+                          ? `${user.annualIncome.currency || 'INR'} ${user.annualIncome.min.toLocaleString('en-IN')} - ${(user.annualIncome.max ?? user.annualIncome.min).toLocaleString('en-IN')}`
+                          : '-')}
                     </p>
                   </div>
                   {/* Removed root Country/State/City display */}
@@ -2003,6 +2179,29 @@ export default function AdminUserDetailPage() {
             </Card>
           </>
         )}
+
+        {/* Gallery photo delete confirmation */}
+        <AlertDialog open={photoToDelete !== null} onOpenChange={(open) => { if (!open) setPhotoToDelete(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this gallery photo?</AlertDialogTitle>
+              <AlertDialogDescription>
+                The photo is removed from the member&apos;s profile and deleted from storage. This can&apos;t be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const index = photoToDelete;
+                setPhotoToDelete(null);
+                handleDeleteGalleryPhoto(index);
+              }}
+              className="bg-destructive text-destructive-foreground"
+            >
+              Delete Photo
+            </AlertDialogAction>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

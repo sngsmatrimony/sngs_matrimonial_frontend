@@ -19,6 +19,11 @@ export const adminApi = {
   updateUser: (id, data) => adminClient.put(`/api/admin/users/${id}`, data),
 
   /**
+   * Export a member's full profile as a PPTX deck
+   */
+  exportUserProfilePptx: (id) => adminClient.get(`/api/admin/users/${id}/export-pptx`, { responseType: 'blob' }),
+
+  /**
    * Deactivate user (soft delete)
    */
   deactivateUser: (id) => adminClient.put(`/api/admin/users/${id}/deactivate`),
@@ -32,6 +37,11 @@ export const adminApi = {
    * Approve a user registration
    */
   approveUser: (id) => adminClient.put(`/api/admin/users/${id}/approve`),
+
+  /**
+   * Mark the member's ID proof as verified (gives the Verified tick)
+   */
+  verifyIdProof: (id) => adminClient.put(`/api/admin/users/${id}/verify-id-proof`),
 
   /**
    * Reject a user registration (requires reason)
@@ -85,32 +95,27 @@ export const adminApi = {
    */
   getActivityLogs: (params) => adminClient.get('/api/admin/activity-logs', { params }),
 
-  // ==================== Phone Number Requests ====================
+  // ==================== Contact & Chat Unlocks (read-only log) ====================
+  // Replaces the old admin-approval phone-request workflow — contact/chat
+  // access is now a purely self-service, credit-charged unlock, so there's
+  // nothing left to approve/deny, only to observe and report on.
 
   /**
-   * Get phone-number requests, filterable by status, paginated
+   * List PHONE_CHAT_UNLOCK activity log entries, paginated/date-filterable
    */
-  getPhoneRequests: (params) => adminClient.get('/api/admin/phone-requests', { params }),
+  getPhoneChatUnlocks: (params) => adminClient.get('/api/admin/phone-chat-unlocks', { params }),
 
   /**
-   * Get count of pending phone-number requests
+   * Download the consolidated contact/chat-unlocks PDF report
    */
-  getPendingPhoneRequestCount: () => adminClient.get('/api/admin/phone-requests/pending-count'),
+  downloadPhoneChatUnlockReport: (params) =>
+    adminClient.get('/api/admin/phone-chat-unlocks/report.pdf', { params, responseType: 'blob' }),
 
   /**
-   * Approve a phone-number request
+   * List "started filling" registration leads — people who cleared the
+   * registration wizard's Quick Start step but haven't finished yet.
    */
-  approvePhoneRequest: (id) => adminClient.put(`/api/admin/phone-requests/${id}/approve`),
-
-  /**
-   * Deny a phone-number request
-   */
-  denyPhoneRequest: (id) => adminClient.put(`/api/admin/phone-requests/${id}/deny`),
-
-  /**
-   * Reply on a phone-number request's note thread
-   */
-  sendPhoneRequestMessage: (id, text) => adminClient.post(`/api/admin/phone-requests/${id}/message`, { text }),
+  getRegistrationLeads: (params) => adminClient.get('/api/admin/registration-leads', { params }),
 
   // ==================== Settings ====================
 
@@ -145,9 +150,25 @@ export const adminApi = {
   getEnforcementSettings: () => adminClient.get('/api/admin/settings/enforcement'),
 
   /**
+   * Credit packs (top-ups during an active plan) + gateway charges passed on to members
+   */
+  getPaymentSettings: () => adminClient.get('/api/admin/settings/payments'),
+  updatePaymentSettings: (data) => adminClient.put('/api/admin/settings/payments', data),
+
+  /**
    * Update membership enforcement toggle state
    */
   updateEnforcementSettings: (data) => adminClient.put('/api/admin/settings/enforcement', data),
+
+  /**
+   * Get the Alliance Meet price + open/closed toggle
+   */
+  getAllianceMeetSettings: () => adminClient.get('/api/admin/settings/alliance-meet'),
+
+  /**
+   * Update the Alliance Meet price and/or open/closed toggle
+   */
+  updateAllianceMeetSettings: (data) => adminClient.put('/api/admin/settings/alliance-meet', data),
 
   /**
    * Get "ID proof required" toggle state

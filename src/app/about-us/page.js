@@ -8,9 +8,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 // FAQ_ITEMS: sensible generic answers — please review and adjust wording/details before publishing.
 const FAQ_ITEMS = [
   {
-    question: 'Is SNGS Matrimony only for the Ezhava community?',
+    question: 'Who is SNGS Matrimony for?',
     answer:
-      'Yes. SNGS Matrimony is built specifically for the Malayali Ezhava community, across Kerala, the rest of India, and the NRI diaspora (Gulf, US, UK, Australia). This focus lets us support community-specific details — sub-caste, family deity, Tharavadu, and Kerala horoscope fields — that generic platforms don’t.',
+      'SNGS Matrimony is built for every Malayalee — across Kerala, the rest of India, and the NRI diaspora (Gulf, US, UK, Australia). In the spirit of Sree Narayana Guru’s teaching of "one caste, one religion, one God for all," we welcome members from every caste and community, while still supporting the Kerala-specific details — family deity, Tharavadu, and horoscope fields — that generic platforms overlook.',
   },
   {
     question: 'How are profiles verified?',
@@ -59,7 +59,7 @@ export default function AboutUsPage() {
               <span className="text-[#F5E6C3] font-medium">Built for Tomorrow.</span>
             </h1>
             <p className="font-sans text-lg text-[#F5E6C3] max-w-2xl mx-auto font-light leading-relaxed">
-              We are a hyper-localized matrimonial platform dedicated exclusively to the Malayali Ezhava community, bridging deep family roots with modern digital convenience.
+              We are a hyper-localized matrimonial platform dedicated to the Malayalee community, bridging deep family roots with modern digital convenience.
             </p>
           </div>
         </section>
@@ -82,7 +82,7 @@ export default function AboutUsPage() {
                     SNGS Matrimony was born to bring that exact level of trust into the digital age. We realized that generic national platforms treat everyone the same. They overlook the details that matter to us—from specific Tharavadu histories to Kerala-specific horoscope alignments like Nakshatra and Dosham.
                   </p>
                   <p>
-                    Today, we combine our offline matchmaking heritage with a premium digital experience to help Ezhava families across India and the NRI diaspora find their perfect match.
+                    Today, we combine our offline matchmaking heritage with a premium digital experience to help Malayalee families across India and the NRI diaspora find their perfect match.
                   </p>
                 </div>
               </div>
@@ -127,7 +127,7 @@ export default function AboutUsPage() {
                 </div>
                 <h3 className="font-serif text-xl font-bold text-[#1A1A1A] mb-3">The NRI Bridge</h3>
                 <p className="font-sans text-[#2C3E50] leading-relaxed">
-                  Connecting Ezhava families locally and globally. Whether you are in Kerala, Bengaluru, the Gulf, the US, or the UK, our platform bridges the distance.
+                  Connecting Malayalee families locally and globally. Whether you are in Kerala, Bengaluru, the Gulf, the US, or the UK, our platform bridges the distance.
                 </p>
               </div>
 
@@ -149,7 +149,7 @@ export default function AboutUsPage() {
                 </div>
                 <h3 className="font-serif text-xl font-bold text-[#1A1A1A] mb-3">Community Depth</h3>
                 <p className="font-sans text-[#2C3E50] leading-relaxed">
-                  We honor the nuances of our culture. Our profiles feature deep filters for Sub-caste, Family Deity, Nakshatra, and Rashi for perfect alignment.
+                  We honor the nuances of our culture. Our profiles feature deep filters for Caste, Family Deity, Nakshatra, and Rashi for perfect alignment.
                 </p>
               </div>
             </div>

@@ -11,48 +11,41 @@ import { Loader2, CheckCircle2, LogOut, Lock, Shield } from 'lucide-react';
 import { client } from '@/lib/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
+import { buildPlanDescription } from '@/lib/planDescription';
+import BuyCreditsCard from '@/components/membership/BuyCreditsCard';
+import { formatDate, formatRupees } from '@/lib/money';
 
-// Real, plan-specific feature bullets — matches exactly what each toggle in
-// the admin membership-plans page actually grants (see checkMembership.js's
-// hasPlanFeature), instead of the same 3 hardcoded claims on every plan.
-//
-// Credits aren't just "profile views" — once a member has an active plan
-// with at least 1 credit remaining, that same credit balance is also what
-// keeps chat, contact numbers, horoscope downloads, and full search unlocked
-// (see checkMembership.js's hasActiveMembership). A plan with no "Unlimited
-// X" toggles still grants all of that, it just stops once credits hit 0 — so
-// the card needs to say so, instead of only listing profile views and
-// leaving everything else unmentioned.
+// Real, plan-specific cost bullets — describes exactly what each of the 3
+// metered activities (profileView, phoneAndChat, profileDownload) costs on
+// THIS plan, or whether it's free/unlimited, instead of a generic claim.
+// Shared phrasing between the purchase-candidate card (here) and a plan the
+// member already owns (buildOwnedPlanPerks below).
+function costLine(label, entry) {
+  if (!entry || entry.unlimited || !entry.cost) return `${label}: free, unlimited`;
+  return `${label}: ${entry.cost} credit${entry.cost === 1 ? '' : 's'} per use`;
+}
+
 function buildFeatureBullets(plan) {
-  const features = plan.features || {};
+  const costs = plan.costs || {};
   const bullets = [
-    features.unlimitedProfileViews ? 'Unlimited profile views' : `${plan.credits} profile views included`,
-    'Re-view any profile anytime, free',
+    `${plan.credits} credits included`,
+    costLine('Viewing a profile', costs.profileView),
+    costLine('Phone number & chat', costs.phoneAndChat),
+    costLine('Downloading a profile', costs.profileDownload),
   ];
-  const stillCreditGated = !features.unlimitedContactAccess || !features.unlimitedChat || !features.unlimitedHoroscopeDownload;
-  if (stillCreditGated) {
-    bullets.push('Credits also unlock chat, contact numbers & horoscope downloads');
-  }
-  if (features.unlimitedBrowsing) bullets.push('Unlimited search — never capped, even at 0 credits');
-  if (features.unlimitedContactAccess) bullets.push('Phone numbers always visible, even at 0 credits');
-  if (features.unlimitedChat) bullets.push('Start unlimited new chats, even at 0 credits');
-  if (features.unlimitedHoroscopeDownload) bullets.push('Unlimited horoscope downloads, even at 0 credits');
   return bullets;
 }
 
-// What a plan the member already owns actually grants — same semantics as
+// What a plan the member already owns actually costs — same semantics as
 // buildFeatureBullets above, phrased for an existing plan rather than one
 // being considered for purchase.
-function buildCurrentPlanPerks(features) {
-  const perks = [];
-  if (features?.unlimitedProfileViews) perks.push('Unlimited profile views');
-  if (features?.unlimitedBrowsing) perks.push('Unlimited search — never capped, even at 0 credits');
-  if (features?.unlimitedContactAccess) perks.push('Phone numbers always visible, even at 0 credits');
-  if (features?.unlimitedChat) perks.push('Unlimited new chats, even at 0 credits');
-  if (features?.unlimitedHoroscopeDownload) perks.push('Unlimited horoscope downloads, even at 0 credits');
-  if (perks.length === 0) {
-    perks.push('Your credit balance also covers chat, contact numbers & horoscope downloads');
-  }
+function buildCurrentPlanPerks(plan) {
+  const costs = plan?.costs || {};
+  const perks = [
+    costLine('Viewing a profile', costs.profileView),
+    costLine('Phone number & chat', costs.phoneAndChat),
+    costLine('Downloading a profile', costs.profileDownload),
+  ];
   return perks;
 }
 
@@ -131,7 +124,10 @@ export default function PurchaseMembershipPage() {
       const errorMessage = error.response?.data?.message || 'Failed to create order. Please try again.';
 
       // Provide better error message for international card restriction
-      if (errorMessage.toLowerCase().includes('international')) {
+      if (error.response?.data?.hasActivePlan) {
+        toastError(errorMessage);
+        refreshMembership();
+      } else if (errorMessage.toLowerCase().includes('international')) {
         toastError('International cards are not supported. Please use a domestic Indian card or contact support.');
       } else {
         toastError(errorMessage);
@@ -189,6 +185,11 @@ export default function PurchaseMembershipPage() {
       {/* Main Content - Add pt-24 for fixed header spacing */}
       <div className="min-h-screen bg-[#FDF8F0] pt-24 py-12 px-4">
         <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-8 pt-4">
+            <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-[#1A1A1A]">Choose Your Membership</h1>
+            <div className="w-16 h-[3px] bg-[#D4A843] mx-auto mt-4" />
+          </div>
+
           {/* Your Current Plan — shown regardless of active/expired/none, so
               this page always answers "what do I already have?" before
               asking the member to buy anything else. */}
@@ -202,9 +203,9 @@ export default function PurchaseMembershipPage() {
                     {membership.expiryDate ? ` (expires ${new Date(membership.expiryDate).toLocaleDateString()})` : ' (never expires)'}
                   </p>
                 </div>
-                {membership.planId?.features && (
+                {membership.planId?.costs && (
                   <ul className="pl-7 space-y-1">
-                    {buildCurrentPlanPerks(membership.planId.features).map((perk) => (
+                    {buildCurrentPlanPerks(membership.planId).map((perk) => (
                       <li key={perk} className="font-sans text-xs text-[#2C3E50]/70">{perk}</li>
                     ))}
                   </ul>
@@ -233,12 +234,23 @@ export default function PurchaseMembershipPage() {
           {/* Simple Value Proposition */}
           <div className="text-center mb-12">
             <p className="font-sans text-[#2C3E50]/70">
-              1 credit = 1 profile view • Re-view any profile anytime, free
+              Credits are spent on viewing a profile, unlocking phone &amp; chat, or downloading a profile —
+              each plan below sets its own cost per activity. Re-opening anything you&apos;ve already unlocked is free while your membership stays active; if it lapses, unlocks reset on renewal.
             </p>
           </div>
 
-          {/* Membership Plans Grid */}
-          {planLoading ? (
+          {/* While a plan is active, members top up with credit packs (which
+              expire with the plan); new plans unlock once it ends. */}
+          {membership?.isActive && !membership?.isExpired ? (
+            <div className="max-w-xl mx-auto mb-16 space-y-4">
+              <BuyCreditsCard />
+              <p className="font-sans text-sm text-center text-[#2C3E50]/70">
+                {membership.expiryDate
+                  ? `New plans can be bought after your current plan ends on ${formatDate(membership.expiryDate)}.`
+                  : 'Your current plan has no expiry date.'}
+              </p>
+            </div>
+          ) : planLoading ? (
             <div className="max-w-5xl mx-auto mb-16">
               <div className="flex flex-col items-center justify-center gap-4 py-12">
                 <Loader2 className="w-8 h-8 text-[#D4A843] animate-spin" />
@@ -247,7 +259,15 @@ export default function PurchaseMembershipPage() {
             </div>
           ) : plans.length > 0 ? (
             <div className="max-w-6xl mx-auto mb-16">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Column count follows the number of plans so 1–2 plans sit centred
+                  instead of leaving empty columns on the right. */}
+              <div className={`grid grid-cols-1 gap-6 mx-auto ${
+                plans.length === 1
+                  ? 'max-w-sm'
+                  : plans.length === 2
+                    ? 'md:grid-cols-2 max-w-3xl'
+                    : 'md:grid-cols-2 lg:grid-cols-3'
+              }`}>
                 {plans.map((plan) => (
                   <Card
                     key={plan._id}
@@ -269,11 +289,9 @@ export default function PurchaseMembershipPage() {
                       <CardTitle className="font-serif text-2xl font-bold text-[#1A1A1A] mb-2">
                         {plan.name}
                       </CardTitle>
-                      {plan.description && (
-                        <CardDescription className="font-sans text-sm text-[#2C3E50]/70">
-                          {plan.description}
-                        </CardDescription>
-                      )}
+                      <CardDescription className="font-sans text-sm text-[#2C3E50]/80 leading-relaxed">
+                        {buildPlanDescription(plan)}
+                      </CardDescription>
                     </CardHeader>
 
                     <CardContent className="flex-1 flex flex-col space-y-6">
@@ -282,6 +300,12 @@ export default function PurchaseMembershipPage() {
                         <div className="font-serif text-5xl font-bold text-[#1A1A1A] mb-1">
                           ₹{plan.price.amount.toLocaleString('en-IN')}
                         </div>
+                        {plan.pricing?.gatewayCharges > 0 && (
+                          <p className="font-sans text-xs text-[#2C3E50]/70">
+                            + {formatRupees(plan.pricing.gatewayCharges)} payment gateway charges (incl. GST) ·{' '}
+                            <span className="font-semibold text-[#1A1A1A]">You pay {formatRupees(plan.pricing.totalAmount)}</span>
+                          </p>
+                        )}
                         <p className="font-sans text-sm text-[#2C3E50]/70">
                           {plan.credits} Credits
                         </p>

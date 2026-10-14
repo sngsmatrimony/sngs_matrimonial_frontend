@@ -21,11 +21,11 @@ export function useLikeMutation() {
     onMutate: async ({ profileId, profile }) => {
       // Cancel any outgoing refetches to avoid overwriting optimistic update
       await queryClient.cancelQueries({ queryKey: ['likedProfiles'] });
-      await queryClient.cancelQueries({ queryKey: ['browseProfiles'] });
+      await queryClient.cancelQueries({ queryKey: ['browseInteractions'] });
 
       // Snapshot the previous values for rollback
       const previousLikedProfiles = queryClient.getQueryData(['likedProfiles']);
-      const previousBrowseProfiles = queryClient.getQueryData(['browseProfiles']);
+      const previousBrowseProfiles = queryClient.getQueryData(['browseInteractions']);
 
       // Optimistically update likedProfiles cache
       queryClient.setQueryData(['likedProfiles'], (old) => {
@@ -36,7 +36,7 @@ export function useLikeMutation() {
       });
 
       // Optimistically update browseProfiles cache (update likedIds)
-      queryClient.setQueryData(['browseProfiles'], (old) => {
+      queryClient.setQueryData(['browseInteractions'], (old) => {
         if (!old) return old;
         const newLikedIds = old.likedIds?.includes(profileId)
           ? old.likedIds
@@ -52,7 +52,7 @@ export function useLikeMutation() {
         queryClient.setQueryData(['likedProfiles'], context.previousLikedProfiles);
       }
       if (context?.previousBrowseProfiles !== undefined) {
-        queryClient.setQueryData(['browseProfiles'], context.previousBrowseProfiles);
+        queryClient.setQueryData(['browseInteractions'], context.previousBrowseProfiles);
       }
       toastError(err.response?.data?.message || 'Error liking profile');
     },
@@ -62,7 +62,7 @@ export function useLikeMutation() {
     onSettled: () => {
       // Always refetch to ensure cache is in sync with server
       queryClient.invalidateQueries({ queryKey: ['likedProfiles'] });
-      queryClient.invalidateQueries({ queryKey: ['browseProfiles'] });
+      queryClient.invalidateQueries({ queryKey: ['browseInteractions'] });
     },
   });
 
@@ -74,11 +74,11 @@ export function useLikeMutation() {
     onMutate: async ({ profileId }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['likedProfiles'] });
-      await queryClient.cancelQueries({ queryKey: ['browseProfiles'] });
+      await queryClient.cancelQueries({ queryKey: ['browseInteractions'] });
 
       // Snapshot previous values
       const previousLikedProfiles = queryClient.getQueryData(['likedProfiles']);
-      const previousBrowseProfiles = queryClient.getQueryData(['browseProfiles']);
+      const previousBrowseProfiles = queryClient.getQueryData(['browseInteractions']);
 
       // Optimistically remove from likedProfiles cache
       queryClient.setQueryData(['likedProfiles'], (old) => {
@@ -87,7 +87,7 @@ export function useLikeMutation() {
       });
 
       // Optimistically update browseProfiles cache (remove from likedIds)
-      queryClient.setQueryData(['browseProfiles'], (old) => {
+      queryClient.setQueryData(['browseInteractions'], (old) => {
         if (!old) return old;
         const newLikedIds = old.likedIds?.filter(id => id !== profileId) || [];
         return { ...old, likedIds: newLikedIds };
@@ -101,7 +101,7 @@ export function useLikeMutation() {
         queryClient.setQueryData(['likedProfiles'], context.previousLikedProfiles);
       }
       if (context?.previousBrowseProfiles !== undefined) {
-        queryClient.setQueryData(['browseProfiles'], context.previousBrowseProfiles);
+        queryClient.setQueryData(['browseInteractions'], context.previousBrowseProfiles);
       }
       toastError(err.response?.data?.message || 'Error removing like');
     },
@@ -111,7 +111,7 @@ export function useLikeMutation() {
     onSettled: () => {
       // Always refetch to ensure cache is in sync with server
       queryClient.invalidateQueries({ queryKey: ['likedProfiles'] });
-      queryClient.invalidateQueries({ queryKey: ['browseProfiles'] });
+      queryClient.invalidateQueries({ queryKey: ['browseInteractions'] });
     },
   });
 
@@ -136,7 +136,7 @@ export function useLikeMutation() {
    */
   const isProfileLiked = (profileId) => {
     // First check browseProfiles cache (has likedIds array)
-    const browseData = queryClient.getQueryData(['browseProfiles']);
+    const browseData = queryClient.getQueryData(['browseInteractions']);
     if (browseData?.likedIds?.includes(profileId)) {
       return true;
     }

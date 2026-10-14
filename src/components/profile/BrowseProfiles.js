@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { SlidersHorizontal, X, Search as SearchIcon, User as UserIcon } from 'lucide-react';
@@ -40,29 +40,15 @@ function FilterControls({
   maritalStatus, setMaritalStatus,
   motherTongue, setMotherTongue,
   sortBy, setSortBy,
-  ignoreAge, setIgnoreAge,
+  ignoreAge,
   onReset,
 }) {
   const hasActiveFilters = country || state || education || caste || maritalStatus || motherTongue || sortBy !== 'newest' || ignoreAge;
 
   return (
-    <div className="space-y-5">
-      <div className="pb-1 border-b border-[#D4A843]/15">
-        <label className="flex items-start gap-2.5 pb-4 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={ignoreAge}
-            onChange={(e) => setIgnoreAge(e.target.checked)}
-            className="mt-0.5 w-4 h-4 rounded border-[#D4A843]/40 accent-[#D4A843]"
-          />
-          <span className="font-sans text-sm text-[#1A1A1A]">
-            Show profiles outside my preferred age range
-          </span>
-        </label>
-      </div>
-
+    <div className="space-y-3">
       <div>
-        <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-2">Location</label>
+        <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-1">Location</label>
         <Select value={country || 'all'} onValueChange={(v) => { setCountry(v === 'all' ? '' : v); if (v !== 'India') setState(''); }}>
           <SelectTrigger className="font-sans h-11 rounded-lg border-[#D4A843]/25">
             <SelectValue placeholder="Any location" />
@@ -78,7 +64,7 @@ function FilterControls({
 
       {country === 'India' && (
         <div>
-          <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-2">State</label>
+          <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-1">State</label>
           <Select value={state || 'all'} onValueChange={(v) => setState(v === 'all' ? '' : v)}>
             <SelectTrigger className="font-sans h-11 rounded-lg border-[#D4A843]/25">
               <SelectValue placeholder="Any state" />
@@ -94,7 +80,7 @@ function FilterControls({
       )}
 
       <div>
-        <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-2">Education</label>
+        <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-1">Education</label>
         <Select value={education || 'all'} onValueChange={(v) => setEducation(v === 'all' ? '' : v)}>
           <SelectTrigger className="font-sans h-11 rounded-lg border-[#D4A843]/25">
             <SelectValue placeholder="Any education" />
@@ -109,7 +95,7 @@ function FilterControls({
       </div>
 
       <div>
-        <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-2">Caste</label>
+        <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-1">Caste</label>
         <Select value={caste || 'all'} onValueChange={(v) => setCaste(v === 'all' ? '' : v)}>
           <SelectTrigger className="font-sans h-11 rounded-lg border-[#D4A843]/25">
             <SelectValue placeholder="Any caste" />
@@ -124,7 +110,7 @@ function FilterControls({
       </div>
 
       <div>
-        <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-2">Marital Status</label>
+        <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-1">Marital Status</label>
         <Select value={maritalStatus || 'all'} onValueChange={(v) => setMaritalStatus(v === 'all' ? '' : v)}>
           <SelectTrigger className="font-sans h-11 rounded-lg border-[#D4A843]/25">
             <SelectValue placeholder="Any marital status" />
@@ -139,7 +125,7 @@ function FilterControls({
       </div>
 
       <div>
-        <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-2">Mother Tongue</label>
+        <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-1">Mother Tongue</label>
         <Select value={motherTongue || 'all'} onValueChange={(v) => setMotherTongue(v === 'all' ? '' : v)}>
           <SelectTrigger className="font-sans h-11 rounded-lg border-[#D4A843]/25">
             <SelectValue placeholder="Any mother tongue" />
@@ -164,7 +150,7 @@ function FilterControls({
       </div>
 
       <div>
-        <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-2">Sort By</label>
+        <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-1">Sort By</label>
         <Select value={sortBy} onValueChange={setSortBy}>
           <SelectTrigger className="font-sans h-11 rounded-lg border-[#D4A843]/25">
             <SelectValue />
@@ -208,30 +194,92 @@ export default function BrowseProfiles() {
   const searchInputRef = useRef(null);
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 350);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['browseProfiles', country, state, education, caste, maritalStatus, motherTongue, sortBy, ignoreAge, debouncedSearch],
+  const outsideRangeSectionRef = useRef(null);
+
+  const filterParams = {
+    country, state, education, caste, maritalStatus, motherTongue, sortBy,
+    search: debouncedSearch || undefined,
+  };
+  const filterKey = [country, state, education, caste, maritalStatus, motherTongue, sortBy, debouncedSearch];
+
+  // Browsing is never capped: pages of 20, loaded as the member scrolls (or
+  // taps "Show more matches"). Only opening a full profile is metered.
+  const fetchPage = (agePreference) => async ({ pageParam = 1 }) => {
+    const res = await client.get('/api/profiles/discover', {
+      params: { ...filterParams, agePreference, page: pageParam },
+    });
+    return { profiles: res.data.data || [], pagination: res.data.pagination || {} };
+  };
+  const nextPage = (lastPage) => (lastPage.pagination?.hasMore ? lastPage.pagination.page + 1 : undefined);
+
+  const {
+    data: pagesData,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['browseProfiles', ...filterKey],
+    queryFn: fetchPage('within'),
+    initialPageParam: 1,
+    getNextPageParam: nextPage,
+  });
+
+  const { data: interactionData } = useQuery({
+    queryKey: ['browseInteractions'],
     queryFn: async () => {
-      const [profilesRes, likedRes, shortlistedRes] = await Promise.all([
-        client.get('/api/profiles/discover', {
-          params: {
-            country, state, education, caste, maritalStatus, motherTongue, sortBy,
-            ignoreAgePreference: ignoreAge ? 'true' : 'false',
-            search: debouncedSearch || undefined,
-          },
-        }),
+      const [likedRes, shortlistedRes] = await Promise.all([
         client.get('/api/profiles/liked'),
         client.get('/api/profiles/shortlisted'),
       ]);
-
-      const profiles = profilesRes.data.data || [];
-      const likedIds = likedRes.data.data?.map((p) => p._id) || [];
-      const shortlistedIds = shortlistedRes.data.data?.map((p) => p._id) || [];
-      const gated = profilesRes.data.gated || false;
-      const totalAvailable = profilesRes.data.totalAvailable || 0;
-
-      return { profiles, likedIds, shortlistedIds, gated, totalAvailable };
+      return {
+        likedIds: likedRes.data.data?.map((p) => p._id) || [],
+        shortlistedIds: shortlistedRes.data.data?.map((p) => p._id) || [],
+      };
     },
   });
+
+  // "See more profiles outside your preferred age range" — a second list of
+  // ONLY out-of-range profiles (so nothing repeats from the grid above),
+  // fetched once that link is clicked and paged the same way.
+  const {
+    data: extraPages,
+    isLoading: isExtraLoading,
+    fetchNextPage: fetchNextExtraPage,
+    hasNextPage: hasNextExtraPage,
+    isFetchingNextPage: isFetchingNextExtraPage,
+  } = useInfiniteQuery({
+    queryKey: ['browseProfilesOutside', ...filterKey],
+    queryFn: fetchPage('outside'),
+    initialPageParam: 1,
+    getNextPageParam: nextPage,
+    enabled: ignoreAge,
+  });
+
+  // Auto-load the next page when the bottom of the in-range grid scrolls
+  // into view; the visible button below does the same for anyone who prefers it.
+  const loadMoreRef = useRef(null);
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el || !hasNextPage) return undefined;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting && !isFetchingNextPage) fetchNextPage();
+    }, { rootMargin: '400px' });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Scroll the newly-revealed section into view below the existing grid,
+  // instead of leaving the page where it was (which reads as "nothing
+  // happened" when the new profiles render off-screen further down).
+  useEffect(() => {
+    if (!ignoreAge) return;
+    const frame = requestAnimationFrame(() => {
+      outsideRangeSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [ignoreAge]);
 
   // The mobile bottom nav's "Search" tab links here with ?focusSearch=1 to
   // jump straight into the text search box instead of the filter sheet.
@@ -254,12 +302,21 @@ export default function BrowseProfiles() {
     }
   }, [error, router]);
 
-  const profilesData = data?.profiles || [];
-  const isGated = data?.gated || false;
-  const totalAvailable = data?.totalAvailable || 0;
+  // De-duplicated across pages (a profile can shift pages if someone joins mid-scroll).
+  const dedupe = (pages) => {
+    const seen = new Set();
+    return (pages || []).flatMap((pg) => pg.profiles).filter((p) => (seen.has(p._id) ? false : seen.add(p._id)));
+  };
+  const profilesData = useMemo(() => dedupe(pagesData?.pages), [pagesData]);
+  const totalMatches = pagesData?.pages?.[0]?.pagination?.total ?? profilesData.length;
 
-  const likedIdsSet = useMemo(() => new Set(data?.likedIds || []), [data?.likedIds]);
-  const shortlistedIdsSet = useMemo(() => new Set(data?.shortlistedIds || []), [data?.shortlistedIds]);
+  const likedIdsSet = useMemo(() => new Set(interactionData?.likedIds || []), [interactionData?.likedIds]);
+  const shortlistedIdsSet = useMemo(() => new Set(interactionData?.shortlistedIds || []), [interactionData?.shortlistedIds]);
+
+  const outsideRangeProfiles = useMemo(() => {
+    const inRange = new Set(profilesData.map((p) => p._id));
+    return dedupe(extraPages?.pages).filter((p) => !inRange.has(p._id));
+  }, [extraPages, profilesData]);
 
   const resetFilters = () => {
     setCountry('');
@@ -275,12 +332,73 @@ export default function BrowseProfiles() {
 
   const activeFilterCount = [country, state, education, caste, maritalStatus, motherTongue, ignoreAge].filter(Boolean).length;
 
+  // Shown below the in-range grid, and below the empty state when nothing
+  // matches the preferred age range.
+  const outsideRangeBlock = !ignoreAge ? (
+    <div className="mt-6 text-center">
+      <button
+        type="button"
+        onClick={() => setIgnoreAge(true)}
+        className="font-sans text-sm text-[#D4A843] hover:text-[#B8860B] underline underline-offset-2"
+      >
+        See more profiles outside your preferred age range
+      </button>
+    </div>
+  ) : (
+    <div ref={outsideRangeSectionRef} className="mt-10 pt-8 border-t border-[#D4A843]/20">
+      <h3 className="font-serif text-lg font-semibold text-[#1A1A1A] mb-4">
+        Profiles outside your preferred age range
+      </h3>
+      {isExtraLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-[#D4A843]/15 shadow-sm overflow-hidden">
+              <Skeleton className="aspect-[4/5] rounded-none" />
+              <div className="p-4 space-y-3">
+                <Skeleton className="h-5 w-2/3" />
+                <Skeleton className="h-3 w-4/5" />
+                <Skeleton className="h-3 w-3/5" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : outsideRangeProfiles.length === 0 ? (
+        <p className="font-sans text-sm text-[#2C3E50]/60">
+          No additional profiles found outside your preferred age range.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          {outsideRangeProfiles.map((profile) => (
+            <ProfileCard
+              key={profile._id}
+              profile={profile}
+              isLiked={likedIdsSet.has(profile._id)}
+              isShortlisted={shortlistedIdsSet.has(profile._id)}
+            />
+          ))}
+        </div>
+      )}
+      {hasNextExtraPage && (
+        <div className="mt-6 text-center">
+          <Button
+            variant="outline"
+            onClick={() => fetchNextExtraPage()}
+            disabled={isFetchingNextExtraPage}
+            className="h-12 px-6 font-sans border-[#D4A843]/50"
+          >
+            {isFetchingNextExtraPage ? 'Loading...' : 'Show more profiles'}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-[#FDF8F0] py-6 sm:py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#1A1A1A]">
-            Browse Profiles
+            Search Matches
           </h2>
 
           {/* Mobile filter trigger */}
@@ -309,7 +427,7 @@ export default function BrowseProfiles() {
                   maritalStatus={maritalStatus} setMaritalStatus={setMaritalStatus}
                   motherTongue={motherTongue} setMotherTongue={setMotherTongue}
                   sortBy={sortBy} setSortBy={setSortBy}
-                  ignoreAge={ignoreAge} setIgnoreAge={setIgnoreAge}
+                  ignoreAge={ignoreAge}
                   onReset={resetFilters}
                 />
               </div>
@@ -394,7 +512,7 @@ export default function BrowseProfiles() {
                 maritalStatus={maritalStatus} setMaritalStatus={setMaritalStatus}
                 motherTongue={motherTongue} setMotherTongue={setMotherTongue}
                 sortBy={sortBy} setSortBy={setSortBy}
-                ignoreAge={ignoreAge} setIgnoreAge={setIgnoreAge}
+                ignoreAge={ignoreAge}
                 onReset={resetFilters}
               />
             </div>
@@ -435,6 +553,7 @@ export default function BrowseProfiles() {
                 </div>
               </div>
             ) : profilesData.length === 0 ? (
+              <>
               <div className="flex items-center justify-center py-24">
                 <div className="text-center max-w-sm">
                   <p className="font-sans text-lg text-[#1A1A1A] font-medium mb-2">
@@ -457,6 +576,9 @@ export default function BrowseProfiles() {
                   )}
                 </div>
               </div>
+              {/* No in-range matches is exactly when widening the age range helps most. */}
+              {outsideRangeBlock}
+              </>
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -470,22 +592,23 @@ export default function BrowseProfiles() {
                   ))}
                 </div>
 
-                {isGated && totalAvailable > profilesData.length && (
-                  <div className="mt-8 rounded-xl border border-[#D4A843]/30 bg-[#F5E6C3]/40 p-6 text-center">
-                    <p className="font-serif text-lg font-semibold text-[#1A1A1A] mb-1">
-                      {totalAvailable - profilesData.length} more {totalAvailable - profilesData.length === 1 ? 'match' : 'matches'} waiting for you
-                    </p>
-                    <p className="font-sans text-sm text-[#2C3E50] mb-4">
-                      Upgrade your membership to see your full list of matches.
-                    </p>
-                    <button
-                      onClick={() => router.push('/membership/purchase')}
-                      className="bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold px-6 py-2.5 rounded-lg transition-colors"
+                <div ref={loadMoreRef} className="mt-6 text-center">
+                  <p className="font-sans text-sm text-[#2C3E50]/60 mb-3">
+                    Showing {profilesData.length} of {totalMatches} {totalMatches === 1 ? 'match' : 'matches'}
+                  </p>
+                  {hasNextPage && (
+                    <Button
+                      variant="outline"
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                      className="h-12 px-6 font-sans border-[#D4A843]/50"
                     >
-                      Upgrade Membership
-                    </button>
-                  </div>
-                )}
+                      {isFetchingNextPage ? 'Loading more matches...' : 'Show more matches'}
+                    </Button>
+                  )}
+                </div>
+
+                {!hasNextPage && outsideRangeBlock}
               </>
             )}
           </div>

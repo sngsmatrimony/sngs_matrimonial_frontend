@@ -8,11 +8,14 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Receipt, Loader2, ShoppingBag } from 'lucide-react';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
+import { formatRupees } from '@/lib/money';
+import { displayTransactionStatus } from '@/lib/transactionStatus';
 
 const STATUS_STYLES = {
   success: 'bg-[#2E7D32] text-white',
   pending: 'bg-[#D4A843] text-[#1A1A1A]',
   failed: 'bg-[#C75B39] text-white',
+  'not completed': 'bg-gray-200 text-gray-700',
 };
 
 export default function TransactionHistory() {
@@ -84,23 +87,33 @@ export default function TransactionHistory() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-serif text-lg font-semibold text-[#1A1A1A]">
-                        {txn.planId?.name || 'Membership Plan'}
+                        {txn.type === 'credits' ? `${txn.creditsGranted} Credits` : `${txn.planId?.name || 'Membership'} plan`}
                       </h3>
-                      <Badge className={`font-sans text-xs capitalize ${STATUS_STYLES[txn.status] || 'bg-gray-400 text-white'}`}>
-                        {txn.status}
+                      <Badge className={`font-sans text-xs capitalize ${STATUS_STYLES[displayTransactionStatus(txn)] || 'bg-gray-400 text-white'}`}>
+                        {displayTransactionStatus(txn)}
                       </Badge>
                     </div>
                     <p className="font-sans text-sm text-[#2C3E50]/70">
                       {new Date(txn.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
+                    {txn.receiptNumber && (
+                      <p className="font-sans text-xs text-[#2C3E50]/60 mt-0.5">Receipt {txn.receiptNumber}</p>
+                    )}
                   </div>
                   <div className="text-right">
-                    <p className="font-serif text-2xl font-bold text-[#1A1A1A]">
-                      ₹{txn.amount?.toLocaleString('en-IN')}
+                    <p className="font-sans text-2xl font-bold text-[#1A1A1A] tabular-nums">
+                      {formatRupees(txn.amount)}
                     </p>
-                    {txn.status === 'success' && (
+                    {txn.gatewayCharges > 0 && (
                       <p className="font-sans text-xs text-[#2C3E50]/60">
-                        {txn.creditsGranted} credits · {txn.validityDays === null ? 'unlimited validity' : `${txn.validityDays}-day validity`}
+                        {formatRupees(txn.baseAmount)} + {formatRupees(txn.gatewayCharges)} gateway charges
+                      </p>
+                    )}
+                    {txn.status === 'success' && !txn.autoRefunded && (
+                      <p className="font-sans text-xs text-[#2C3E50]/60">
+                        {txn.type === 'credits'
+                          ? `${txn.creditsGranted} credits added to your plan`
+                          : `${txn.creditsGranted} credits · ${txn.validityDays === null ? 'no expiry' : `${txn.validityDays}-day validity`}`}
                       </p>
                     )}
                   </div>
@@ -118,7 +131,7 @@ export default function TransactionHistory() {
                       Refund {txn.refundStatus}
                     </Badge>
                     <p className="font-sans text-sm text-[#2C3E50]/70">
-                      ₹{txn.refundAmount?.toLocaleString('en-IN')} refunded
+                      {formatRupees(txn.refundAmount ?? txn.amount)} refunded
                       {txn.refundReason ? ` — ${txn.refundReason}` : ''}
                     </p>
                   </div>

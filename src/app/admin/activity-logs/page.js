@@ -17,6 +17,7 @@ const ACTION_OPTIONS = [
   { value: 'PDF_DOWNLOAD', label: 'PDF Download' },
   { value: 'EXPRESS_INTEREST', label: 'Express Interest' },
   { value: 'HOROSCOPE_DOWNLOAD', label: 'Horoscope Download' },
+  { value: 'PHONE_CHAT_UNLOCK', label: 'Phone & Chat Unlock' },
 ];
 
 const ACTION_LABELS = Object.fromEntries(ACTION_OPTIONS.map((o) => [o.value, o.label]));
@@ -67,7 +68,7 @@ export default function AdminActivityLogsPage() {
       <div>
         <h1 className="font-serif text-2xl text-[#1A1A1A]">Activity Logs</h1>
         <p className="font-sans text-sm text-[#2C3E50]/70 mt-1">
-          Audit trail of member logins, profile views, downloads, and express-interest actions —
+          Audit trail of member logins, profile views, downloads, contact unlocks and express-interest actions —
           use it to spot unusually high activity from a single account (a common sign of a broker
           scraping the platform rather than a genuine member browsing).
         </p>

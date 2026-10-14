@@ -24,7 +24,7 @@ function EmojiPicker({ onSelect, disabled }) {
           variant="ghost"
           size="icon"
           disabled={disabled}
-          className="hidden sm:inline-flex shrink-0 mb-1 text-[#2C3E50]/60 hover:text-[#D4A843] hover:bg-[#F5E6C3]/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="hidden sm:inline-flex shrink-0 h-10 w-10 rounded-full text-[#2C3E50]/60 hover:text-[#B8860B] hover:bg-[#F5E6C3]/60 disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Insert emoji"
         >
           <Smile className="w-5 h-5" />
@@ -50,6 +50,8 @@ function EmojiPicker({ onSelect, disabled }) {
 }
 
 const TYPING_REFRESH_MS = 2000;
+// Matches the server's per-message limit (chat.socket.js / chat.controller.js).
+const MAX_LENGTH = 4000;
 
 /**
  * MessageInput Component
@@ -69,6 +71,7 @@ export default function MessageInput({
   isLoading = false,
   disabled = false,
   placeholder = "Type a message...",
+  draft = null, // { text, nonce } — fills the box (e.g. a suggested opener) without sending
 }) {
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -76,9 +79,25 @@ export default function MessageInput({
   const typingTimeoutRef = useRef(null);
   const lastTypingStartRef = useRef(0);
 
+  // A suggestion chip was picked: put it in the box for the member to edit
+  // and send (React's "adjust state when a prop changes" pattern).
+  const [appliedDraftNonce, setAppliedDraftNonce] = useState(null);
+  if (draft?.text && draft.nonce !== appliedDraftNonce) {
+    setAppliedDraftNonce(draft.nonce);
+    setMessage(draft.text.slice(0, MAX_LENGTH));
+  }
+  useEffect(() => {
+    if (!appliedDraftNonce) return;
+    const t = textareaRef.current;
+    if (t) {
+      t.focus();
+      t.setSelectionRange(t.value.length, t.value.length);
+    }
+  }, [appliedDraftNonce]);
+
   // Handle message change and typing indicator
   const handleChange = (e) => {
-    const value = e.target.value;
+    const value = e.target.value.slice(0, MAX_LENGTH);
     setMessage(value);
 
     // Trigger typing indicator. The server drops a typing state after 5s without
@@ -128,9 +147,11 @@ export default function MessageInput({
     }
   };
 
-  // Handle Enter key to send (Shift+Enter for new line)
+  // Enter sends on desktop (Shift+Enter = new line). On touch screens Enter
+  // adds a new line and the member taps Send — avoids accidental sends.
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    const isTouch = typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
+    if (e.key === "Enter" && !e.shiftKey && !isTouch) {
       e.preventDefault();
       handleSend();
     }
@@ -174,47 +195,54 @@ export default function MessageInput({
     };
   }, []);
 
+  const remaining = MAX_LENGTH - message.length;
+
   return (
-    <div className="border-t border-[#D4A843]/15 bg-white px-4 py-3 shrink-0 sticky bottom-0 z-20">
+    <div className="border-t border-[#D4A843]/15 bg-white px-3 sm:px-4 py-3 shrink-0">
       <div className="flex items-end gap-2">
-        {/* Emoji Picker (desktop only) */}
-        <EmojiPicker onSelect={handleEmojiSelect} disabled={disabled || isLoading} />
+        <div className="flex-1 flex items-end gap-1 rounded-3xl border border-[#D4A843]/30 bg-[#FDF8F0] pl-2 pr-1 focus-within:border-[#D4A843] focus-within:ring-2 focus-within:ring-[#D4A843]/25 transition-colors">
+          {/* Emoji Picker (desktop only) */}
+          <EmojiPicker onSelect={handleEmojiSelect} disabled={disabled || isLoading} />
 
-        {/* Message Textarea */}
-        <Textarea
-          ref={textareaRef}
-          value={message}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={disabled || isLoading}
-          className={cn(
-            "min-h-[40px] max-h-[120px] resize-none font-sans text-[15px] leading-relaxed rounded-xl",
-            "border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50",
-            "disabled:opacity-50 disabled:cursor-not-allowed"
-          )}
-          rows={1}
-        />
+          <Textarea
+            ref={textareaRef}
+            value={message}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            disabled={disabled || isLoading}
+            aria-label="Type a message"
+            maxLength={MAX_LENGTH}
+            className={cn(
+              "min-h-[44px] max-h-[120px] resize-none border-0 bg-transparent shadow-none px-2 py-2.5",
+              "font-sans text-[15px] leading-relaxed focus-visible:ring-0 focus-visible:border-0",
+              "disabled:opacity-50 disabled:cursor-not-allowed"
+            )}
+            rows={1}
+          />
+        </div>
 
-        {/* Send Button */}
         <Button
           type="button"
           onClick={handleSend}
           disabled={!message.trim() || disabled || isLoading}
-          className={cn(
-            "shrink-0 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] mb-1 px-3",
-            "disabled:opacity-50 disabled:cursor-not-allowed"
-          )}
+          className="shrink-0 h-11 rounded-full px-4 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Send className="w-5 h-5 sm:mr-1.5" />
-          <span className="hidden sm:inline">Send</span>
+          <Send className="w-4 h-4 mr-1.5" aria-hidden="true" />
+          Send
         </Button>
       </div>
 
-      {/* Helper Text */}
-      <p className="text-[11px] font-sans text-[#2C3E50]/50 mt-2 px-1">
-        Press Enter to send, Shift + Enter for new line
-      </p>
+      <div className="flex justify-between gap-2 mt-1.5 px-2 min-h-[16px]">
+        <p className="hidden md:block text-[11px] font-sans text-[#2C3E50]/50">
+          Enter to send · Shift + Enter for a new line
+        </p>
+        {remaining <= 500 && (
+          <p className={cn("text-[11px] font-sans ml-auto tabular-nums", remaining <= 100 ? "text-[#C75B39]" : "text-[#2C3E50]/60")}>
+            {remaining} characters left
+          </p>
+        )}
+      </div>
     </div>
   );
 }

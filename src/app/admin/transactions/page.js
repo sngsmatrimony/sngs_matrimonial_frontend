@@ -22,12 +22,15 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toastError, toastSuccess } from '@/lib/toast';
+import { formatRupees } from '@/lib/money';
+import { displayTransactionStatus } from '@/lib/transactionStatus';
 import { ChevronLeft, ChevronRight, IndianRupee } from 'lucide-react';
 
 const STATUS_BADGE = {
   success: { variant: 'default', className: 'bg-[#E3F1E4] text-[#2E7D32] border-[#2E7D32]/30' },
   pending: { variant: 'outline', className: 'bg-[#F5E6C3] text-[#8A6215] border-[#D4A843]/40' },
   failed: { variant: 'destructive', className: '' },
+  'not completed': { variant: 'outline', className: 'bg-gray-100 text-gray-600 border-gray-300' },
 };
 
 export default function AdminTransactionsPage() {
@@ -102,7 +105,7 @@ export default function AdminTransactionsPage() {
                   <TableRow className="bg-[#FDF8F0]">
                     <TableHead>Date</TableHead>
                     <TableHead>Member</TableHead>
-                    <TableHead>Plan</TableHead>
+                    <TableHead>Purchase</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Credits</TableHead>
                     <TableHead>Status</TableHead>
@@ -121,30 +124,43 @@ export default function AdminTransactionsPage() {
                           <div className="font-medium text-[#1A1A1A]">{txn.userId?.fullName || 'Deleted user'}</div>
                           <div className="text-xs text-[#2C3E50]/60">{txn.userId?.email}</div>
                         </TableCell>
-                        <TableCell className="text-sm font-sans text-[#2C3E50]">{txn.planId?.name || '—'}</TableCell>
-                        <TableCell className="text-sm font-sans text-[#1A1A1A] font-medium">
-                          ₹{txn.amount?.toLocaleString('en-IN')}
+                        <TableCell className="text-sm font-sans text-[#2C3E50]">
+                          {txn.type === 'credits'
+                            ? <Badge variant="outline" className="font-sans text-xs">Credit pack</Badge>
+                            : txn.planId?.name || '—'}
+                          {txn.receiptNumber && <div className="text-[11px] text-[#2C3E50]/50 mt-0.5">{txn.receiptNumber}</div>}
+                        </TableCell>
+                        <TableCell className="text-sm font-sans text-[#1A1A1A]">
+                          <div className="font-medium tabular-nums">{formatRupees(txn.amount)}</div>
+                          {txn.gatewayCharges > 0 && (
+                            <div className="text-[11px] text-[#2C3E50]/60">
+                              {formatRupees(txn.baseAmount)} + {formatRupees(txn.gatewayCharges)} charges
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="text-sm font-sans text-[#2C3E50]">{txn.creditsGranted}</TableCell>
                         <TableCell>
                           <Badge
-                            variant={STATUS_BADGE[txn.status]?.variant || 'secondary'}
-                            className={`capitalize ${STATUS_BADGE[txn.status]?.className || ''}`}
+                            variant={STATUS_BADGE[displayTransactionStatus(txn)]?.variant || 'secondary'}
+                            className={`capitalize ${STATUS_BADGE[displayTransactionStatus(txn)]?.className || ''}`}
                           >
-                            {txn.status}
+                            {displayTransactionStatus(txn)}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           {txn.refundStatus ? (
-                            <Badge variant="outline" className="capitalize">
-                              {txn.refundStatus} · ₹{txn.refundAmount?.toLocaleString('en-IN')}
-                            </Badge>
+                            <div>
+                              <Badge variant="outline" className={`capitalize ${txn.refundStatus === 'failed' ? 'text-[#C75B39] border-[#C75B39]/40' : ''}`}>
+                                {txn.autoRefunded ? 'Auto · ' : ''}{txn.refundStatus}{txn.refundAmount ? ` · ${formatRupees(txn.refundAmount)}` : ''}
+                              </Badge>
+                              {txn.refundReason && <div className="text-[11px] text-[#2C3E50]/60 mt-1 max-w-[220px]">{txn.refundReason}</div>}
+                            </div>
                           ) : (
                             <span className="text-xs font-sans text-[#2C3E50]/40">—</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          {txn.status === 'success' && !txn.refundStatus && (
+                          {txn.status === 'success' && (!txn.refundStatus || (txn.refundStatus === 'failed' && !txn.refundId)) && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -191,8 +207,10 @@ export default function AdminTransactionsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="font-serif">Refund this transaction?</AlertDialogTitle>
             <AlertDialogDescription className="font-sans">
-              This refunds ₹{refundTarget?.amount?.toLocaleString('en-IN')} to {refundTarget?.userId?.fullName} via Razorpay
-              and deducts {refundTarget?.creditsGranted} credits from their account. This cannot be undone.
+              This refunds {formatRupees(refundTarget?.amount)} to {refundTarget?.userId?.fullName} via Razorpay
+              {refundTarget?.autoRefunded
+                ? '. No credits were added for this payment, so none are deducted.'
+                : ` and deducts ${refundTarget?.creditsGranted} credits from their account.`} This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2">

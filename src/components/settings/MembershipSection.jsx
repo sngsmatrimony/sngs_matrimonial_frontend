@@ -11,18 +11,20 @@ import { useEnforcementStatus } from '@/hooks/useEnforcementStatus';
 
 // Same semantics as membership/purchase/page.js's buildFeatureBullets, but
 // phrased for a plan the member already has rather than one they're
-// considering — see checkMembership.js's hasPlanFeature for what each
-// toggle actually does.
-function buildActivePerks(features) {
-  const perks = [];
-  if (features?.unlimitedProfileViews) perks.push('Unlimited profile views');
-  if (features?.unlimitedBrowsing) perks.push('Unlimited search — never capped, even at 0 credits');
-  if (features?.unlimitedContactAccess) perks.push('Phone numbers always visible, even at 0 credits');
-  if (features?.unlimitedChat) perks.push('Unlimited new chats, even at 0 credits');
-  if (features?.unlimitedHoroscopeDownload) perks.push('Unlimited horoscope downloads, even at 0 credits');
-  if (perks.length === 0) {
-    perks.push('Your credit balance also covers chat, contact numbers & horoscope downloads');
-  }
+// considering — see creditCost.service.js for what each activity cost
+// actually gates.
+function costLine(label, entry) {
+  if (!entry || entry.unlimited || !entry.cost) return `${label}: free, unlimited`;
+  return `${label}: ${entry.cost} credit${entry.cost === 1 ? '' : 's'} per use`;
+}
+
+function buildActivePerks(plan) {
+  const costs = plan?.costs || {};
+  const perks = [
+    costLine('Viewing a profile', costs.profileView),
+    costLine('Phone number & chat', costs.phoneAndChat),
+    costLine('Downloading a profile', costs.profileDownload),
+  ];
   return perks;
 }
 
@@ -88,14 +90,14 @@ export default function MembershipSection() {
               </div>
             </div>
 
-            {/* What this plan actually grants — mirrors the admin's own
-                Feature Access checklist for this plan, so a member can see
-                exactly what they're entitled to, not just a credit count. */}
+            {/* What this plan actually costs per activity — mirrors the
+                admin's own Credit Costs panel for this plan, so a member can
+                see exactly what they're entitled to, not just a credit count. */}
             <div className="p-4 bg-[#FDF8F0] border border-[#D4A843]/20 rounded-lg space-y-2">
               <p className="font-sans text-xs font-semibold uppercase tracking-wide text-[#2C3E50]/60">
                 What your plan includes
               </p>
-              {buildActivePerks(plan?.features).map((perk) => (
+              {buildActivePerks(plan).map((perk) => (
                 <div key={perk} className="flex items-start gap-2 font-sans text-sm text-[#1A1A1A]">
                   <CheckCircle2 className="w-4 h-4 text-[#2E7D32] shrink-0 mt-0.5" />
                   <span>{perk}</span>
@@ -103,18 +105,24 @@ export default function MembershipSection() {
               ))}
             </div>
 
+            <p className="font-sans text-sm text-[#2C3E50]/80 leading-relaxed">
+              {membership?.expiryDate
+                ? `Running low? Buy more credits any time before ${new Date(membership.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} — they're added to this plan and expire with it. When the plan ends, unused credits and unlocked profiles reset.`
+                : 'Running low? Buy more credits any time — they are added to this plan.'}
+            </p>
+
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
-                onClick={() => router.push('/membership/purchase')}
-                className="w-full sm:w-auto bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold"
+                onClick={() => router.push('/membership/purchase#credits')}
+                className="w-full sm:w-auto h-12 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold"
               >
                 <ShoppingBag className="mr-2 h-4 w-4" />
-                Purchase More Credits
+                Buy More Credits
               </Button>
               <Button
                 variant="outline"
                 onClick={() => router.push('/transactions')}
-                className="w-full sm:w-auto border-[#2C3E50]/20 text-[#1A1A1A] font-sans font-semibold"
+                className="w-full sm:w-auto h-12 border-[#2C3E50]/20 text-[#1A1A1A] font-sans font-semibold"
               >
                 <Receipt className="mr-2 h-4 w-4" />
                 View Purchase History
@@ -128,7 +136,9 @@ export default function MembershipSection() {
               {membership?.isExpired ? 'Membership Expired' : 'No Active Membership'}
             </h3>
             <p className="font-sans text-[#2C3E50]/70 mb-4">
-              Get a membership to browse profiles
+              {membership?.isExpired
+                ? 'Your plan has ended, so its credits and unlocked profiles have reset. Choose a plan to continue viewing full profiles.'
+                : 'Searching is free. Choose a plan to view full profiles, contact matches and chat.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button

@@ -546,7 +546,8 @@ export const getAllEducationOptions = () => {
 
 // Utility function to get all occupation options in flat array
 export const getAllOccupationOptions = () => {
-  return Object.values(OCCUPATIONS).flat();
+  // frequentlySelected repeats entries from the category lists.
+  return [...new Set(Object.values(OCCUPATIONS).flat())];
 };
 
 // Utility function to get all mother tongue options in flat array

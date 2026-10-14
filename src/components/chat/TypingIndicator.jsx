@@ -1,11 +1,10 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-
 /**
  * TypingIndicator Component
  *
- * Displays an animated "User is typing..." indicator with three dots animation.
+ * "Name is typing" with three softly fading dots — a gentle opacity pulse,
+ * no bouncing (the design system avoids bouncy animation).
  *
  * @param {Object} props - Component props
  * @param {Array<string>} props.typingUsers - Array of user IDs who are currently typing
@@ -16,68 +15,37 @@ export default function TypingIndicator({ typingUsers = [], typingUserDetails = 
     return null;
   }
 
-  // Get the name of the first typing user
-  const firstTypingUserId = typingUsers[0];
-  const typingUserName = typingUserDetails[firstTypingUserId]?.name || "Someone";
+  const typingUserName = typingUserDetails[typingUsers[0]]?.name?.split(' ')[0] || "Someone";
 
   return (
-    <div className="flex w-full justify-start mb-3 animate-fadeIn">
-      <div className="max-w-[70%] rounded-2xl rounded-bl-sm px-4 py-3 bg-[#F5E6C3]/60 shadow-sm">
+    <div className="flex w-full justify-start mt-3" aria-live="polite">
+      <div className="rounded-2xl rounded-bl-md px-3.5 py-2.5 bg-white border border-[#D4A843]/20 shadow-sm">
         <div className="flex items-center gap-2">
-          {/* Typing User Name */}
-          <span className="text-xs font-sans text-[#2C3E50]/70">
+          <span className="text-[13px] font-sans text-[#2C3E50]/75">
             {typingUserName} is typing
           </span>
-
-          {/* Three Dots Animation */}
-          <div className="flex items-center gap-1">
-            <span
-              className="w-2 h-2 bg-[#2C3E50]/40 rounded-full animate-typingDot"
-              style={{ animationDelay: "0ms" }}
-            ></span>
-            <span
-              className="w-2 h-2 bg-[#2C3E50]/40 rounded-full animate-typingDot"
-              style={{ animationDelay: "200ms" }}
-            ></span>
-            <span
-              className="w-2 h-2 bg-[#2C3E50]/40 rounded-full animate-typingDot"
-              style={{ animationDelay: "400ms" }}
-            ></span>
-          </div>
+          <span className="flex items-center gap-1" aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-[#D4A843] chat-typing-dot"
+                style={{ animationDelay: `${i * 200}ms` }}
+              />
+            ))}
+          </span>
         </div>
       </div>
 
       <style jsx>{`
-        @keyframes typingDot {
-          0%,
-          60%,
-          100% {
-            transform: translateY(0);
-            opacity: 0.7;
-          }
-          30% {
-            transform: translateY(-8px);
-            opacity: 1;
-          }
+        .chat-typing-dot {
+          animation: chatTypingFade 1.2s infinite ease-in-out;
         }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(4px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        @keyframes chatTypingFade {
+          0%, 80%, 100% { opacity: 0.25; }
+          40% { opacity: 1; }
         }
-
-        .animate-typingDot {
-          animation: typingDot 1.4s infinite ease-in-out;
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
+        @media (prefers-reduced-motion: reduce) {
+          .chat-typing-dot { animation: none; opacity: 0.6; }
         }
       `}</style>
     </div>

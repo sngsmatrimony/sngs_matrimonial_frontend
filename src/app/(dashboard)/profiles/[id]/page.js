@@ -19,6 +19,8 @@ export default function ProfileViewPage() {
   const [loading, setLoading] = useState(true);
   const [creditsDeducted, setCreditsDeducted] = useState(false);
   const [error, setError] = useState(null);
+  const [serverMessage, setServerMessage] = useState('');
+  const [isExpiredPlan, setIsExpiredPlan] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -35,15 +37,18 @@ export default function ProfileViewPage() {
 
       if (response.data.data.creditsDeducted) {
         await refreshMembership();
-        toastSuccess('1 credit deducted for viewing this profile');
+        const spent = response.data.data.creditsSpent || 1;
+        toastSuccess(`${spent} credit${spent === 1 ? '' : 's'} used to view this profile`);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
 
       if (error.response?.data?.requiresCredits) {
         setError('insufficient-credits');
+        setServerMessage(error.response.data.message || '');
       } else if (error.response?.data?.requiresMembership) {
         setError('no-membership');
+        setIsExpiredPlan(!!error.response.data.isExpired);
       } else if (error.response?.status === 404) {
         setError('not-found');
         toastError('Profile not found');
@@ -94,17 +99,19 @@ export default function ProfileViewPage() {
           </h2>
           <p className="font-sans text-[#2C3E50]/80 mb-6 leading-relaxed">
             {error === 'insufficient-credits'
-              ? "You're out of credits. Choose a membership plan to unlock this profile and keep browsing without limits."
-              : 'An active membership is required to view full profiles. Choose a plan to unlock this profile and connect with matches.'}
+              ? `${serverMessage || "You don't have enough credits."} Buy more credits for your current plan to unlock this profile.`
+              : isExpiredPlan
+                ? 'Your plan has ended. Choose a new plan to view full profiles again.'
+                : 'An active membership is required to view full profiles. Choose a plan to unlock this profile and connect with matches.'}
           </p>
           <div className="flex flex-col gap-3">
             <Button
               asChild
               className="w-full bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold h-12 rounded-xl shadow-sm"
             >
-              <Link href="/membership/purchase">
+              <Link href={error === 'insufficient-credits' ? '/membership/purchase#credits' : '/membership/purchase'}>
                 <Sparkles className="w-4 h-4 mr-2" />
-                View Membership Plans
+                {error === 'insufficient-credits' ? 'Buy More Credits' : 'View Membership Plans'}
               </Link>
             </Button>
             <Button
@@ -143,10 +150,10 @@ export default function ProfileViewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#FDF8F0]">
       {/* Profile Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ProfileDetailView profileId={params.id} profile={profile} />
+        <ProfileDetailView profileId={params.id} profile={profile} onProfileRefresh={fetchProfile} />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api/admin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +29,7 @@ function StatsCard({ icon: Icon, label, value, subtitle, color = 'text-primary' 
 }
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const { data: analyticsData, isLoading, error } = useQuery({
     queryKey: ['adminAnalytics'],
     queryFn: async () => {
@@ -63,7 +65,7 @@ export default function AdminDashboard() {
   const { counts, newUsersToday, newUsersThisWeek, newUsersThisMonth, pendingApprovals, averageAge, genderBreakdown, maritalStatusBreakdown, topCities, topStates, growthChart, revenue, activeMembersCount, membersByPlan } = analyticsData;
 
   const genderChartData = genderBreakdown.map((item) => ({
-    name: item._id || 'Unknown',
+    name: item._id ? item._id.charAt(0).toUpperCase() + item._id.slice(1) : 'Unknown',
     value: item.count,
   }));
 
@@ -231,6 +233,7 @@ export default function AdminDashboard() {
           <Card className="border-[#D4A843]/15">
             <CardHeader>
               <CardTitle className="font-serif text-[#1A1A1A]">Gender Breakdown</CardTitle>
+              <p className="font-sans text-xs text-[#2C3E50]/50 mt-0.5">Click a slice to view those users</p>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={260}>
@@ -243,6 +246,8 @@ export default function AdminDashboard() {
                     cy="50%"
                     outerRadius={90}
                     label={(entry) => `${entry.name}: ${entry.value}`}
+                    onClick={(entry) => entry?.name && entry.name !== 'Unknown' && router.push(`/admin/users?gender=${encodeURIComponent(entry.name.toLowerCase())}`)}
+                    cursor="pointer"
                   >
                     {genderChartData.map((entry, index) => (
                       <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />
@@ -260,6 +265,7 @@ export default function AdminDashboard() {
           <Card className="border-[#D4A843]/15">
             <CardHeader>
               <CardTitle className="font-serif text-[#1A1A1A]">Marital Status</CardTitle>
+              <p className="font-sans text-xs text-[#2C3E50]/50 mt-0.5">Click a bar to view those users</p>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={260}>
@@ -268,7 +274,13 @@ export default function AdminDashboard() {
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip />
-                  <Bar dataKey="value" fill="#D4A843" radius={[6, 6, 0, 0]} />
+                  <Bar
+                    dataKey="value"
+                    fill="#D4A843"
+                    radius={[6, 6, 0, 0]}
+                    cursor="pointer"
+                    onClick={(entry) => entry?.name && entry.name !== 'Unknown' && router.push(`/admin/users?maritalStatus=${encodeURIComponent(entry.name)}`)}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -282,6 +294,7 @@ export default function AdminDashboard() {
           <Card className="border-[#D4A843]/15">
             <CardHeader>
               <CardTitle className="font-serif text-[#1A1A1A]">Top Cities</CardTitle>
+              <p className="font-sans text-xs text-[#2C3E50]/50 mt-0.5">Click a bar to view those users</p>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={260}>
@@ -290,7 +303,13 @@ export default function AdminDashboard() {
                   <XAxis type="number" tick={{ fontSize: 12 }} />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={90} />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#2C3E50" radius={[0, 6, 6, 0]} />
+                  <Bar
+                    dataKey="count"
+                    fill="#2C3E50"
+                    radius={[0, 6, 6, 0]}
+                    cursor="pointer"
+                    onClick={(entry) => entry?.name && entry.name !== 'Unknown' && router.push(`/admin/users?city=${encodeURIComponent(entry.name)}`)}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -301,6 +320,7 @@ export default function AdminDashboard() {
           <Card className="border-[#D4A843]/15">
             <CardHeader>
               <CardTitle className="font-serif text-[#1A1A1A]">Top States</CardTitle>
+              <p className="font-sans text-xs text-[#2C3E50]/50 mt-0.5">Click a bar to view those users</p>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={260}>
@@ -309,7 +329,13 @@ export default function AdminDashboard() {
                   <XAxis type="number" tick={{ fontSize: 12 }} />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={90} />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#C75B39" radius={[0, 6, 6, 0]} />
+                  <Bar
+                    dataKey="count"
+                    fill="#C75B39"
+                    radius={[0, 6, 6, 0]}
+                    cursor="pointer"
+                    onClick={(entry) => entry?.name && entry.name !== 'Unknown' && router.push(`/admin/users?state=${encodeURIComponent(entry.name)}`)}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>

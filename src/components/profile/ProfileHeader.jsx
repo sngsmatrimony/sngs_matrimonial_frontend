@@ -3,10 +3,9 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, BadgeCheck, MapPin } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, MapPin, ShieldAlert } from 'lucide-react';
 import ImageLightbox from '@/components/ui/image-lightbox';
-import PhotoWatermark, { buildWatermarkText } from '@/components/ui/photo-watermark';
-import { useAuthStore } from '@/store/authStore';
+import { getVerificationState } from '@/lib/verification';
 
 function formatLocation(profile) {
   const addr = profile?.presentResidentialAddress;
@@ -21,12 +20,12 @@ function formatLocation(profile) {
  */
 export default function ProfileHeader({ profile, mode = 'self', primaryAction }) {
   const router = useRouter();
-  const { user: viewerUser } = useAuthStore();
   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [imageFailed, setImageFailed] = useState(false);
   const bannerStyle = { backgroundColor: profile?.profileBanner?.bannerColor || '#F5E6C3' };
-  const profileImageUrl = profile?.profilePicture?.url;
-  const watermarkText = mode === 'other' ? buildWatermarkText(viewerUser) : null;
-  const isVerified = profile?.approvalStatus === 'approved';
+  // A missing/deleted photo file falls back to the "No Photo" placeholder.
+  const profileImageUrl = imageFailed ? null : profile?.profilePicture?.url;
+  const verification = getVerificationState(profile);
   const location = formatLocation(profile);
   const genderLabel = profile?.gender ? profile.gender[0].toUpperCase() + profile.gender.slice(1) : null;
 
@@ -64,11 +63,11 @@ export default function ProfileHeader({ profile, mode = 'self', primaryAction })
                 unoptimized
                 draggable={false}
                 onContextMenu={(e) => e.preventDefault()}
+                onError={() => setImageFailed(true)}
               />
             ) : (
               <span className="text-center text-[#2C3E50]/40 font-sans text-xs px-2">No Photo</span>
             )}
-            <PhotoWatermark text={watermarkText} />
           </div>
 
           {profileImageUrl && (
@@ -76,7 +75,6 @@ export default function ProfileHeader({ profile, mode = 'self', primaryAction })
               images={[{ url: profileImageUrl, alt: profile?.fullName || 'Profile photo' }]}
               index={lightboxIndex}
               onOpenChange={setLightboxIndex}
-              watermarkText={watermarkText}
             />
           )}
 
@@ -85,10 +83,16 @@ export default function ProfileHeader({ profile, mode = 'self', primaryAction })
               <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1A1A1A]">
                 {profile?.fullName}
               </h1>
-              {isVerified && (
+              {verification === 'verified' && (
                 <span className="inline-flex items-center gap-1 bg-[#2E7D32]/10 text-[#2E7D32] text-xs font-sans font-semibold px-2.5 py-1 rounded-full">
                   <BadgeCheck size={14} strokeWidth={2} />
                   Verified
+                </span>
+              )}
+              {verification === 'notVerified' && (
+                <span className="inline-flex items-center gap-1 bg-[#2C3E50]/8 text-[#2C3E50]/80 text-xs font-sans font-medium px-2.5 py-1 rounded-full border border-[#2C3E50]/15">
+                  <ShieldAlert size={14} strokeWidth={2} />
+                  Not ID verified
                 </span>
               )}
             </div>
@@ -106,6 +110,19 @@ export default function ProfileHeader({ profile, mode = 'self', primaryAction })
 
           {primaryAction && <div className="pb-1 shrink-0">{primaryAction}</div>}
         </div>
+
+        {/* Below the overlapping photo row (not inside it) so extra text can't
+            push the name up under the banner. */}
+        {verification === 'notVerified' && mode === 'other' && (
+          <p className="flex items-start gap-2 font-sans text-sm text-[#2C3E50]/80 mt-4 max-w-2xl px-3 py-2.5 rounded-lg bg-[#F5E6C3]/40 border border-[#D4A843]/25">
+            <ShieldAlert size={16} className="text-[#B8860B] shrink-0 mt-0.5" strokeWidth={2} />
+            <span>
+              {profile?.idProofSubmitted
+                ? 'This member’s ID proof is awaiting verification. Our team approved this profile based on the details provided.'
+                : 'This member hasn’t submitted an ID proof. Our team approved this profile based on the details provided.'}
+            </span>
+          </p>
+        )}
 
         {profile?.profileAbout && (
           <p className="font-sans text-[#2C3E50] text-sm leading-relaxed mt-4 max-w-2xl">

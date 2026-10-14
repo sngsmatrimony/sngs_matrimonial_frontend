@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toastError, toastSuccess } from '@/lib/toast';
+import { noPasteHandlers } from '@/lib/noPasteHandlers';
 import { Shield, Plus, Eye, EyeOff } from 'lucide-react';
 
 // Zod validation schema
@@ -51,7 +52,7 @@ export default function AdminManagementPage() {
   });
 
   // Toggle an individual admin's automated alert emails (new registration,
-  // resubmission, contact form, excessive downloads, phone requests)
+  // resubmission, ID proof upload, contact form, excessive downloads)
   const alertPreferenceMutation = useMutation({
     mutationFn: ({ id, receiveAlertEmails }) => adminApi.updateAdminAlertPreference(id, receiveAlertEmails),
     onSuccess: () => {
@@ -161,6 +162,7 @@ export default function AdminManagementPage() {
                             autoComplete="new-password"
                             className="border-2 border-gray-200 focus:border-primary focus:ring-primary transition-colors font-sans pr-10"
                             {...field}
+                            {...noPasteHandlers}
                           />
                           <button
                             type="button"
@@ -210,7 +212,7 @@ export default function AdminManagementPage() {
           <CardTitle className="font-serif">All Admins ({total})</CardTitle>
           <p className="text-sm text-gray-500 font-sans">
             &quot;Receive Alert Emails&quot; controls automated notifications only (new registrations,
-            resubmissions, contact form messages, excessive downloads, phone requests) — uncheck it
+            resubmissions, ID proof uploads, contact form messages, excessive downloads) — uncheck it
             for an admin who shouldn&apos;t be emailed on every event, e.g. during testing.
           </p>
         </CardHeader>

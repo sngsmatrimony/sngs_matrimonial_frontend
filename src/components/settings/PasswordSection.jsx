@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { noPasteHandlers } from '@/lib/noPasteHandlers';
 
 const passwordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
@@ -89,7 +90,8 @@ export default function PasswordSection() {
                         type={showCurrentPassword ? 'text' : 'password'}
                         placeholder="Enter current password"
                         autoComplete="current-password"
-                        className="font-sans pr-10"
+                        className="font-sans h-12 rounded-xl pr-10"
+                        {...noPasteHandlers}
                         {...field}
                       />
                       <button
@@ -119,7 +121,8 @@ export default function PasswordSection() {
                         type={showNewPassword ? 'text' : 'password'}
                         placeholder="Enter new password"
                         autoComplete="new-password"
-                        className="font-sans pr-10"
+                        className="font-sans h-12 rounded-xl pr-10"
+                        {...noPasteHandlers}
                         {...field}
                       />
                       <button
@@ -152,7 +155,8 @@ export default function PasswordSection() {
                         type={showConfirmPassword ? 'text' : 'password'}
                         placeholder="Confirm new password"
                         autoComplete="new-password"
-                        className="font-sans pr-10"
+                        className="font-sans h-12 rounded-xl pr-10"
+                        {...noPasteHandlers}
                         {...field}
                       />
                       <button

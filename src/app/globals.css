@@ -221,3 +221,12 @@
     @apply transition-colors duration-200;
   }
 }
+
+/* Firebase's invisible reCAPTCHA (mobile OTP during registration — see
+   register/page.js) still renders its fixed-position corner badge, which on
+   narrow viewports lands on top of real buttons. Hiding it is only allowed
+   by Google's terms if the required attribution text is shown visibly
+   elsewhere instead — see the credit line next to the mobile verify button. */
+.grecaptcha-badge {
+  visibility: hidden;
+}

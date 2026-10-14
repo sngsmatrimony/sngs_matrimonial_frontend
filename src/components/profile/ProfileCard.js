@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, memo } from 'react';
+import { useCallback, useState, memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Heart, MessageCircle, Lock, MapPin, GraduationCap, Briefcase, BadgeCheck, User as UserIcon, Bookmark, Sparkles } from 'lucide-react';
+import { Heart, MessageCircle, Lock, MapPin, GraduationCap, Briefcase, BadgeCheck, ShieldAlert, User as UserIcon, Bookmark, Sparkles } from 'lucide-react';
+import { getVerificationState } from '@/lib/verification';
 import { useLandingStore } from '@/store/landingStore';
 import { useAuthStore } from '@/store/authStore';
 import { useLikeMutation } from '@/hooks/useLikeMutation';
@@ -12,7 +13,7 @@ import { useShortlistMutation } from '@/hooks/useShortlistMutation';
 import { useEnforcementStatus } from '@/hooks/useEnforcementStatus';
 import { toastInfo } from '@/lib/toast';
 import { formatRelativeActivity } from '@/lib/time';
-import PhotoWatermark, { buildWatermarkText } from '@/components/ui/photo-watermark';
+import SpendCreditsDialog from '@/components/shared/SpendCreditsDialog';
 
 function formatLocation(profile) {
   const addr = profile?.presentResidentialAddress;
@@ -23,14 +24,34 @@ function formatLocation(profile) {
 function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
   // All hooks must be called before any early returns
   const router = useRouter();
-  const { membership, user: viewerUser } = useAuthStore();
+  const { membership } = useAuthStore();
   const { setSelectedChatUserId } = useLandingStore();
   const { toggleLike, isLoading } = useLikeMutation();
   const { toggleShortlist, isLoading: isShortlistLoading } = useShortlistMutation();
+  const [showSpendDialog, setShowSpendDialog] = useState(false);
+  // A missing/deleted photo file would otherwise show a broken-image icon + alt text.
+  const [imageFailed, setImageFailed] = useState(false);
 
   // Check if user has no membership or expired/no credits (only matters when enforcement is on)
   const enforcementActive = useEnforcementStatus();
   const hasNoMembership = enforcementActive && (!membership?.isActive || membership?.isExpired || membership?.credits <= 0);
+
+  // Viewing a never-unlocked profile (server already told us via
+  // `nameMasked`) spends the plan's profileView cost — confirm before
+  // navigating rather than letting the charge happen silently on load. Only
+  // relevant when the member actually has an active, non-unlimited,
+  // nonzero-cost plan; otherwise there's nothing meaningful to confirm and
+  // the existing no-membership/insufficient-credits screen on the profile
+  // detail page already handles those cases.
+  const profileViewCost = membership?.planId?.costs?.profileView;
+  const needsSpendConfirm =
+    enforcementActive &&
+    !!profile?.nameMasked &&
+    membership?.isActive &&
+    !membership?.isExpired &&
+    profileViewCost &&
+    !profileViewCost.unlimited &&
+    profileViewCost.cost > 0;
 
   const handleLike = useCallback((e) => {
     e.preventDefault();
@@ -54,14 +75,29 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
     router.push('/messages');
   }, [profile, setSelectedChatUserId, router]);
 
-  const handleCardClick = useCallback(() => {
+  const handleCardClick = useCallback((e) => {
     // Deliberately not blocked here: navigating through shows the profile
     // page's own "Unlock This Profile" upgrade card with a direct path to
     // the plans page, which is a clearer next step than a dead-end toast.
-    if (hasNoMembership) {
+    // A member on a valid plan always gets the confirm dialog for a locked
+    // profile — including at 0 credits, where it says "Not enough credits"
+    // and offers Buy Credits instead of a dead end.
+    if (needsSpendConfirm) {
+      e.preventDefault();
+      setShowSpendDialog(true);
+      return;
+    }
+    // Only a profile that's actually still locked (masked name) — one the
+    // member already unlocked keeps opening for free even at 0 credits.
+    if (hasNoMembership && profile?.nameMasked) {
       toastInfo('This profile is locked — view membership plans to unlock it');
     }
-  }, [hasNoMembership]);
+  }, [hasNoMembership, needsSpendConfirm, profile?.nameMasked]);
+
+  const handleConfirmSpend = useCallback(() => {
+    setShowSpendDialog(false);
+    if (profile?._id) router.push(`/profiles/${profile._id}`);
+  }, [router, profile]);
 
   // Validate profile data (after hooks)
   if (!profile || !profile._id || profile._id === 'undefined' || profile._id === 'null') {
@@ -70,9 +106,8 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
 
   const profileImageUrl = profile?.profilePicture?.url;
   const location = formatLocation(profile);
-  const isVerified = profile?.approvalStatus === 'approved';
+  const verification = getVerificationState(profile);
   const activityLabel = formatRelativeActivity(profile?.lastActiveAt);
-  const watermarkText = buildWatermarkText(viewerUser);
 
   return (
     <Link
@@ -82,7 +117,7 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
     >
       {/* Photo */}
       <div className="relative aspect-[4/5] bg-[#F5E6C3]/40">
-        {profileImageUrl ? (
+        {profileImageUrl && !imageFailed ? (
           <Image
             src={profileImageUrl}
             alt={profile?.fullName || 'Profile photo'}
@@ -92,6 +127,7 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
             unoptimized
             draggable={false}
             onContextMenu={(e) => e.preventDefault()}
+            onError={() => setImageFailed(true)}
           />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
@@ -99,12 +135,17 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
             <span className="font-sans text-xs text-[#2C3E50]/50">Photo not available</span>
           </div>
         )}
-        <PhotoWatermark text={watermarkText} />
 
-        {isVerified && (
+        {verification === 'verified' && (
           <span className="absolute top-3 left-3 inline-flex items-center gap-1 bg-white/95 text-[#2E7D32] text-xs font-sans font-semibold px-2.5 py-1 rounded-full shadow-sm">
             <BadgeCheck size={13} strokeWidth={2} />
             Verified
+          </span>
+        )}
+        {verification === 'notVerified' && (
+          <span className="absolute top-3 left-3 inline-flex items-center gap-1 bg-white/95 text-[#2C3E50]/75 text-xs font-sans font-medium px-2.5 py-1 rounded-full shadow-sm">
+            <ShieldAlert size={13} strokeWidth={2} />
+            Not ID verified
           </span>
         )}
 
@@ -165,11 +206,11 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <button
             onClick={handleLike}
             disabled={isLoading}
-            className={`flex-1 inline-flex items-center justify-center gap-1.5 font-sans text-xs font-semibold px-2 py-2 rounded-lg border transition-colors disabled:opacity-50 ${
+            className={`col-span-2 h-10 inline-flex items-center justify-center gap-1.5 font-sans text-sm font-semibold px-3 rounded-lg border whitespace-nowrap transition-colors disabled:opacity-50 ${
               isLiked
                 ? 'bg-[#C75B39]/10 border-[#C75B39]/40 text-[#C75B39]'
                 : 'bg-[#D4A843] border-[#D4A843] text-[#1A1A1A] hover:bg-[#B8860B]'
@@ -183,7 +224,7 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
             disabled={isShortlistLoading}
             aria-label={isShortlisted ? 'Remove from shortlist' : 'Add to shortlist'}
             title={isShortlisted ? 'Remove from shortlist' : 'Add to shortlist'}
-            className={`inline-flex items-center justify-center gap-1.5 font-sans text-xs font-semibold px-3 py-2 rounded-lg border transition-colors disabled:opacity-50 ${
+            className={`h-10 inline-flex items-center justify-center gap-1.5 font-sans text-sm font-semibold px-3 rounded-lg border whitespace-nowrap transition-colors disabled:opacity-50 ${
               isShortlisted
                 ? 'bg-[#2C3E50]/10 border-[#2C3E50]/40 text-[#2C3E50]'
                 : 'border-[#D4A843]/40 text-[#1A1A1A] hover:bg-[#F5E6C3]/40'
@@ -195,13 +236,22 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
           <button
             onClick={handleChat}
             aria-label="Send message"
-            className="inline-flex items-center justify-center gap-1.5 font-sans text-xs font-semibold px-3 py-2 rounded-lg border border-[#D4A843]/40 text-[#1A1A1A] hover:bg-[#F5E6C3]/40 transition-colors"
+            className="h-10 inline-flex items-center justify-center gap-1.5 font-sans text-sm font-semibold px-3 rounded-lg border border-[#D4A843]/40 text-[#1A1A1A] hover:bg-[#F5E6C3]/40 whitespace-nowrap transition-colors"
           >
             <MessageCircle size={14} />
             Chat
           </button>
         </div>
       </div>
+      {needsSpendConfirm && (
+        <SpendCreditsDialog
+          open={showSpendDialog}
+          cost={profileViewCost.cost}
+          activityLabel="Viewing this profile"
+          onConfirm={handleConfirmSpend}
+          onCancel={() => setShowSpendDialog(false)}
+        />
+      )}
     </Link>
   );
 }

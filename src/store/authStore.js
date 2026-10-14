@@ -72,9 +72,38 @@ export const useAuthStore = create(
           const { token, user } = response.data;
 
           localStorage.setItem('authToken', token);
-          set({ 
-            user, 
-            token, 
+          set({
+            user,
+            token,
+            isLoading: false,
+            membership: user.membership || {
+              isActive: false,
+              credits: 0,
+              expiryDate: null,
+              isExpired: false,
+            }
+          });
+          return { success: true };
+        } catch (error) {
+          const errorMessage = error.response?.data?.message || 'Login failed';
+          set({ error: errorMessage, isLoading: false });
+          return { success: false, error: errorMessage };
+        }
+      },
+
+      // Login via Firebase Phone Auth (mobile OTP) instead of email+password —
+      // same response shape as login() above, so it plugs into the exact same
+      // post-login state update.
+      loginWithMobileOtp: async (mobileNumber, mobileIdToken) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await client.post('/api/auth/login/mobile', { mobileNumber, mobileIdToken });
+          const { token, user } = response.data;
+
+          localStorage.setItem('authToken', token);
+          set({
+            user,
+            token,
             isLoading: false,
             membership: user.membership || {
               isActive: false,

@@ -18,10 +18,10 @@ export function useShortlistMutation() {
     },
     onMutate: async ({ profileId, profile }) => {
       await queryClient.cancelQueries({ queryKey: ['shortlistedProfiles'] });
-      await queryClient.cancelQueries({ queryKey: ['browseProfiles'] });
+      await queryClient.cancelQueries({ queryKey: ['browseInteractions'] });
 
       const previousShortlisted = queryClient.getQueryData(['shortlistedProfiles']);
-      const previousBrowseProfiles = queryClient.getQueryData(['browseProfiles']);
+      const previousBrowseProfiles = queryClient.getQueryData(['browseInteractions']);
 
       queryClient.setQueryData(['shortlistedProfiles'], (old) => {
         if (!old) return [profile];
@@ -29,7 +29,7 @@ export function useShortlistMutation() {
         return [...old, profile];
       });
 
-      queryClient.setQueryData(['browseProfiles'], (old) => {
+      queryClient.setQueryData(['browseInteractions'], (old) => {
         if (!old) return old;
         const newShortlistedIds = old.shortlistedIds?.includes(profileId)
           ? old.shortlistedIds
@@ -44,7 +44,7 @@ export function useShortlistMutation() {
         queryClient.setQueryData(['shortlistedProfiles'], context.previousShortlisted);
       }
       if (context?.previousBrowseProfiles !== undefined) {
-        queryClient.setQueryData(['browseProfiles'], context.previousBrowseProfiles);
+        queryClient.setQueryData(['browseInteractions'], context.previousBrowseProfiles);
       }
       toastError(err.response?.data?.message || 'Error shortlisting profile');
     },
@@ -53,7 +53,7 @@ export function useShortlistMutation() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['shortlistedProfiles'] });
-      queryClient.invalidateQueries({ queryKey: ['browseProfiles'] });
+      queryClient.invalidateQueries({ queryKey: ['browseInteractions'] });
     },
   });
 
@@ -64,17 +64,17 @@ export function useShortlistMutation() {
     },
     onMutate: async ({ profileId }) => {
       await queryClient.cancelQueries({ queryKey: ['shortlistedProfiles'] });
-      await queryClient.cancelQueries({ queryKey: ['browseProfiles'] });
+      await queryClient.cancelQueries({ queryKey: ['browseInteractions'] });
 
       const previousShortlisted = queryClient.getQueryData(['shortlistedProfiles']);
-      const previousBrowseProfiles = queryClient.getQueryData(['browseProfiles']);
+      const previousBrowseProfiles = queryClient.getQueryData(['browseInteractions']);
 
       queryClient.setQueryData(['shortlistedProfiles'], (old) => {
         if (!old) return old;
         return old.filter((p) => p._id !== profileId);
       });
 
-      queryClient.setQueryData(['browseProfiles'], (old) => {
+      queryClient.setQueryData(['browseInteractions'], (old) => {
         if (!old) return old;
         const newShortlistedIds = old.shortlistedIds?.filter((id) => id !== profileId) || [];
         return { ...old, shortlistedIds: newShortlistedIds };
@@ -87,7 +87,7 @@ export function useShortlistMutation() {
         queryClient.setQueryData(['shortlistedProfiles'], context.previousShortlisted);
       }
       if (context?.previousBrowseProfiles !== undefined) {
-        queryClient.setQueryData(['browseProfiles'], context.previousBrowseProfiles);
+        queryClient.setQueryData(['browseInteractions'], context.previousBrowseProfiles);
       }
       toastError(err.response?.data?.message || 'Error removing shortlist');
     },
@@ -96,7 +96,7 @@ export function useShortlistMutation() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['shortlistedProfiles'] });
-      queryClient.invalidateQueries({ queryKey: ['browseProfiles'] });
+      queryClient.invalidateQueries({ queryKey: ['browseInteractions'] });
     },
   });
 

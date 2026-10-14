@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { toastError, toastSuccess } from '@/lib/toast';
 import adminClient from '@/lib/api/adminClient';
+import { noPasteHandlers } from '@/lib/noPasteHandlers';
 import { Eye, EyeOff } from 'lucide-react';
 
 const resetSchema = z.object({
@@ -128,6 +129,7 @@ export default function AdminVerifyOTPPage() {
                               autoComplete="new-password"
                               className="border-2 border-gray-200 focus:border-primary font-sans pr-10"
                               {...field}
+                              {...noPasteHandlers}
                             />
                             <button
                               type="button"
@@ -161,6 +163,7 @@ export default function AdminVerifyOTPPage() {
                               autoComplete="new-password"
                               className="border-2 border-gray-200 focus:border-primary font-sans pr-10"
                               {...field}
+                              {...noPasteHandlers}
                             />
                             <button
                               type="button"

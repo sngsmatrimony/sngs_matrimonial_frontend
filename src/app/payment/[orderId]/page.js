@@ -16,7 +16,7 @@ export default function PaymentPage() {
   const { user, refreshMembership } = useAuthStore();
   const [orderData, setOrderData] = useState(null);
   const [scriptLoaded, setScriptLoaded] = useState(false);
-  const [paymentStatus, setPaymentStatus] = useState('loading'); // loading, processing, success
+  const [paymentStatus, setPaymentStatus] = useState('loading'); // loading, processing, verifying, success, refunded, unconfirmed
   const [transactionData, setTransactionData] = useState(null);
   const checkoutOpenedRef = useRef(false);
 
@@ -72,35 +72,72 @@ export default function PaymentPage() {
     };
   }, [scriptLoaded]);
 
-  // Handler: Payment Success
-  const handlePaymentSuccess = useCallback(async (response) => {
-    try {
-      toastInfo('Verifying payment...');
-
-      await client.post('/api/membership/verify-payment', {
-        razorpay_order_id: response.razorpay_order_id,
-        razorpay_payment_id: response.razorpay_payment_id,
-        razorpay_signature: response.razorpay_signature,
-      });
-
-      toastSuccess('Payment successful — membership activated.');
-      await refreshMembership();
-
-      // Set success state with transaction details
-      setPaymentStatus('success');
-      setTransactionData({
-        paymentId: response.razorpay_payment_id,
-        orderId: response.razorpay_order_id,
-      });
-
-    } catch (error) {
-      console.error('Payment verification error:', error);
-      toastError('Payment verification failed. Please contact support.');
-      setTimeout(() => {
-        router.push('/membership/purchase');
-      }, 2000);
+  // Handler: Payment Success — the member has already paid at this point,
+  // so a failed confirmation call must never look like a failed payment.
+  // Network/server errors are retried; if confirmation still can't be
+  // reached, the member sees their payment ID and a "Check again" button
+  // (the Razorpay webhook also credits the order in the background).
+  const confirmPayment = useCallback(async (response) => {
+    const payload = {
+      razorpay_order_id: response.razorpay_order_id,
+      razorpay_payment_id: response.razorpay_payment_id,
+      razorpay_signature: response.razorpay_signature,
+    };
+    let lastError;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const res = await client.post('/api/membership/verify-payment', payload);
+        return { ok: true, data: res.data?.data, refunded: !!res.data?.refunded, message: res.data?.message };
+      } catch (error) {
+        lastError = error;
+        const status = error.response?.status;
+        if (status && status >= 400 && status < 500) break; // rejected, retrying won't help
+        await new Promise((resolve) => setTimeout(resolve, 1500 * (attempt + 1)));
+      }
     }
-  }, [refreshMembership, router]);
+    return { ok: false, error: lastError };
+  }, []);
+
+  const handlePaymentSuccess = useCallback(async (response) => {
+    setPaymentStatus('verifying');
+    setTransactionData({
+      paymentId: response.razorpay_payment_id,
+      orderId: response.razorpay_order_id,
+      razorpayResponse: response,
+    });
+
+    const result = await confirmPayment(response);
+    if (result.ok && result.refunded) {
+      // The purchase couldn't be applied (e.g. a plan is already active) —
+      // the server refunded it automatically.
+      await refreshMembership();
+      setTransactionData((prev) => ({ ...prev, refundMessage: result.message }));
+      setPaymentStatus('refunded');
+      return;
+    }
+    if (result.ok) {
+      const isPack = result.data?.type === 'credits';
+      toastSuccess(isPack ? 'Payment successful — credits added.' : 'Payment successful — membership activated.');
+      await refreshMembership();
+      setTransactionData((prev) => ({
+        ...prev,
+        type: result.data?.type,
+        creditsAdded: result.data?.creditsAdded,
+        credits: result.data?.credits,
+        expiryDate: result.data?.expiryDate,
+      }));
+      setPaymentStatus('success');
+      return;
+    }
+
+    console.error('Payment confirmation error:', result.error);
+    setPaymentStatus('unconfirmed');
+  }, [confirmPayment, refreshMembership]);
+
+  const handleCheckAgain = useCallback(async () => {
+    if (!transactionData?.razorpayResponse) return;
+    await handlePaymentSuccess(transactionData.razorpayResponse);
+  }, [transactionData, handlePaymentSuccess]);
 
   // Handler: Payment Dismissed
   const handlePaymentDismiss = useCallback(() => {
@@ -173,7 +210,6 @@ export default function PaymentPage() {
     if (scriptLoaded && orderData) {
       checkoutOpenedRef.current = true;
       // Safe: ref guard prevents duplicate opens, state update is intentional and controlled
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       openRazorpayCheckout();
     }
   }, [scriptLoaded, orderData, openRazorpayCheckout]);
@@ -217,6 +253,77 @@ export default function PaymentPage() {
           </div>
         )}
 
+        {paymentStatus === 'verifying' && (
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 text-[#D4A843] animate-spin mx-auto mb-4" />
+            <p className="text-white font-sans text-lg">Confirming your payment...</p>
+          </div>
+        )}
+
+        {/* Paid, but confirmation couldn't be reached — never send the
+            member back to the plans page (they might pay twice). */}
+        {paymentStatus === 'refunded' && (
+          <Card className="max-w-md w-full border-2 border-[#D4A843] shadow-2xl">
+            <CardContent className="pt-10 pb-8 text-center">
+              <h1 className="font-serif text-2xl font-bold text-[#1A1A1A] mb-3">
+                Payment refunded
+              </h1>
+              <p className="font-sans text-[#2C3E50]/80 mb-5 leading-relaxed">
+                {transactionData?.refundMessage || 'This payment could not be applied to your account, so it has been refunded.'}
+              </p>
+              <p className="font-sans text-sm text-[#2C3E50]/70 mb-6">
+                Refunds usually reach your account within 5–7 working days.
+                {transactionData?.paymentId && (
+                  <> Payment ID: <span className="font-mono text-xs text-[#1A1A1A] break-all">{transactionData.paymentId}</span></>
+                )}
+              </p>
+              <Button
+                onClick={() => router.push('/membership/purchase')}
+                className="w-full h-12 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold"
+              >
+                Go to My Membership
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {paymentStatus === 'unconfirmed' && (
+          <Card className="max-w-md w-full border-2 border-[#D4A843] shadow-2xl">
+            <CardContent className="pt-10 pb-8 text-center">
+              <h1 className="font-serif text-2xl font-bold text-[#1A1A1A] mb-3">
+                We&apos;re confirming your payment
+              </h1>
+              <p className="font-sans text-[#2C3E50]/80 mb-5 leading-relaxed">
+                Your payment went through, but we couldn&apos;t confirm it just now. Your credits are
+                added automatically within a few minutes — please don&apos;t pay again.
+              </p>
+              {transactionData?.paymentId && (
+                <p className="font-sans text-sm text-[#2C3E50]/70 mb-6">
+                  Payment ID: <span className="font-mono text-xs text-[#1A1A1A] break-all">{transactionData.paymentId}</span>
+                </p>
+              )}
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={handleCheckAgain}
+                  className="w-full h-12 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold"
+                >
+                  Check Again
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => router.push('/settings')}
+                  className="w-full h-12 font-sans"
+                >
+                  Go to My Membership
+                </Button>
+              </div>
+              <p className="font-sans text-xs text-[#2C3E50]/60 mt-4">
+                Still not showing after 10 minutes? Contact support with the payment ID above.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Success State - Show transaction details */}
         {paymentStatus === 'success' && (
           <Card className="max-w-md w-full border-2 border-[#2E7D32] shadow-2xl">
@@ -228,12 +335,32 @@ export default function PaymentPage() {
 
               {/* Success Message */}
               <h1 className="font-serif text-3xl font-bold text-[#1A1A1A] mb-3">
-                Payment Successful
+                {transactionData?.type === 'credits' ? 'Credits Added' : 'Payment Successful'}
               </h1>
 
               <p className="font-sans text-[#2C3E50]/70 mb-6">
-                Your membership has been activated.
+                {transactionData?.type === 'credits'
+                  ? `${transactionData.creditsAdded} credits have been added to your current plan.`
+                  : 'Your membership has been activated.'}
+                {' '}A receipt has been sent to your email.
               </p>
+
+              {typeof transactionData?.credits === 'number' && (
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <div className="rounded-lg bg-[#F5E6C3]/50 border border-[#D4A843]/30 p-3">
+                    <p className="font-sans text-xs text-[#2C3E50]/70">Credits available</p>
+                    <p className="font-sans text-2xl font-bold text-[#1A1A1A] tabular-nums">{transactionData.credits}</p>
+                  </div>
+                  <div className="rounded-lg bg-[#F5E6C3]/50 border border-[#D4A843]/30 p-3">
+                    <p className="font-sans text-xs text-[#2C3E50]/70">Valid until</p>
+                    <p className="font-sans text-base font-semibold text-[#1A1A1A] mt-1">
+                      {transactionData.expiryDate
+                        ? new Date(transactionData.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                        : 'No expiry'}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Transaction Details */}
               {transactionData && (
@@ -258,7 +385,7 @@ export default function PaymentPage() {
                 onClick={handleGoHome}
                 className="w-full h-12 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold text-lg"
               >
-                Go to Dashboard
+                Start Searching Matches
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </CardContent>

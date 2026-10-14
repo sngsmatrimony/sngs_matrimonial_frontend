@@ -54,6 +54,16 @@ export default function UserLayout({ children }) {
     }
   }, [isInitialized, token, router]);
 
+  // Login only stores the plan's id; load the full plan (per-activity credit
+  // costs) so every "Use N credits?" confirmation shows the real cost
+  // instead of reading 0 and skipping the prompt.
+  const refreshMembership = useAuthStore((state) => state.refreshMembership);
+  useEffect(() => {
+    if (isInitialized && token) {
+      refreshMembership();
+    }
+  }, [isInitialized, token, refreshMembership]);
+
   // Sync pathname to activeTab for store consistency if needed elsewhere
   useEffect(() => {
     if (pathname.includes('/browse')) setActiveTab('browse');
@@ -125,10 +135,10 @@ export default function UserLayout({ children }) {
             )}
             {showMembershipCta && (
               <Link
-                href="/membership/purchase"
+                href={hasActiveMembership ? '/membership/purchase#credits' : '/membership/purchase'}
                 className="bg-[#D4A843] hover:bg-[#B8860B] px-4 py-1.5 rounded-full font-sans text-sm font-semibold text-[#1A1A1A] shadow-sm hover:shadow transition-all"
               >
-                {hasActiveMembership ? 'Upgrade Plan' : 'Get Membership'}
+                {hasActiveMembership ? 'Buy Credits' : 'Get Membership'}
               </Link>
             )}
           </div>
@@ -156,7 +166,7 @@ export default function UserLayout({ children }) {
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#FBEAE5] text-[#C75B39] hover:bg-[#F5DDD5] transition-colors font-sans font-medium text-sm"
           >
             <LogOut size={18} />
-            <span className="hidden sm:inline">Logout</span>
+            <span className="text-xs sm:text-sm">Logout</span>
           </button>
         </div>
       </header>
@@ -165,7 +175,7 @@ export default function UserLayout({ children }) {
       <div className="hidden md:block bg-[#2C3E50] border-b border-[#D4A843]/20 pt-2 fixed top-[65px] left-0 right-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-8 overflow-x-auto">
-            {/* Browse Tab - Requires approval */}
+            {/* Search Matches Tab - Requires approval */}
             {hasFullAccess && (
               <Link
                 href="/browse"
@@ -176,7 +186,7 @@ export default function UserLayout({ children }) {
                 }`}
               >
                 <Compass size={18} strokeWidth={1.75} />
-                Browse
+                Search Matches
               </Link>
             )}
 

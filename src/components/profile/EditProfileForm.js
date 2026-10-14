@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { ChevronLeft, ChevronRight, HeartHandshake, MapPin, Briefcase, Users, Images } from 'lucide-react';
+import { ChevronLeft, ChevronRight, HeartHandshake, MapPin, Briefcase, Users, Images, ShieldCheck } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +26,9 @@ import { client } from '@/lib/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { useLandingStore } from '@/store/landingStore';
 import { useIdProofRequired } from '@/hooks/useIdProofRequired';
+import { useFirebasePhoneAuth } from '@/hooks/useFirebasePhoneAuth';
+import { getFriendlyErrorMessage } from '@/lib/errorMessages';
+import { Input } from '@/components/ui/input';
 import EmailChangeDialog from './EmailChangeDialog';
 import {
   PersonalDetailsStep,
@@ -153,30 +156,51 @@ const step5Schema = z.object({
   path: ['ageTo'],
 });
 
-export default function EditProfileForm({ userProfile, user, onCancel, onSuccess }) {
-  const [currentStep, setCurrentStep] = useState(1);
+export default function EditProfileForm({ userProfile, user, onCancel, onSuccess, initialStep = 1 }) {
+  const [currentStep, setCurrentStep] = useState(initialStep);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const { uploadProfilePicture, setProfileBannerColor, deleteHoroscopeDocument, deleteIdProof } = useAuthStore();
   const { setUserProfile } = useLandingStore();
   const idProofRequired = useIdProofRequired();
 
-  // Full name and email live outside the step wizard's react-hook-form state:
-  // both carry consequences (re-approval, OTP verification) that don't fit
-  // the "every step's fields always resubmit together" pattern the rest of
-  // this form uses, so they're handled as their own small, explicit flows.
+  // Full name, mobile number, and email live outside the step wizard's
+  // react-hook-form state: all three carry consequences (re-approval, OTP
+  // verification) that don't fit the "every step's fields always resubmit
+  // together" pattern the rest of this form uses, so they're handled as
+  // their own small, explicit flows.
   const [fullNameValue, setFullNameValue] = useState(user?.fullName || userProfile?.fullName || '');
-  const [showNameChangeConfirm, setShowNameChangeConfirm] = useState(false);
+  const [mobileNumberValue, setMobileNumberValue] = useState(user?.mobileNumber || '');
+  // Kept out of react-hook-form like the fields above: step navigation merges
+  // form.getValues() over formData, which would overwrite edits made here.
+  const [alternateMobileValue, setAlternateMobileValue] = useState(user?.alternateMobileNumber || '');
+  const [showReapprovalConfirm, setShowReapprovalConfirm] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const originalFullName = (user?.fullName || userProfile?.fullName || '').trim();
+  const originalMobileNumber = (user?.mobileNumber || '').trim();
+  const mobileChanged = mobileNumberValue.trim() !== originalMobileNumber;
+
+
+  // A new mobile number must be OTP-verified — it's also a login credential.
+  const {
+    mobileVerificationStep,
+    mobileOtpValue,
+    setMobileOtpValue,
+    mobileOtpLoading,
+    mobileVerified,
+    mobileIdToken,
+    mobileResendTimer,
+    sendMobileOTP,
+    verifyMobileOTP,
+    resendMobileOTP,
+    resetMobileVerification,
+  } = useFirebasePhoneAuth('recaptcha-container-edit-profile');
 
   // Parse existing timeOfBirth (24-hour format) to dropdown values (12-hour format)
   const existingTimeDropdowns = user?.timeOfBirth ? parseTimeToDropdowns(user.timeOfBirth) : { hours: '', minutes: '', meridiem: '' };
 
   const [formData, setFormData] = useState({
     // Step 1: Personal Details
-    mobileNumber: user?.mobileNumber || '',
-    alternateMobileNumber: user?.alternateMobileNumber || '',
     dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth) : null,
     timeOfBirth_hours: existingTimeDropdowns.hours,
     timeOfBirth_minutes: existingTimeDropdowns.minutes,
@@ -244,6 +268,20 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
       default: return step1Schema;
     }
   };
+
+  // Each of these sends an approved profile back for review (a rejected one
+  // is resubmitted by any save). A new ID proof does NOT — the profile stays
+  // live and only the Verified tick waits for an admin to check the ID.
+  const reapprovalReasons = [
+    fullNameValue.trim() !== originalFullName && 'changing your name',
+    mobileChanged && 'changing your mobile number',
+  ].filter(Boolean);
+  const reapprovalReasonsText = (() => {
+    const text = reapprovalReasons.length > 1
+      ? `${reapprovalReasons.slice(0, -1).join(', ')} and ${reapprovalReasons[reapprovalReasons.length - 1]}`
+      : reapprovalReasons[0] || '';
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  })();
 
   const form = useForm({
     resolver: zodResolver(getSchemaForStep(currentStep)),
@@ -358,11 +396,27 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
         return;
       }
 
-      // A name change is identity-relevant the same way the original approval
-      // was, so it needs a fresh review — warn before it's submitted, same as
-      // the email-change flow's own warning before it sends an OTP.
-      if (fullNameValue.trim() !== originalFullName) {
-        setShowNameChangeConfirm(true);
+      if (!/^[6-9]\d{9}$/.test(mobileNumberValue.trim())) {
+        toastError('Please enter a valid 10-digit mobile number.');
+        return;
+      }
+
+      if (alternateMobileValue && !/^[6-9]\d{9}$/.test(alternateMobileValue.trim())) {
+        toastError('Please enter a valid 10-digit alternate mobile number, or leave it blank.');
+        return;
+      }
+
+      if (mobileChanged && !mobileVerified) {
+        toastError('Please verify your new mobile number with OTP before saving (Step 1, Account Details).');
+        return;
+      }
+
+      // A name or mobile number change is identity-relevant the same way the
+      // original approval was, so either one needs a fresh review — warn
+      // before it's submitted, same as the email-change flow's own warning
+      // before it sends an OTP.
+      if (reapprovalReasons.length > 0) {
+        setShowReapprovalConfirm(true);
         return;
       }
 
@@ -430,6 +484,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
   const submitUpdate = async () => {
     setIsLoading(true);
     setError('');
+    let idProofUploaded = false;
 
     try {
       // Merge accumulated formData (all steps) with latest RHF state (step 5 inputs)
@@ -447,8 +502,9 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
 
       const updateData = {
         fullName: fullNameValue.trim(),
-        mobileNumber: formValues.mobileNumber,
-        alternateMobileNumber: formValues.alternateMobileNumber,
+        mobileNumber: mobileNumberValue.trim(),
+        ...(mobileChanged && { mobileIdToken }),
+        alternateMobileNumber: alternateMobileValue.trim(),
         dateOfBirth: formValues.dateOfBirth,
         timeOfBirth: timeOfBirth24,
         motherTongue: formValues.motherTongue,
@@ -515,37 +571,40 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
         }
       }
 
-      // Upload media files if any
-      try {
-        if (formData.profilePicture?.file) {
-          await useAuthStore.getState().uploadProfilePicture(formData.profilePicture.file);
+      // Upload media files if any. The store's upload actions return
+      // { success: false } instead of throwing, so each result is checked —
+      // a failed upload must be reported, not reported as "updated successfully".
+      const store = useAuthStore.getState();
+      const failedUploads = [];
+      const safely = async (fn) => {
+        try {
+          return await fn();
+        } catch (error) {
+          return { success: false, error: error.message };
         }
+      };
 
-        if (formData.galleryPhotos?.length > 0) {
-          for (const photo of formData.galleryPhotos) {
-            if (photo.file && !photo.existing) {
-              await useAuthStore.getState().uploadPhoto(photo.file);
-            }
-          }
-        }
-
-        if (formData.horoscope?.file) {
-          try {
-            await useAuthStore.getState().uploadHoroscopeDocument(formData.horoscope.file);
-          } catch (error) {
-            console.warn('Horoscope upload warning:', error.message);
-          }
-        }
-
-        if (formData.idProof?.file) {
-          try {
-            await useAuthStore.getState().uploadIdProof(formData.idProof.file);
-          } catch (error) {
-            console.warn('ID proof upload warning:', error.message);
-          }
-        }
-      } catch (mediaErr) {
-        console.warn('Media upload warning:', mediaErr.message);
+      if (formData.profilePicture?.file) {
+        const res = await safely(() => store.uploadProfilePicture(formData.profilePicture.file));
+        if (!res?.success) failedUploads.push('profile photo');
+      }
+      const newGallery = (formData.galleryPhotos || []).filter((photo) => photo.file && !photo.existing);
+      let galleryUploaded = 0;
+      for (const photo of newGallery) {
+        const res = await safely(() => store.uploadPhoto(photo.file));
+        if (res?.success) galleryUploaded++;
+      }
+      if (galleryUploaded < newGallery.length) {
+        failedUploads.push(`${newGallery.length - galleryUploaded} gallery photo(s)`);
+      }
+      if (formData.horoscope?.file) {
+        const res = await safely(() => store.uploadHoroscopeDocument(formData.horoscope.file));
+        if (!res?.success) failedUploads.push('horoscope document');
+      }
+      if (formData.idProof?.file) {
+        const res = await safely(() => store.uploadIdProof(formData.idProof.file));
+        idProofUploaded = !!res?.success;
+        if (!res?.success) failedUploads.push('ID proof');
       }
 
       const profileResponse = await client.get('/api/profiles/me/view');
@@ -557,11 +616,20 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
       // Use server message if profile was resubmitted, otherwise default message
       const successMessage = response.data.resubmittedForApproval
         ? 'Profile updated and resubmitted for approval. Our team will review it shortly.'
-        : 'Profile updated successfully!';
-      toastSuccess(successMessage);
+        : idProofUploaded && user?.approvalStatus === 'approved'
+          ? 'Profile updated. Your ID proof will be verified shortly — your profile stays visible meanwhile.'
+          : 'Profile updated successfully!';
+      if (failedUploads.length > 0) {
+        toastError(
+          `Your details were saved, but your ${failedUploads.join(', ')} didn't upload. Please try adding them again (JPEG or PNG photos, up to 10 MB).`,
+          { duration: 12000 }
+        );
+      } else {
+        toastSuccess(successMessage);
+      }
       onSuccess?.();
     } catch (err) {
-      const msg = `Error: ${err.message || 'Please try again.'}`;
+      const msg = getFriendlyErrorMessage(err, 'We couldn’t save your changes. Please try again.');
       setError(msg);
       toastError(msg);
     } finally {
@@ -649,6 +717,119 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
                   </div>
 
                   <div>
+                    <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-2">Mobile Number</label>
+                    <div id="recaptcha-container-edit-profile" />
+                    <div className="flex gap-2.5">
+                      <div className="flex flex-1">
+                        <div className="w-16 flex items-center justify-center border border-r-0 border-[#D4A843]/25 rounded-l-xl bg-[#F5E6C3]/50 font-sans text-sm text-[#2C3E50] font-medium">
+                          +91
+                        </div>
+                        <input
+                          type="tel"
+                          value={mobileNumberValue}
+                          onChange={(e) => {
+                            setMobileNumberValue(e.target.value.replace(/\D/g, '').slice(0, 10));
+                            if (mobileVerified || mobileVerificationStep === 'otp') resetMobileVerification();
+                          }}
+                          maxLength={10}
+                          pattern="[0-9]*"
+                          placeholder="9876543210"
+                          className="w-full h-12 px-4 rounded-l-none rounded-r-xl border border-[#D4A843]/25 bg-white font-sans text-[15px] text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50"
+                        />
+                      </div>
+                      {mobileChanged && !mobileVerified && (
+                        <Button
+                          type="button"
+                          onClick={() => sendMobileOTP(mobileNumberValue.trim())}
+                          disabled={mobileOtpLoading || !/^[6-9]\d{9}$/.test(mobileNumberValue.trim())}
+                          className="bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold whitespace-nowrap h-12 px-5 rounded-xl"
+                        >
+                          {mobileOtpLoading ? 'Sending...' : 'Verify Mobile'}
+                        </Button>
+                      )}
+                      {mobileChanged && mobileVerified && (
+                        <div className="flex items-center gap-2 px-4 h-12 bg-green-50 text-[#2E7D32] rounded-xl border border-green-200">
+                          <ShieldCheck className="w-4 h-4 shrink-0" strokeWidth={1.75} />
+                          <span className="font-sans font-semibold text-sm whitespace-nowrap">Verified</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-[#2C3E50]/60 font-sans mt-1.5">
+                      A new mobile number must be verified with OTP, and will send your profile for re-approval.
+                    </p>
+                    {mobileChanged && (
+                      // Required by Google's terms since the reCAPTCHA badge is hidden (globals.css).
+                      <p className="font-sans text-[11px] text-[#2C3E50]/50 mt-1">
+                        This site is protected by reCAPTCHA and the Google{' '}
+                        <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-[#2C3E50]/70">Privacy Policy</a>{' '}
+                        and{' '}
+                        <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-[#2C3E50]/70">Terms of Service</a>{' '}
+                        apply.
+                      </p>
+                    )}
+
+                    {mobileChanged && mobileVerificationStep === 'otp' && !mobileVerified && (
+                      <div className="mt-3 space-y-3 p-4 bg-[#F5E6C3]/40 rounded-xl border border-[#D4A843]/30 border-l-4 border-l-[#D4A843]">
+                        <p className="font-sans text-sm text-[#2C3E50]">
+                          Enter the 6-digit code sent to <strong className="text-[#1A1A1A]">+91 {mobileNumberValue}</strong>
+                        </p>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="000000"
+                          maxLength={6}
+                          value={mobileOtpValue}
+                          onChange={(e) => setMobileOtpValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              if (!mobileOtpLoading && mobileOtpValue.length === 6) verifyMobileOTP();
+                            }
+                          }}
+                          className="text-center text-2xl tracking-[0.5em] font-sans h-12 rounded-xl bg-white border-[#D4A843]/40 focus-visible:ring-[#D4A843]/40"
+                        />
+                        <div className="flex gap-2.5">
+                          <Button
+                            type="button"
+                            onClick={verifyMobileOTP}
+                            disabled={mobileOtpLoading || mobileOtpValue.length !== 6}
+                            className="flex-1 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold h-11 rounded-xl"
+                          >
+                            {mobileOtpLoading ? 'Verifying...' : 'Verify OTP'}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={resendMobileOTP}
+                            disabled={mobileResendTimer > 0}
+                            className="font-sans h-11 rounded-xl border-[#D4A843]/40 text-[#2C3E50] hover:bg-[#F5E6C3]/30"
+                          >
+                            {mobileResendTimer > 0 ? `Resend (${mobileResendTimer}s)` : 'Resend OTP'}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-2">Alternate Mobile Number (optional)</label>
+                    <div className="flex">
+                      <div className="w-16 flex items-center justify-center border border-r-0 border-[#D4A843]/25 rounded-l-xl bg-[#F5E6C3]/50 font-sans text-sm text-[#2C3E50] font-medium">
+                        +91
+                      </div>
+                      <input
+                        type="tel"
+                        value={alternateMobileValue}
+                        onChange={(e) => setAlternateMobileValue(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        maxLength={10}
+                        pattern="[0-9]*"
+                        placeholder="9876543210"
+                        className="w-full h-12 px-4 rounded-l-none rounded-r-xl border border-[#D4A843]/25 bg-white font-sans text-[15px] text-[#1A1A1A] focus:outline-none focus:ring-2 focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
                     <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-2">Email Address</label>
                     <div className="flex items-center gap-3">
                       <div className="flex-1 h-12 px-4 rounded-xl border border-[#D4A843]/15 bg-white/60 flex items-center font-sans text-[15px] text-[#2C3E50]/80 truncate">
@@ -718,12 +899,12 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
       </div>
       </form>
 
-      <AlertDialog open={showNameChangeConfirm} onOpenChange={setShowNameChangeConfirm}>
+      <AlertDialog open={showReapprovalConfirm} onOpenChange={setShowReapprovalConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="font-serif">Your Profile Will Be Sent for Re-Approval</AlertDialogTitle>
             <AlertDialogDescription className="font-sans">
-              Changing your name requires our team to review your profile again. Until it&apos;s re-approved,
+              {reapprovalReasonsText} requires our team to review your profile again. Until it&apos;s re-approved,
               your profile will be restricted the same way it was before your very first approval.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -732,7 +913,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
             <AlertDialogAction
               className="font-sans bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A]"
               onClick={() => {
-                setShowNameChangeConfirm(false);
+                setShowReapprovalConfirm(false);
                 submitUpdate();
               }}
             >

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import client from '@/lib/api/client';
 import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
 
 /**
@@ -26,10 +25,11 @@ export const useProfilePdf = () => {
 
     setIsGenerating(true);
 
-    // Fire-and-forget: PDF generation itself is entirely client-side and
-    // otherwise invisible to the server, so log it separately for abuse
-    // monitoring. Never blocks or fails the actual download.
-    client.post('/api/profiles/pdf-download-log', { targetId: profileId || undefined }).catch(() => {});
+    // Unlock + abuse-logging already happened via POST
+    // /api/profiles/:id/unlock-download before this hook is called (see
+    // ProfileDetailView.js's requestDownload/unlockAndDownload) — PDF
+    // generation itself is entirely client-side and otherwise invisible to
+    // the server, so that call is the only place the backend learns about it.
 
     // Show appropriate message based on whether horoscope will be included
     if (horoscopeDocument?.url) {

@@ -7,7 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { useAdminAuthStore } from "@/store/adminAuthStore";
-import { BarChart3, Users, Settings, Shield, LogOut, CreditCard, ScrollText, Phone, Receipt } from "lucide-react";
+import { BarChart3, Users, Settings, Shield, LogOut, CreditCard, ScrollText, Phone, Receipt, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import HelpButton from "@/components/layout/HelpButton";
 import { adminApi } from "@/lib/api/admin";
@@ -31,14 +31,7 @@ export default function AdminLayout({ children }) {
         enabled: !isAuthRoute && !!admin,
         refetchInterval: 60 * 1000,
     });
-    const { data: pendingPhoneRequestData } = useQuery({
-        queryKey: ["adminPendingPhoneRequestCount"],
-        queryFn: async () => (await adminApi.getPendingPhoneRequestCount()).data,
-        enabled: !isAuthRoute && !!admin,
-        refetchInterval: 60 * 1000,
-    });
     const pendingApprovalCount = pendingApprovalData?.data?.pendingCount || 0;
-    const pendingPhoneRequestCount = pendingPhoneRequestData?.data?.pendingCount || 0;
 
     // Initialize auth and determine authorization
     useEffect(() => {
@@ -63,7 +56,9 @@ export default function AdminLayout({ children }) {
         return children;
     }
 
-    if (isLoading) {
+    // !admin: the redirect effect above is on its way — don't flash the
+    // portal (or fire its API calls) for a signed-out visitor meanwhile.
+    if (isLoading || !admin) {
         return (
             <div className="flex items-center justify-center min-h-screen bg-gray-50">
                 <div className="text-center">
@@ -80,17 +75,17 @@ export default function AdminLayout({ children }) {
             <main className="flex-1 flex flex-col">
                 {/* Top Header - Similar to Dashboard */}
                 <header className="border-b border-gray-100 bg-white shadow-sm">
-                    <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-                        <Link href="/admin" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+                    <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-2">
+                        <Link href="/admin" className="flex items-center gap-2 sm:gap-3 min-w-0 hover:opacity-80 transition-opacity cursor-pointer">
                             <Image
                                 src="/logo_1.png"
                                 alt="SNGS Matrimonial Logo"
                                 width={48}
                                 height={48}
-                                className="h-12 w-auto"
+                                className="h-10 sm:h-12 w-auto"
                                 style={{ width: 'auto', height: 'auto' }}
                             />
-                            <h1 className="font-serif text-2xl text-accent">
+                            <h1 className="font-serif text-lg sm:text-2xl text-accent whitespace-nowrap">
                                 SNGS Admin
                             </h1>
                         </Link>
@@ -111,10 +106,10 @@ export default function AdminLayout({ children }) {
                         {/* Logout Button */}
                         <button
                             onClick={handleLogout}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors font-sans"
+                            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors font-sans"
                         >
                             <LogOut size={18} />
-                            <span className="hidden sm:inline">Logout</span>
+                            <span>Logout</span>
                         </button>
                     </div>
                 </header>
@@ -122,7 +117,7 @@ export default function AdminLayout({ children }) {
                 {/* Navigation Tabs */}
                 <div className="bg-black border-b border-gray-900">
                     <div className="px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center gap-8 overflow-x-auto">
+                        <div className="flex items-center gap-5 sm:gap-8 overflow-x-auto text-sm sm:text-base">
                             <Link
                                 href="/admin"
                                 className={`py-4 font-sans font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
@@ -132,7 +127,7 @@ export default function AdminLayout({ children }) {
                                 }`}
                             >
                                 <BarChart3 size={20} />
-                                <span className="hidden sm:inline">
+                                <span>
                                     Dashboard
                                 </span>
                             </Link>
@@ -152,7 +147,7 @@ export default function AdminLayout({ children }) {
                                         </span>
                                     )}
                                 </span>
-                                <span className="hidden sm:inline">Users</span>
+                                <span>Users</span>
                             </Link>
                             <Link
                                 href="/admin/membership-plans"
@@ -163,7 +158,7 @@ export default function AdminLayout({ children }) {
                                 }`}
                             >
                                 <CreditCard size={20} />
-                                <span className="hidden sm:inline">Plans</span>
+                                <span>Plans</span>
                             </Link>
                             <Link
                                 href="/admin/transactions"
@@ -174,7 +169,7 @@ export default function AdminLayout({ children }) {
                                 }`}
                             >
                                 <Receipt size={20} />
-                                <span className="hidden sm:inline">Transactions</span>
+                                <span>Transactions</span>
                             </Link>
                             <Link
                                 href="/admin/activity-logs"
@@ -185,25 +180,29 @@ export default function AdminLayout({ children }) {
                                 }`}
                             >
                                 <ScrollText size={20} />
-                                <span className="hidden sm:inline">Activity Logs</span>
+                                <span>Activity Logs</span>
                             </Link>
                             <Link
                                 href="/admin/phone-requests"
-                                className={`relative py-4 font-sans font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                                className={`py-4 font-sans font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
                                     pathname.startsWith("/admin/phone-requests")
                                         ? "border-primary text-primary"
                                         : "border-transparent text-white hover:text-gray-300"
                                 }`}
                             >
-                                <span className="relative">
-                                    <Phone size={20} />
-                                    {pendingPhoneRequestCount > 0 && (
-                                        <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[9px] font-semibold flex items-center justify-center">
-                                            {pendingPhoneRequestCount > 9 ? "9+" : pendingPhoneRequestCount}
-                                        </span>
-                                    )}
-                                </span>
-                                <span className="hidden sm:inline">Phone Requests</span>
+                                <Phone size={20} />
+                                <span>Contact Unlocks</span>
+                            </Link>
+                            <Link
+                                href="/admin/registration-leads"
+                                className={`py-4 font-sans font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                                    pathname.startsWith("/admin/registration-leads")
+                                        ? "border-primary text-primary"
+                                        : "border-transparent text-white hover:text-gray-300"
+                                }`}
+                            >
+                                <UserPlus size={20} />
+                                <span>Started Filling</span>
                             </Link>
                             <Link
                                 href="/admin/admins"
@@ -214,7 +213,7 @@ export default function AdminLayout({ children }) {
                                 }`}
                             >
                                 <Shield size={20} />
-                                <span className="hidden sm:inline">Admins</span>
+                                <span>Admins</span>
                             </Link>
                             <Link
                                 href="/admin/settings"
@@ -225,7 +224,7 @@ export default function AdminLayout({ children }) {
                                 }`}
                             >
                                 <Settings size={20} />
-                                <span className="hidden sm:inline">
+                                <span>
                                     Settings
                                 </span>
                             </Link>

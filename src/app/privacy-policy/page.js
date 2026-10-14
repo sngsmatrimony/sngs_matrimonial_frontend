@@ -8,30 +8,6 @@ import { ArrowLeft } from 'lucide-react';
 export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-[#FDF8F0]">
-      {/* Header */}
-      <header className="border-b border-[#D4A843]/15">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <Image
-              src="/logo_1.png"
-              alt="SNGS Matrimonial Logo"
-              width={48}
-              height={48}
-              className="h-12 w-auto"
-              style={{ width: 'auto', height: 'auto' }}
-            />
-            <h1 className="font-serif text-xl sm:text-2xl text-accent">SNGS Matrimonial</h1>
-          </Link>
-          <Link href="/">
-            <Button variant="ghost" className="font-sans text-secondary hover:text-secondary/80">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">Back to Home</span>
-              <span className="sm:hidden">Back</span>
-            </Button>
-          </Link>
-        </div>
-      </header>
-
       {/* Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="font-serif text-3xl sm:text-4xl text-secondary mb-2">

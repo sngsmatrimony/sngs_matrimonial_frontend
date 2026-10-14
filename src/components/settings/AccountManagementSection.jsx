@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { noPasteHandlers } from '@/lib/noPasteHandlers';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -123,7 +124,8 @@ export default function AccountManagementSection() {
                     value={deletePassword}
                     onChange={(e) => setDeletePassword(e.target.value)}
                     autoComplete="current-password"
-                    className="font-sans mt-1"
+                    className="font-sans h-12 rounded-xl mt-1"
+                    {...noPasteHandlers}
                   />
                 </div>
 

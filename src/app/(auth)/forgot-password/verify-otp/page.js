@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { toastError, toastSuccess } from '@/lib/toast';
 import client from '@/lib/api/client';
+import { noPasteHandlers } from '@/lib/noPasteHandlers';
 
 const resetSchema = z.object({
   otp: z.string().length(6, 'OTP must be 6 digits'),
@@ -147,6 +148,7 @@ export default function VerifyOTPPage() {
                       <FormControl>
                         <Input
                           {...field}
+                          {...noPasteHandlers}
                           type={showNewPassword ? 'text' : 'password'}
                           autoComplete="new-password"
                           placeholder="••••••••"
@@ -182,6 +184,7 @@ export default function VerifyOTPPage() {
                       <FormControl>
                         <Input
                           {...field}
+                          {...noPasteHandlers}
                           type={showConfirmPassword ? 'text' : 'password'}
                           autoComplete="new-password"
                           placeholder="••••••••"

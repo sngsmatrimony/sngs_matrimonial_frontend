@@ -5,7 +5,8 @@ import { cn } from "@/lib/utils";
 /**
  * OnlineStatusBadge Component
  *
- * Displays a green dot indicator for user's online status.
+ * A calm, static green dot for "online" (no pulsing — the design system
+ * avoids flashy animation). Renders nothing when not online.
  *
  * @param {Object} props - Component props
  * @param {boolean} props.isOnline - Whether the user is currently online
@@ -22,33 +23,20 @@ export default function OnlineStatusBadge({
   }
 
   const sizeClasses = {
-    sm: "w-2 h-2",
-    md: "w-2.5 h-2.5",
-    lg: "w-3 h-3",
+    sm: "w-2.5 h-2.5",
+    md: "w-3 h-3",
+    lg: "w-3.5 h-3.5",
   };
 
   return (
     <span
       className={cn(
-        "relative inline-flex items-center justify-center",
+        "inline-block rounded-full bg-[#2E7D32] ring-2 ring-white",
+        sizeClasses[size],
         className
       )}
-    >
-      {/* Pulsing outer ring */}
-      <span
-        className={cn(
-          "absolute inline-flex rounded-full bg-success opacity-75 animate-ping",
-          sizeClasses[size]
-        )}
-      ></span>
-
-      {/* Solid inner dot */}
-      <span
-        className={cn(
-          "relative inline-flex rounded-full bg-success",
-          sizeClasses[size]
-        )}
-      ></span>
-    </span>
+      aria-label="Online"
+      title="Online"
+    />
   );
 }

@@ -1,24 +1,37 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import MessageBubble from "./MessageBubble";
 import TypingIndicator from "./TypingIndicator";
 import MessageInput from "./MessageInput";
 import ChatSafetyBanner from "./ChatSafetyBanner";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Loader2, AlertCircle, MessageCircle, ArrowDown } from "lucide-react";
+import { formatDayLabel, isSameDay, senderIdOf } from "./chatTime";
+
+// Messages from the same person within this gap read as one run.
+const GROUP_GAP_MS = 5 * 60 * 1000;
+
+const OPENERS = [
+  "Namaskaram! I came across your profile and would love to know you better.",
+  "Hello! I liked your profile. Would you be open to a conversation?",
+  "Hi! Our families seem to share similar values. May I tell you a little about myself?",
+];
 
 /**
  * ChatConversation Component
  *
- * Message thread display with infinite scroll for loading older messages.
- * Shows typing indicators and read receipts.
+ * Message thread with day separators, grouped bubbles, typing indicator,
+ * a "jump to latest" button when scrolled up, and suggested openers for a
+ * brand-new conversation. Rendered with key={conversationId} by ChatLayout,
+ * so all local state (scroll position, suggested draft) starts fresh per
+ * conversation.
  *
  * @param {Object} props - Component props
  * @param {string} props.conversationId - ID of the current conversation
  * @param {Array<Object>} props.messages - Array of message objects
  * @param {string} props.currentUserId - ID of the current user
+ * @param {string} [props.otherParticipantName] - Name of the person being chatted with
  * @param {Array<string>} props.typingUsers - Array of user IDs currently typing
  * @param {Object} props.typingUserDetails - Map of user IDs to user details
  * @param {Function} props.onLoadMore - Callback to load more (older) messages
@@ -34,6 +47,7 @@ export default function ChatConversation({
   conversationId,
   messages = [],
   currentUserId,
+  otherParticipantName = "",
   typingUsers = [],
   typingUserDetails = {},
   onLoadMore,
@@ -48,23 +62,25 @@ export default function ChatConversation({
   const messagesContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
+  const [draft, setDraft] = useState(null);
   const previousScrollHeight = useRef(0);
 
-  // Scroll to bottom when new messages arrive
+  // Scroll the message list (only the list — scrollIntoView would also
+  // scroll the whole page on phones, pushing the header out of view).
   const scrollToBottom = (smooth = true) => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: smooth ? "smooth" : "auto",
-    });
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
   };
 
   // Handle scroll to detect when to load more messages
   const handleScroll = () => {
-    if (!messagesContainerRef.current || !onLoadMore) return;
+    if (!messagesContainerRef.current) return;
 
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
 
     // Check if scrolled to top
-    if (scrollTop === 0 && hasMoreMessages && !isLoadingMore) {
+    if (onLoadMore && scrollTop === 0 && hasMoreMessages && !isLoadingMore) {
       previousScrollHeight.current = scrollHeight;
       onLoadMore();
     }
@@ -97,15 +113,36 @@ export default function ChatConversation({
     }
   }, [typingUsers, shouldScrollToBottom]);
 
+  // Day separators + same-sender grouping, computed once per messages change.
+  const rows = useMemo(() => messages.map((message, i) => {
+    const prev = messages[i - 1];
+    const next = messages[i + 1];
+    const time = (m) => new Date(m?.timestamp || m?.createdAt).getTime();
+    const sameRun = (a, b) => a && b && senderIdOf(a) === senderIdOf(b)
+      && isSameDay(a.timestamp || a.createdAt, b.timestamp || b.createdAt)
+      && Math.abs(time(b) - time(a)) < GROUP_GAP_MS;
+    return {
+      message,
+      showDay: !prev || !isSameDay(prev.timestamp || prev.createdAt, message.timestamp || message.createdAt),
+      isFirstInGroup: !sameRun(prev, message),
+      isLastInGroup: !sameRun(message, next),
+    };
+  }), [messages]);
+
+  const firstName = otherParticipantName?.split(" ")[0] || "them";
+
   if (!conversationId) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-[#FDF8F0]">
-        <div className="text-center">
-          <p className="text-lg font-serif text-[#2C3E50] mb-2">
-            Select a conversation
+      <div className="flex-1 flex items-center justify-center bg-[#FDF8F0] px-6">
+        <div className="text-center max-w-sm">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#F5E6C3] ring-1 ring-[#D4A843]/40 flex items-center justify-center">
+            <MessageCircle className="w-7 h-7 text-[#B8860B]" strokeWidth={1.75} />
+          </div>
+          <p className="text-xl font-serif text-[#1A1A1A] mb-1.5">
+            Your conversations
           </p>
-          <p className="text-sm font-sans text-[#2C3E50]/70">
-            Choose a conversation from the list to start messaging
+          <p className="text-[15px] font-sans text-[#2C3E50]/75 leading-relaxed">
+            Choose a conversation on the left to continue chatting.
           </p>
         </div>
       </div>
@@ -126,7 +163,7 @@ export default function ChatConversation({
           <Button
             onClick={() => window.location.reload()}
             variant="outline"
-            className="border-[#D4A843]/40 text-[#D4A843] hover:bg-[#F5E6C3]/40"
+            className="border-[#D4A843]/40 text-[#1A1A1A] hover:bg-[#F5E6C3]/40"
           >
             Reload Page
           </Button>
@@ -136,25 +173,26 @@ export default function ChatConversation({
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-white min-h-0">
+    <div className="flex-1 flex flex-col bg-[#FDF8F0] min-h-0 relative">
       <ChatSafetyBanner />
 
       {/* Messages Container */}
       <div
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-1 min-h-0 flex flex-col"
-        style={{ scrollBehavior: "smooth" }}
+        className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-6 py-3 min-h-0 flex flex-col"
+        role="log"
+        aria-label={`Conversation with ${otherParticipantName || "member"}`}
       >
         {/* Load More Button */}
         {hasMoreMessages && (
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center mb-2">
             <Button
               onClick={onLoadMore}
               disabled={isLoadingMore}
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="text-[#2C3E50] hover:text-[#D4A843] hover:bg-[#F5E6C3]/40 font-sans"
+              className="rounded-full border-[#D4A843]/40 text-[#2C3E50] hover:bg-[#F5E6C3]/40 font-sans"
             >
               {isLoadingMore ? (
                 <>
@@ -169,31 +207,59 @@ export default function ChatConversation({
         )}
 
         {/* Loading Indicator at Top */}
-        {isLoadingMore && (
-          <div className="flex justify-center py-2">
+        {isLoadingMore && messages.length === 0 && (
+          <div className="flex justify-center py-6">
             <Loader2 className="w-5 h-5 text-[#2C3E50] animate-spin" />
           </div>
         )}
 
-        {/* Empty State */}
+        {/* New conversation: warm start + suggested openers */}
         {messages.length === 0 && !isLoadingMore && (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <p className="text-base font-sans text-[#2C3E50]/70">
-                No messages yet. Start the conversation!
+          <div className="flex-1 flex items-center justify-center py-6">
+            <div className="text-center max-w-md">
+              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-[#F5E6C3] ring-1 ring-[#D4A843]/40 flex items-center justify-center">
+                <MessageCircle className="w-6 h-6 text-[#B8860B]" strokeWidth={1.75} />
+              </div>
+              <p className="font-serif text-lg text-[#1A1A1A] mb-1">
+                Start your conversation with {firstName}
               </p>
+              <p className="font-sans text-sm text-[#2C3E50]/70 mb-4">
+                A warm, respectful first message goes a long way. Tap one to use it, or write your own.
+              </p>
+              <div className="flex flex-col gap-2">
+                {OPENERS.map((text) => (
+                  <button
+                    key={text}
+                    type="button"
+                    onClick={() => setDraft({ text, nonce: Date.now() })}
+                    className="text-left font-sans text-sm text-[#1A1A1A] bg-white border border-[#D4A843]/30 hover:border-[#D4A843] hover:bg-[#F5E6C3]/30 rounded-xl px-4 py-3 transition-colors"
+                  >
+                    {text}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Message Bubbles */}
-        {messages.map((message) => (
-          <MessageBubble
-            key={message._id || message.id}
-            message={message}
-            currentUserId={currentUserId}
-            onMarkAsRead={onMarkAsRead}
-          />
+        {/* Messages with day separators */}
+        {rows.map(({ message, showDay, isFirstInGroup, isLastInGroup }) => (
+          <Fragment key={message._id || message.id}>
+            {showDay && (
+              <div className="flex justify-center my-3" role="separator">
+                <span className="font-sans text-xs font-medium text-[#2C3E50]/70 bg-white border border-[#D4A843]/20 rounded-full px-3 py-1 shadow-sm">
+                  {formatDayLabel(message.timestamp || message.createdAt)}
+                </span>
+              </div>
+            )}
+            <MessageBubble
+              message={message}
+              currentUserId={currentUserId}
+              onMarkAsRead={onMarkAsRead}
+              isFirstInGroup={isFirstInGroup || showDay}
+              isLastInGroup={isLastInGroup}
+            />
+          </Fragment>
         ))}
 
         {/* Typing Indicator */}
@@ -203,8 +269,20 @@ export default function ChatConversation({
         />
 
         {/* Scroll Anchor */}
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} className="h-1 shrink-0" />
       </div>
+
+      {/* Scrolled up: a labelled way back to the newest message */}
+      {!shouldScrollToBottom && messages.length > 0 && (
+        <button
+          type="button"
+          onClick={() => { setShouldScrollToBottom(true); scrollToBottom(); }}
+          className="absolute left-1/2 -translate-x-1/2 bottom-24 z-10 inline-flex items-center gap-1.5 rounded-full bg-white border border-[#D4A843]/40 shadow-md px-4 py-2 font-sans text-sm font-medium text-[#1A1A1A] hover:bg-[#F5E6C3]/50"
+        >
+          <ArrowDown className="w-4 h-4" aria-hidden="true" />
+          Latest messages
+        </button>
+      )}
 
       {/* Message Input - Only show when there's an active conversation */}
       {conversationId && (
@@ -213,6 +291,8 @@ export default function ChatConversation({
           onTyping={onTyping}
           isLoading={isSending}
           disabled={!conversationId}
+          draft={draft}
+          placeholder={otherParticipantName ? `Message ${firstName}...` : "Type a message..."}
         />
       )}
     </div>

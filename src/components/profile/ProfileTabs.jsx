@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, Lock, Phone } from 'lucide-react';
 import ImageLightbox from '@/components/ui/image-lightbox';
-import PhotoWatermark, { buildWatermarkText } from '@/components/ui/photo-watermark';
-import PhoneNumberRequestPanel from '@/components/profile/PhoneNumberRequestPanel';
+import { Button } from '@/components/ui/button';
+import SpendCreditsDialog from '@/components/shared/SpendCreditsDialog';
 import { useAuthStore } from '@/store/authStore';
+import { client } from '@/lib/api/client';
+import { toastSuccess, toastError } from '@/lib/toast';
 
 const TABS = [
   { value: 'about', label: 'About' },
@@ -51,24 +53,98 @@ function formatAddress(addr) {
 }
 
 /**
+ * Replaces the masked contact section for a non-unlocked profile — spends
+ * the plan's phoneAndChat cost to reveal the number AND enable starting a
+ * chat with this specific person, together as one action (see
+ * profile.controller.js's unlockContact). Reads the cost straight from the
+ * logged-in member's plan so the confirm dialog can show it without a
+ * separate lookup.
+ */
+function UnlockContactPanel({ profileId, onUnlocked }) {
+  const { membership } = useAuthStore();
+  const [showDialog, setShowDialog] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+
+  const costInfo = membership?.planId?.costs?.phoneAndChat;
+  const unlimited = !!costInfo?.unlimited;
+  const cost = costInfo?.cost ?? 0;
+
+  const handleUnlock = async () => {
+    setIsUnlocking(true);
+    try {
+      await client.post(`/api/profiles/${profileId}/unlock-contact`);
+      toastSuccess('Contact & chat unlocked for this profile.');
+      setShowDialog(false);
+      onUnlocked?.();
+    } catch (error) {
+      const data = error.response?.data;
+      if (data?.requiresCredits) {
+        toastError(`You need ${data.requiredCredits} credits; you have ${data.currentCredits}.`);
+      } else if (data?.requiresMembership) {
+        toastError(data.message || 'An active membership is required.');
+      } else {
+        toastError(data?.message || 'Failed to unlock contact.');
+      }
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start gap-3 py-2 text-[#2C3E50]/70">
+        <Lock size={16} className="text-[#D4A843] shrink-0 mt-0.5" />
+        <span className="font-sans text-sm">
+          {unlimited
+            ? 'Your plan includes unlimited contact & chat access — unlock this profile to start.'
+            : `Unlock this profile's phone number and start chatting for ${cost} credit${cost === 1 ? '' : 's'}.`}
+        </span>
+      </div>
+      <Button
+        type="button"
+        size="sm"
+        onClick={() => (unlimited || cost === 0 ? handleUnlock() : setShowDialog(true))}
+        disabled={isUnlocking}
+        className="bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans"
+      >
+        <Phone size={14} className="mr-1.5" />
+        {isUnlocking ? 'Unlocking...' : 'Unlock Phone & Chat'}
+      </Button>
+      {!unlimited && cost > 0 && (
+        <SpendCreditsDialog
+          open={showDialog}
+          cost={cost}
+          activityLabel="Unlocking phone number & chat"
+          isLoading={isUnlocking}
+          onConfirm={handleUnlock}
+          onCancel={() => setShowDialog(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
  * The brief's 6-tab profile layout, shared by both the self and other
  * profile views. `contactMasked` (other-profile only) hides raw contact
- * numbers behind an upgrade prompt when the viewer lacks active membership.
+ * numbers behind a pay-to-unlock prompt until the viewer spends the plan's
+ * phoneAndChat cost (see UnlockContactPanel below) or the plan grants it
+ * free. `onContactUnlocked` lets the parent re-fetch the profile after a
+ * successful unlock, so the real number replaces the masked prompt.
  */
-export default function ProfileTabs({ profile, mode = 'self', contactMasked = false, onDownloadHoroscope }) {
-  const { user: viewerUser } = useAuthStore();
+export default function ProfileTabs({ profile, mode = 'self', contactMasked = false, onDownloadHoroscope, onContactUnlocked }) {
   const [activeTab, setActiveTab] = useState('about');
   const [lightboxIndex, setLightboxIndex] = useState(null);
-  const watermarkText = mode === 'other' ? buildWatermarkText(viewerUser) : null;
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="w-full flex flex-wrap h-auto bg-[#F5E6C3]/40 p-1 rounded-xl gap-1">
+      {/* One scrollable row on phones instead of tabs wrapping into ragged rows. */}
+      <TabsList className="w-full flex flex-nowrap md:flex-wrap justify-start md:justify-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden h-auto bg-[#F5E6C3]/40 p-1 rounded-xl gap-1">
         {TABS.map((tab) => (
           <TabsTrigger
             key={tab.value}
             value={tab.value}
-            className="font-sans text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:text-[#1A1A1A] data-[state=active]:shadow-sm text-[#2C3E50]/70 rounded-lg px-3 py-2"
+            className="shrink-0 flex-none md:flex-1 whitespace-nowrap font-sans text-sm data-[state=active]:bg-white data-[state=active]:text-[#1A1A1A] data-[state=active]:shadow-sm text-[#2C3E50]/70 rounded-lg px-3 py-2"
           >
             {tab.label}
           </TabsTrigger>
@@ -104,7 +180,7 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
 
         <Section title="Contact Information">
           {contactMasked ? (
-            <PhoneNumberRequestPanel profileId={profile?._id} />
+            <UnlockContactPanel profileId={profile?._id} onUnlocked={onContactUnlocked} />
           ) : (
             <>
               <Field label="Mobile Number" value={profile?.mobileNumber ? `+91 ${profile.mobileNumber}` : null} />
@@ -287,7 +363,6 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
                   draggable={false}
                   onContextMenu={(e) => e.preventDefault()}
                 />
-                <PhotoWatermark text={watermarkText} />
               </button>
             ))}
           </div>
@@ -300,7 +375,6 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
         images={(profile?.gallery?.photos || []).map((photo, idx) => ({ url: photo.url, alt: `Photo ${idx + 1}` }))}
         index={lightboxIndex}
         onOpenChange={setLightboxIndex}
-        watermarkText={watermarkText}
       />
     </Tabs>
   );

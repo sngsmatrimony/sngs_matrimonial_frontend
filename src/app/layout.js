@@ -24,7 +24,7 @@ const playfair = Playfair_Display({
 
 export const metadata = {
   title: "SNGS Matrimonial",
-  description: "Find your perfect match within the Malayali Ezhava Community.",
+  description: "Find your perfect match within the Malayalee Community.",
   icons: {
     icon: '/icon.png',
     apple: '/apple-icon.png',

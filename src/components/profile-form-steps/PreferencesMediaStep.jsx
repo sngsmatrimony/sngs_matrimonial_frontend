@@ -30,6 +30,20 @@ const PROFILE_BANNER_COLORS = [
   { value: '#FFEAA7', label: 'Pastel Butter', name: 'butter' },
 ];
 
+// Same rules the server enforces (s3.service.js photoUpload) — caught here,
+// while the member can still pick another file, instead of after the account
+// is created when the upload would fail.
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+function photoProblem(file) {
+  if (!['image/jpeg', 'image/png'].includes(file.type)) {
+    return `"${file.name}" isn't a JPEG or PNG photo. Please choose a JPEG or PNG image.`;
+  }
+  if (file.size > MAX_PHOTO_BYTES) {
+    return `"${file.name}" is larger than 10 MB. Please choose a smaller photo.`;
+  }
+  return null;
+}
+
 export function PreferencesMediaStep({
   form,
   userProfile = null,
@@ -40,6 +54,7 @@ export function PreferencesMediaStep({
   idProof = null,
   idProofRequired = false,
   onDeleteIdProof = null,
+  hidePreferredAgeRange = false,
 }) {
   const { user: authUser } = useAuthStore();
   const hasInitialized = useRef(false);
@@ -119,7 +134,15 @@ export function PreferencesMediaStep({
   }, [onFileUpdate, userProfile, authUser]);
 
   const handlePhotoUpload = (e) => {
-    const files = Array.from(e.target.files || []);
+    const files = Array.from(e.target.files || []).filter((file) => {
+      const problem = photoProblem(file);
+      if (problem) toastError(problem);
+      return !problem;
+    });
+    if (files.length === 0) {
+      if (e.target) e.target.value = '';
+      return;
+    }
 
     // Use parent state if available, otherwise use local state
     const currentPhotos = onFileUpdate
@@ -151,6 +174,12 @@ export function PreferencesMediaStep({
   const handleProfilePictureUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const problem = photoProblem(file);
+    if (problem) {
+      toastError(problem);
+      e.target.value = '';
+      return;
+    }
 
     const pictureData = {
       file,
@@ -216,58 +245,61 @@ export function PreferencesMediaStep({
     <div className="space-y-6">
       {/* <h2 className="font-serif text-xl text-[#1A1A1A]">Preferences & Media</h2> */}
 
-      {/* Age Range */}
-      <div className="space-y-4">
-        <FormField
-          control={form.control}
-          name="ageFrom"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Preferred Age From *</FormLabel>
-              <Select value={field.value || ''} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
-                    <SelectValue placeholder="Select minimum age" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Array.from({ length: 73 }, (_, i) => 18 + i).map(age => (
-                    <SelectItem key={age} value={age.toString()}>
-                      {age}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
-            </FormItem>
-          )}
-        />
+      {/* Age Range — hidden when captured earlier (registration's quick-start
+          step already asks for this as "preferred partner" age range) */}
+      {!hidePreferredAgeRange && (
+        <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="ageFrom"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Preferred Age From *</FormLabel>
+                <Select value={field.value || ''} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                      <SelectValue placeholder="Select minimum age" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Array.from({ length: 73 }, (_, i) => 18 + i).map(age => (
+                      <SelectItem key={age} value={age.toString()}>
+                        {age}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="ageTo"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Preferred Age To *</FormLabel>
-              <Select value={field.value || ''} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
-                    <SelectValue placeholder="Select maximum age" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Array.from({ length: 73 }, (_, i) => 18 + i).map(age => (
-                    <SelectItem key={age} value={age.toString()}>
-                      {age}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
-            </FormItem>
-          )}
-        />
-      </div>
+          <FormField
+            control={form.control}
+            name="ageTo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-sans text-sm font-medium text-[#1A1A1A]">Preferred Age To *</FormLabel>
+                <Select value={field.value || ''} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                      <SelectValue placeholder="Select maximum age" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Array.from({ length: 73 }, (_, i) => 18 + i).map(age => (
+                      <SelectItem key={age} value={age.toString()}>
+                        {age}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+              </FormItem>
+            )}
+          />
+        </div>
+      )}
 
       {/* Interests */}
       <FormField
@@ -516,7 +548,7 @@ export function PreferencesMediaStep({
             <div className="flex-1">
               <p className="font-sans text-sm font-medium">Current ID Proof</p>
               <p className="font-sans text-xs text-gray-500">
-                Uploaded {existingIdProof.uploadedAt ? new Date(existingIdProof.uploadedAt).toLocaleDateString() : 'Previously'}
+                Uploaded {existingIdProof.uploadedAt ? new Date(existingIdProof.uploadedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Previously'}
               </p>
             </div>
             {onDeleteIdProof && (

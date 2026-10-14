@@ -21,6 +21,8 @@ import {
   Mail,
 } from 'lucide-react';
 import client from '@/lib/api/client';
+import { useFirebasePhoneAuth } from '@/hooks/useFirebasePhoneAuth';
+import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,7 +35,9 @@ import { useAuthStore } from '@/store/authStore';
 import { useIdProofRequired } from '@/hooks/useIdProofRequired';
 import { toastSuccess, toastError } from '@/lib/toast';
 import { convertTo24Hour, buildTimeFromDropdowns } from '@/lib/time';
-import { MONTHS } from '@/lib/constants/formData';
+import { noPasteHandlers } from '@/lib/noPasteHandlers';
+import { MONTHS, COUNTRIES } from '@/lib/constants/formData';
+import { setMonth, setYear, format } from 'date-fns';
 import {
   PersonalDetailsStep,
   LocationAddressStep,
@@ -42,9 +46,60 @@ import {
   PreferencesMediaStep,
 } from '@/components/profile-form-steps';
 
-// Step 1: Account Creation (unique to register)
+// Step 1: Quick Start — the minimal set of fields a visitor commits to before
+// deciding whether to finish the rest of the form. Deliberately excludes
+// email/password (now step 7, "Account Finish") so starting a profile asks
+// for almost nothing up front. Mobile is Firebase-OTP-verified here (not
+// deferred) since this is also what the "started filling" Supabase lead row
+// is keyed on, and what the new mobile-OTP login feature needs trustworthy.
+const getAge = (dob) => {
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) age--;
+  return age;
+};
+
+const CURRENT_YEAR = new Date().getFullYear();
+// Only years that can produce an 18–90 age (the same range the backend enforces).
+const DOB_YEARS = Array.from({ length: 73 }, (_, i) => CURRENT_YEAR - 18 - i);
+
 const step1Schema = z.object({
-  fullName: z.string().min(2, 'Full name must be at least 2 characters'),
+  fullName: z.string().trim().min(2, 'Full name must be at least 2 characters').max(100, 'Full name must be at most 100 characters'),
+  dateOfBirth: z.date({ error: 'Please select your date of birth' })
+    .refine((dob) => {
+      const age = getAge(dob);
+      return age >= 18 && age <= 90;
+    }, 'Age must be between 18 and 90 years'),
+  gender: z.string().min(1, 'Please select your gender'),
+  seekingGender: z.string().min(1, 'Please select who you are looking for'),
+  placeCountry: z.string().min(1, 'Please select your country'),
+  placeCity: z.string().min(1, 'Please enter your city'),
+  mobileNumber: z.string().min(1, 'Mobile number is required').regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number (starting with 6-9)'),
+  ageFrom: z.string()
+    .min(1, 'Please select minimum age')
+    .refine(val => {
+      const num = parseInt(val, 10);
+      return !isNaN(num) && num >= 18 && num <= 90;
+    }, 'Age from must be between 18 and 90'),
+  ageTo: z.string()
+    .min(1, 'Please select maximum age')
+    .refine(val => {
+      const num = parseInt(val, 10);
+      return !isNaN(num) && num >= 18 && num <= 90;
+    }, 'Age to must be between 18 and 90'),
+}).refine(data => {
+  const from = parseInt(data.ageFrom, 10);
+  const to = parseInt(data.ageTo, 10);
+  return to >= from;
+}, {
+  message: 'Age to must be greater than or equal to age from',
+  path: ['ageTo'],
+});
+
+// Step 7: Account Finish — email (OTP-verified, same flow as before, just
+// relocated) + password + the optional alternate mobile number.
+const step7Schema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
@@ -52,7 +107,6 @@ const step1Schema = z.object({
     .regex(/[A-Z]/, 'Must contain uppercase letter')
     .regex(/\d/, 'Must contain number'),
   confirmPassword: z.string(),
-  mobileNumber: z.string().min(1, 'Mobile number is required').regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number (starting with 6-9)'),
   alternateMobileNumber: z.string().regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number (starting with 6-9)').optional().or(z.literal('')),
 }).refine(data => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
@@ -60,8 +114,8 @@ const step1Schema = z.object({
 });
 
 // Reuse schemas from EditProfileForm
+// dateOfBirth lives in step1Schema now (quick-start) — not duplicated here.
 const step2Schema = z.object({
-  dateOfBirth: z.date({ error: 'Please select your date of birth' }),
   timeOfBirth_hours: z.string().optional(),
   timeOfBirth_minutes: z.string().optional(),
   timeOfBirth_meridiem: z.string().optional(),
@@ -69,8 +123,7 @@ const step2Schema = z.object({
   height: z.string().min(1, 'Please select your height'),
   physicalStatus: z.string().min(1, 'Please select your physical status'),
   maritalStatus: z.string().min(1, 'Please select your marital status'),
-  gender: z.string().min(1, 'Please select your gender'),
-  seekingGender: z.string().min(1, 'Please select who you are looking for'),
+  // gender/seekingGender live in step1Schema now (quick-start) — not duplicated here.
   religion: z.string().min(1, 'Please select your religion'),
   caste: z.string().optional(),
   shuddhaJathakam: z.string().optional(),
@@ -82,7 +135,9 @@ const step2Schema = z.object({
   complexion: z.enum(['Very Fair', 'Fair', 'Wheatish', 'Wheatish Brown', 'Dark', 'Very Dark'], {
     error: 'Please select your complexion',
   }),
-  weight: z.number({ error: 'Please enter your weight' }).positive('Please enter a valid weight'),
+  // Same 30–200 range Edit Profile enforces, so a typo here can't make the
+  // profile un-editable later.
+  weight: z.number({ error: 'Please enter your weight' }).min(30, 'Weight must be at least 30 kg').max(200, 'Weight must be at most 200 kg'),
   bloodGroup: z.string().min(1, 'Please select your blood group'),
   diet: z.enum(['Vegetarian', 'Non-Vegetarian', 'Eggetarian', 'Both (Veg & Non-Veg)'], {
     error: 'Please select your diet preference',
@@ -145,78 +200,18 @@ const step5Schema = z.object({
   familyStatus: z.string().min(1, 'Please select your family status'),
 });
 
+// ageFrom/ageTo live in step1Schema now (quick-start, "preferred partner"
+// age range) — not duplicated here.
 const step6Schema = z.object({
-  ageFrom: z.string()
-    .min(1, 'Please select minimum age')
-    .refine(val => {
-      const num = parseInt(val, 10);
-      return !isNaN(num) && num >= 18 && num <= 90;
-    }, 'Age from must be between 18 and 90'),
-  ageTo: z.string()
-    .min(1, 'Please select maximum age')
-    .refine(val => {
-      const num = parseInt(val, 10);
-      return !isNaN(num) && num >= 18 && num <= 90;
-    }, 'Age to must be between 18 and 90'),
   interests: z.array(z.string()).min(1, 'Please select at least one interest'),
   profileAbout: z.string().min(1, 'Please tell us about yourself').max(1000, 'About must be at most 1000 characters'),
   partnerPreferenceDescription: z.string().max(1000, 'Partner preference description must be at most 1000 characters').optional(),
   profileBannerColor: z.string().optional(),
-}).refine(data => {
-  const from = parseInt(data.ageFrom, 10);
-  const to = parseInt(data.ageTo, 10);
-  return to >= from;
-}, {
-  message: 'Age to must be greater than or equal to age from',
-  path: ['ageTo'],
 });
 
 // Turns backend/JS-level errors into plain, user-facing messages.
-// Anything that looks like a stack trace, a parsing error, or another
-// "for developers" message is swapped for a friendly fallback instead
-// of being shown to the person filling out the form.
-const TECHNICAL_ERROR_PATTERNS = [
-  /unexpected (token|string|number|identifier|end of json)/i,
-  /json\.parse|is not valid json/i,
-  /is not a function/i,
-  /cannot read propert/i,
-  /undefined is not/i,
-  /null is not/i,
-  /syntaxerror|typeerror|referenceerror/i,
-  /^\s*at\s+\S+\s*\(/m, // stack trace lines
-  /\.(js|ts|jsx|tsx):\d+:\d+/, // file:line:col references
-  /status code \d{3}/i,
-  /expected .+ received/i, // raw zod type-mismatch messages
-  /econnrefused|etimedout|enotfound/i,
-];
-
-const getFriendlyErrorMessage = (
-  err,
-  fallback = 'Something went wrong on our end. Please try again in a moment.'
-) => {
-  const raw =
-    (typeof err === 'string' ? err : '') ||
-    err?.response?.data?.message ||
-    err?.message ||
-    '';
-
-  if (!raw) return fallback;
-
-  if (/network error|failed to fetch/i.test(raw)) {
-    return 'We couldn\u2019t reach the server. Please check your internet connection and try again.';
-  }
-
-  if (TECHNICAL_ERROR_PATTERNS.some((pattern) => pattern.test(raw))) {
-    return fallback;
-  }
-
-  // Long, unpunctuated or code-like strings are unlikely to be meant for users
-  if (raw.length > 160 || /[{}<>]/.test(raw)) {
-    return fallback;
-  }
-
-  return raw;
-};
+// getFriendlyErrorMessage now lives in src/lib/errorMessages.js (shared with
+// useFirebasePhoneAuth.js) \u2014 imported above.
 
 
 export default function RegisterPage() {
@@ -236,17 +231,40 @@ export default function RegisterPage() {
   const [verificationToken, setVerificationToken] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
 
+  // Mobile OTP Verification (Firebase Phone Auth) — the SMS itself is sent
+  // directly by Firebase from the browser, not via our backend; the
+  // backend's only job is verifying the resulting ID token at final submit
+  // (see submitRegistration's mobileIdToken and auth.controller.js's register).
+  // Logic lives in the shared useFirebasePhoneAuth hook (also used by the
+  // login page's mobile-OTP option and Edit Profile).
+  const {
+    mobileVerificationStep,
+    mobileOtpValue,
+    setMobileOtpValue,
+    mobileOtpLoading,
+    mobileVerified,
+    mobileIdToken,
+    mobileResendTimer,
+    sendMobileOTP,
+    verifyMobileOTP,
+    resendMobileOTP,
+    resetMobileVerification,
+  } = useFirebasePhoneAuth('recaptcha-container');
+
   // Password visibility toggles
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [formData, setFormData] = useState({
-    // Step 1
+    // Step 1 — Quick Start
     fullName: '',
+    mobileNumber: '',
+    placeCountry: '',
+    placeCity: '',
+    // Step 7 — Account Finish
     email: '',
     password: '',
     confirmPassword: '',
-    mobileNumber: '',
     alternateMobileNumber: '',
     // Step 2-6 will be populated with defaults from shared component
     dateOfBirth: null,
@@ -304,9 +322,11 @@ export default function RegisterPage() {
     residentialStatus: '',
     familyStatus: '',
     diet: '',
-    // Step 6
+    // ageFrom/ageTo captured in Step 1 (Quick Start) now — kept here as
+    // shared formData, just no longer gathered during Step 6.
     ageFrom: '',
     ageTo: '',
+    // Step 6
     interests: [],
     profileAbout: '',
     partnerPreferenceDescription: '',
@@ -326,6 +346,7 @@ export default function RegisterPage() {
       case 4: return step4Schema;
       case 5: return step5Schema;
       case 6: return step6Schema;
+      case 7: return step7Schema;
       default: return step1Schema;
     }
   };
@@ -499,20 +520,80 @@ export default function RegisterPage() {
     await sendOTP();
   };
 
+  // Saves the quick-start answers as a "started filling" lead in Supabase
+  // the moment someone clears step 1 — even if they never come back. Admin
+  // sees these in a read-only "Started Filling" tab and follows up manually
+  // (no automated reminder email). Mirrors firebaseAdminService verification
+  // the final /api/auth/register call also does, so a lead can't be faked
+  // with an unverified mobile number.
+  const startRegistrationLead = async (values) => {
+    try {
+      await client.post('/api/auth/register/start', {
+        fullName: values.fullName,
+        // Calendar date as picked (not toISOString()) — local midnight in IST
+        // serializes to the previous day in UTC, which a Postgres `date`
+        // column would then store one day early.
+        dateOfBirth: format(values.dateOfBirth, 'yyyy-MM-dd'),
+        gender: values.gender,
+        seekingGender: values.seekingGender,
+        placeCountry: values.placeCountry,
+        placeCity: values.placeCity,
+        mobileNumber: values.mobileNumber,
+        mobileIdToken,
+        ageFrom: values.ageFrom,
+        ageTo: values.ageTo,
+      });
+      return true;
+    } catch (error) {
+      toastError(getFriendlyErrorMessage(error, 'We couldn’t save your details. Please try again.'));
+      return false;
+    }
+  };
+
   const validateAndProceed = async () => {
     setError('');
+
+    if (currentStep === 1) {
+      const isValid = await form.trigger();
+      if (!isValid) {
+        toastError('Some fields are not filled in correctly. Please check and try again.');
+        return;
+      }
+
+      const values = form.getValues();
+      setIsLoading(true);
+      const saved = await startRegistrationLead(values);
+      setIsLoading(false);
+      if (!saved) return;
+
+      setFormData(prev => ({
+        ...prev,
+        ...values,
+        // Prefill the later address step's country/city from this quick
+        // answer so the user isn't asked for the same thing twice.
+        presentResidentialAddress: {
+          ...prev.presentResidentialAddress,
+          country: values.placeCountry,
+          city: values.placeCity,
+        },
+        profilePicture: prev.profilePicture,
+        galleryPhotos: prev.galleryPhotos,
+        horoscope: prev.horoscope,
+        idProof: prev.idProof,
+      }));
+      setCurrentStep(currentStep + 1);
+      return;
+    }
 
     if (currentStep === 6) {
       const isValid = await form.trigger();
       if (!isValid) {
         toastError('Some fields are not filled in correctly. Please check and try again.');
-        setIsLoading(false);
         return;
       }
 
       if (idProofRequired && !formData.idProof?.file) {
         toastError('Please upload an ID proof document to continue.');
-        setIsLoading(false);
         return;
       }
 
@@ -523,12 +604,31 @@ export default function RegisterPage() {
       // no photos at all.
       if (!formData.profilePicture) {
         toastError('Please upload a profile photo to continue.');
-        setIsLoading(false);
         return;
       }
 
       if (!formData.galleryPhotos || formData.galleryPhotos.length < 1) {
         toastError('Please upload at least one gallery photo to continue.');
+        return;
+      }
+
+      const values = form.getValues();
+      setFormData(prev => ({
+        ...prev,
+        ...values,
+        profilePicture: prev.profilePicture,
+        galleryPhotos: prev.galleryPhotos,
+        horoscope: prev.horoscope,
+        idProof: prev.idProof,
+      }));
+      setCurrentStep(currentStep + 1);
+      return;
+    }
+
+    if (currentStep === 7) {
+      const isValid = await form.trigger();
+      if (!isValid) {
+        toastError('Some fields are not filled in correctly. Please check and try again.');
         setIsLoading(false);
         return;
       }
@@ -606,9 +706,10 @@ export default function RegisterPage() {
         fullName: submissionData.fullName,
         email: submissionData.email,
         password: submissionData.password,
-        mobileNumber: submissionData.mobileNumber || '', 
+        mobileNumber: submissionData.mobileNumber || '',
         alternateMobileNumber: submissionData.alternateMobileNumber || '',
         verificationToken: verificationToken,
+        mobileIdToken: mobileIdToken,
         dateOfBirth: dob.toISOString(),
         timeOfBirth: timeOfBirth24,
         motherTongue: submissionData.motherTongue,
@@ -666,39 +767,67 @@ export default function RegisterPage() {
       const result = await register(registrationData);
 
       if (result.success) {
-        toastSuccess('Registration successful. Logging you in...');
+        // The account exists from here on; photos/documents upload as separate
+        // calls. The store's upload actions return { success: false } rather
+        // than throwing, so every result must be checked — otherwise a failed
+        // photo upload silently leaves a photo-less profile in the approval queue.
+        const store = useAuthStore.getState();
+        const failed = [];
+        const safely = async (fn) => {
+          try {
+            return await fn();
+          } catch (error) {
+            return { success: false, error: error.message };
+          }
+        };
 
-        try {
-          if (submissionData.profilePicture?.file) {
-            await useAuthStore.getState().uploadProfilePicture(submissionData.profilePicture.file);
-          }
-          if (submissionData.galleryPhotos?.length > 0) {
-            for (const photo of submissionData.galleryPhotos) {
-              if (photo.file && !photo.existing) {
-                await useAuthStore.getState().uploadPhoto(photo.file);
-              }
-            }
-          }
-          if (submissionData.horoscope?.file) {
-            try {
-              await useAuthStore.getState().uploadHoroscopeDocument(submissionData.horoscope.file);
-            } catch (error) {
-              console.warn('Horoscope upload warning:', error.message);
-            }
-          }
-          if (submissionData.idProof?.file) {
-            try {
-              await useAuthStore.getState().uploadIdProof(submissionData.idProof.file);
-            } catch (error) {
-              console.warn('ID proof upload warning:', error.message);
-            }
-          }
-        } catch (mediaErr) {
-          console.warn('Media upload warning:', mediaErr.message);
+        if (submissionData.profilePicture?.file) {
+          const res = await safely(() => store.uploadProfilePicture(submissionData.profilePicture.file));
+          if (!res?.success) failed.push('profile photo');
+        }
+        const newGallery = (submissionData.galleryPhotos || []).filter((photo) => photo.file && !photo.existing);
+        let galleryUploaded = 0;
+        for (const photo of newGallery) {
+          const res = await safely(() => store.uploadPhoto(photo.file));
+          if (res?.success) galleryUploaded++;
+        }
+        if (newGallery.length > 0 && galleryUploaded < newGallery.length) {
+          failed.push(galleryUploaded === 0 ? 'gallery photos' : `${newGallery.length - galleryUploaded} gallery photo(s)`);
+        }
+        if (submissionData.horoscope?.file) {
+          const res = await safely(() => store.uploadHoroscopeDocument(submissionData.horoscope.file));
+          if (!res?.success) failed.push('horoscope document');
+        }
+        if (submissionData.idProof?.file) {
+          const res = await safely(() => store.uploadIdProof(submissionData.idProof.file));
+          if (!res?.success) failed.push('ID proof');
         }
 
-        router.push('/');
+        if (failed.length > 0) {
+          // Profile page lets a pending member add the missing files (Edit Profile).
+          toastError(
+            `Your account was created, but your ${failed.join(', ')} didn't upload. Please add them on your profile page — your profile can't be approved without your photos.`,
+            { duration: 12000 }
+          );
+          router.push('/profile');
+        } else {
+          toastSuccess('Registration successful. Logging you in...');
+          router.push('/');
+        }
       } else {
+        // Mobile was verified back in step 1 — if the whole form took long
+        // enough that the Firebase ID token's ~1hr validity lapsed before
+        // this final submit, the backend rejects with this specific message.
+        // Send them back to re-verify instead of leaving them stuck on a
+        // generic error at the very last step, with everything else they
+        // already filled in still intact (one shared formData object).
+        if (/mobile.*verif.*expired|verify your mobile number again/i.test(result.error || '')) {
+          toastError('Your mobile verification expired. Please verify your mobile number again.');
+          setCurrentStep(1);
+          resetMobileVerification();
+          setIsLoading(false);
+          return;
+        }
         throw new Error(
           getFriendlyErrorMessage(result.error, 'Registration failed. Please check your details and try again.')
         );
@@ -717,15 +846,28 @@ export default function RegisterPage() {
   };
 
   const stepTitles = [
-    { label: 'Create Your Account', icon: UserPlus },
+    { label: 'Quick Start', icon: UserPlus },
     { label: 'Personal Details', icon: HeartHandshake },
     { label: 'Location Details', icon: MapPin },
     { label: 'Professional Details', icon: Briefcase },
     { label: 'Family & Additional Details', icon: Users },
     { label: 'Preferences & Media', icon: Images },
+    { label: 'Account Finish', icon: Mail },
   ];
-  const progressValue = (currentStep / 6) * 100;
+  const progressValue = (currentStep / 7) * 100;
   const CurrentStepIcon = stepTitles[currentStep - 1].icon;
+  const isFinalStep = currentStep === 7;
+  const submitDisabled = isLoading || (isFinalStep && !emailVerified);
+  const submitLabel = isLoading
+    ? 'Processing...'
+    : isFinalStep && !emailVerified
+      ? 'Verify Email to Continue'
+      : isFinalStep
+        ? 'Complete Registration'
+        : 'Next';
+  // For the quick-start Date of Birth picker — same pattern PersonalDetailsStep
+  // uses for the same field in later editing contexts.
+  const displayDate = form.watch('dateOfBirth');
 
   return (
     <>
@@ -746,7 +888,12 @@ export default function RegisterPage() {
       <div className="relative z-10 flex items-center justify-center min-h-screen w-full p-4 py-24">
         
         {currentStep === 1 ? (
-          /* STEP 1: ACCOUNT CREATION CARD */
+          /* STEP 1: QUICK START CARD — the minimal commitment before deciding
+             to finish the rest of the form. Name, age, place, a verified
+             mobile number, and a quick preferred-partner age range; nothing
+             else. Clearing this step saves a "started filling" lead to
+             Supabase (see startRegistrationLead) so an admin can follow up
+             even if the person never comes back. */
           <Card className="border border-white/40 shadow-[0_25px_70px_-20px_rgba(0,0,0,0.55)] bg-white/97 backdrop-blur-xl ring-1 ring-[#D4A843]/15 w-full max-w-2xl mx-auto rounded-[28px] overflow-hidden py-0 gap-0">
             <CardHeader className="pb-7 pt-9 px-6 sm:px-10 bg-gradient-to-br from-[#2C3E50] via-[#233240] to-[#1A2733] relative overflow-hidden">
               {/* Subtle decorative texture */}
@@ -759,7 +906,7 @@ export default function RegisterPage() {
                   </span>
                   <div>
                     <p className="font-sans text-[11px] tracking-[0.18em] uppercase text-[#D4A843] font-semibold mb-0.5">
-                      Step 1 of 6
+                      Step 1 of 7
                     </p>
                     <CardTitle className="font-serif text-2xl text-white font-bold leading-tight tracking-tight">
                       {stepTitles[0].label}
@@ -779,15 +926,19 @@ export default function RegisterPage() {
             <form onSubmit={(e) => { e.preventDefault(); validateAndProceed(); }}>
             <CardContent className="px-6 sm:px-10">
               <Form {...form}>
-                <div className="space-y-6 py-8">
+                <div className="space-y-4 py-6">
                   <FormAlert message={error} onDismiss={() => setError('')} />
+
+                  {/* Invisible Firebase reCAPTCHA widget required before an SMS can be
+                      sent — renders nothing visible (size: 'invisible'), see useFirebasePhoneAuth. */}
+                  <div id="recaptcha-container" />
 
                   <FormField
                     control={form.control}
                     name="fullName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-sans text-[#1A1A1A] font-medium">Full Name</FormLabel>
+                        <FormLabel className="font-sans text-[#1A1A1A] font-medium">Full Name *</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -808,190 +959,164 @@ export default function RegisterPage() {
 
                   <FormField
                     control={form.control}
-                    name="email"
+                    name="dateOfBirth"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-sans text-[#1A1A1A] font-medium">Email Address *</FormLabel>
-                        <div className="flex gap-2.5">
-                          <div className="relative flex-1">
-                            <Mail className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#2C3E50]/50" strokeWidth={1.75} />
+                        <FormLabel className="font-sans text-[#1A1A1A] font-medium">Age (Date of Birth) *</FormLabel>
+                        <div className="grid grid-cols-3 gap-2">
+                          <Select value={displayDate ? displayDate.getDate().toString().padStart(2, '0') : ''} onValueChange={(day) => {
+                            const baseDate = displayDate || new Date(new Date().getFullYear() - 25, 0, 1);
+                            const newDate = new Date(baseDate);
+                            newDate.setDate(parseInt(day, 10));
+                            field.onChange(newDate);
+                          }}>
                             <FormControl>
-                             <Input
-                                {...field}
-                                type="email"
-                                placeholder="your@email.com"
-                                className="font-sans pl-10 h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
-                                disabled={emailVerified}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    const emailVal = e.currentTarget.value.trim();
-                                    const isValidEmail = z.string().email().safeParse(emailVal).success;
-                                    if (!emailVerified && !otpLoading && isValidEmail) {
-                                      sendOTP();
-                                    }
-                                  }
-                                }}
-                                onChange={(e) => {
-                                  field.onChange(e);
-                                  setFormData(prev => ({
-                                    ...prev,
-                                    email: e.target.value
-                                  }));
-                                  if (emailVerified) {
-                                    setEmailVerified(false);
-                                    setVerificationToken('');
-                                    setEmailVerificationStep('input');
-                                  }
-                                  // field.onChange() above already re-validates this field —
-                                  // the form uses mode: 'onChange', so the Zod resolver reruns
-                                  // automatically on every keystroke. This manual trigger('email')
-                                  // just repeated that same validation a second time in the same
-                                  // tick, doubling the render work on every character typed here
-                                  // for no behavioral difference.
-                                }}
-                              />
+                              <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                                <SelectValue placeholder="Day" />
+                              </SelectTrigger>
                             </FormControl>
-                          </div>
-                          {!emailVerified && (
-                            <Button
-                              type="button"
-                              onClick={sendOTP}
-                              disabled={otpLoading || !formData.email || !z.string().email().safeParse(formData.email).success}
-                              className="bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold whitespace-nowrap h-12 px-5 rounded-xl shadow-sm"
-                            >
-                              {otpLoading ? 'Sending...' : 'Verify Email'}
-                            </Button>
-                          )}
-                          {emailVerified && (
-                            <div className="flex items-center gap-2 px-4 h-12 bg-green-50 text-green-700 rounded-xl border border-green-200">
-                              <ShieldCheck className="w-4.5 h-4.5 shrink-0" strokeWidth={1.75} />
-                              <span className="font-sans font-semibold text-sm whitespace-nowrap">Verified</span>
-                            </div>
-                          )}
+                            <SelectContent>
+                              {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                                <SelectItem key={day} value={day.toString().padStart(2, '0')}>
+                                  {day}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          <Select value={displayDate ? (displayDate.getMonth() + 1).toString().padStart(2, '0') : ''} onValueChange={(month) => {
+                            const baseDate = displayDate || new Date(new Date().getFullYear() - 25, 0, 1);
+                            const newDate = setMonth(baseDate, parseInt(month, 10) - 1);
+                            field.onChange(newDate);
+                          }}>
+                            <FormControl>
+                              <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                                <SelectValue placeholder="Month" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((month, idx) => (
+                                <SelectItem key={month} value={(idx + 1).toString().padStart(2, '0')}>
+                                  {month}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          <Select value={displayDate ? displayDate.getFullYear().toString() : ''} onValueChange={(year) => {
+                            const baseDate = displayDate || new Date(parseInt(year, 10), 0, 1);
+                            const newDate = setYear(baseDate, parseInt(year, 10));
+                            field.onChange(newDate);
+                          }}>
+                            <FormControl>
+                              <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                                <SelectValue placeholder="Year" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {DOB_YEARS.map(year => (
+                                <SelectItem key={year} value={year.toString()}>
+                                  {year}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
                       </FormItem>
                     )}
                   />
 
-                  {emailVerificationStep === 'otp' && !emailVerified && (
-                    <div className="space-y-4 p-5 bg-[#F5E6C3]/40 rounded-xl border border-[#D4A843]/30 border-l-4 border-l-[#D4A843]">
-                      <p className="font-sans text-sm text-[#2C3E50]">
-                        Enter the 6-digit code sent to <strong className="text-[#1A1A1A]">{formData.email}</strong>
-                      </p>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="000000"
-                        maxLength={6}
-                        value={otpValue}
-                        onChange={(e) => {
-                          const cleaned = e.target.value.replace(/\D/g, '').slice(0, 6);
-                          setOtpValue(cleaned);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (!otpLoading && otpValue.length === 6) {
-                              verifyOTP();
-                            }
-                          }
-                        }}
-                        className="text-center text-2xl tracking-[0.5em] font-sans h-14 rounded-xl bg-white border-[#D4A843]/40 focus-visible:ring-[#D4A843]/40"
-                      />
-                      <div className="flex gap-2.5">
-                        <Button
-                          type="button"
-                          onClick={verifyOTP}
-                          disabled={otpLoading || !otpValue || otpValue.length !== 6}
-                          className="flex-1 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold h-11 rounded-xl shadow-sm"
-                        >
-                          {otpLoading ? 'Verifying...' : 'Verify OTP'}
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={resendOTP}
-                          disabled={resendTimer > 0}
-                          variant="outline"
-                          className="font-sans h-11 rounded-xl border-[#D4A843]/40 text-[#2C3E50] hover:bg-[#F5E6C3]/30"
-                        >
-                          {resendTimer > 0 ? `Resend (${resendTimer}s)` : 'Resend OTP'}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-sans text-[#1A1A1A] font-medium">Gender *</FormLabel>
+                          <Select value={field.value || ''} onValueChange={field.onChange}>
+                            <FormControl>
+                              <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                                <SelectValue placeholder="Select gender" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="male">Male</SelectItem>
+                              <SelectItem value="female">Female</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+                        </FormItem>
+                      )}
+                    />
 
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-sans text-[#1A1A1A] font-medium">Password</FormLabel>
-                        <div className="relative">
+                    <FormField
+                      control={form.control}
+                      name="seekingGender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-sans text-[#1A1A1A] font-medium">Preferred Partner Gender *</FormLabel>
+                          <Select value={field.value || ''} onValueChange={field.onChange}>
+                            <FormControl>
+                              <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                                <SelectValue placeholder="Select preference" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="male">Male</SelectItem>
+                              <SelectItem value="female">Female</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="placeCountry"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-sans text-[#1A1A1A] font-medium">Country *</FormLabel>
+                          <Select value={field.value || ''} onValueChange={field.onChange}>
+                            <FormControl>
+                              <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                                <SelectValue placeholder="Select country" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {COUNTRIES.map(country => (
+                                <SelectItem key={country} value={country}>
+                                  {country}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="placeCity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-sans text-[#1A1A1A] font-medium">City *</FormLabel>
                           <FormControl>
                             <Input
                               {...field}
-                              type={showPassword ? 'text' : 'password'}
-                              autoComplete="new-password"
-                              placeholder="At least 8 characters"
-                              className="font-sans h-12 rounded-xl border-[#D4A843]/25 pr-11 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
-                              onChange={(e) => {
-                                field.onChange(e);
-                                if (form.formState.errors.password) form.trigger('password');
-                                if (form.formState.errors.confirmPassword) form.trigger('confirmPassword');
-                              }}
+                              placeholder="Enter city"
+                              className="font-sans h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
                             />
                           </FormControl>
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword((prev) => !prev)}
-                            aria-label={showPassword ? 'Hide password' : 'Show password'}
-                            tabIndex={-1}
-                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#2C3E50]/50 hover:text-[#D4A843] transition-colors"
-                          >
-                            {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
-                          </button>
-                        </div>
-                        <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-sans text-[#1A1A1A] font-medium">Confirm Password</FormLabel>
-                        <div className="relative">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type={showConfirmPassword ? 'text' : 'password'}
-                              autoComplete="new-password"
-                              placeholder="••••••••"
-                              className="font-sans h-12 rounded-xl border-[#D4A843]/25 pr-11 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
-                              onChange={(e) => {
-                                field.onChange(e);
-                                if (form.formState.errors.confirmPassword) form.trigger('confirmPassword');
-                              }}
-                            />
-                          </FormControl>
-                          <button
-                            type="button"
-                            onClick={() => setShowConfirmPassword((prev) => !prev)}
-                            aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                            tabIndex={-1}
-                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#2C3E50]/50 hover:text-[#D4A843] transition-colors"
-                          >
-                            {showConfirmPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
-                          </button>
-                        </div>
-                        <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
-                      </FormItem>
-                    )}
-                  />
+                          <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <FormField
                     control={form.control}
@@ -999,60 +1124,175 @@ export default function RegisterPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="font-sans text-[#1A1A1A] font-medium">Mobile Number *</FormLabel>
-                        <div className="flex">
-                          <div className="w-16 flex items-center justify-center border border-r-0 border-[#D4A843]/25 rounded-l-xl bg-[#F5E6C3]/50 font-sans text-sm text-[#2C3E50] font-medium">
-                            +91
+                        <div className="flex gap-2.5">
+                          <div className="flex flex-1">
+                            <div className="w-16 flex items-center justify-center border border-r-0 border-[#D4A843]/25 rounded-l-xl bg-[#F5E6C3]/50 font-sans text-sm text-[#2C3E50] font-medium">
+                              +91
+                            </div>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="tel"
+                                placeholder="9876543210"
+                                maxLength={10}
+                                pattern="[0-9]*"
+                                disabled={mobileVerified}
+                                className="font-sans flex-1 h-12 rounded-l-none rounded-r-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const mobileVal = e.currentTarget.value.trim();
+                                    if (!mobileVerified && !mobileOtpLoading && /^[6-9]\d{9}$/.test(mobileVal)) {
+                                      sendMobileOTP(mobileVal);
+                                    }
+                                  }
+                                }}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  setFormData(prev => ({ ...prev, mobileNumber: e.target.value }));
+                                  if (mobileVerified) {
+                                    resetMobileVerification();
+                                  }
+                                  if (form.formState.errors.mobileNumber) form.trigger('mobileNumber');
+                                }}
+                              />
+                            </FormControl>
                           </div>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="tel"
-                              placeholder="9876543210"
-                              maxLength={10}
-                              pattern="[0-9]*"
-                              className="font-sans flex-1 h-12 rounded-l-none rounded-r-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
-                              onChange={(e) => {
-                                field.onChange(e);
-                                setFormData(prev => ({ ...prev, mobileNumber: e.target.value }));
-                                if (form.formState.errors.mobileNumber) form.trigger('mobileNumber');
-                              }}
-                            />
-                          </FormControl>
+                          {!mobileVerified && (
+                            <Button
+                              type="button"
+                              onClick={() => sendMobileOTP(formData.mobileNumber)}
+                              disabled={mobileOtpLoading || !/^[6-9]\d{9}$/.test(formData.mobileNumber)}
+                              className="bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold whitespace-nowrap h-12 px-5 rounded-xl shadow-sm"
+                            >
+                              {mobileOtpLoading ? 'Sending...' : 'Verify Mobile'}
+                            </Button>
+                          )}
+                          {mobileVerified && (
+                            <div className="flex items-center gap-2 px-4 h-12 bg-green-50 text-green-700 rounded-xl border border-green-200">
+                              <ShieldCheck className="w-4.5 h-4.5 shrink-0" strokeWidth={1.75} />
+                              <span className="font-sans font-semibold text-sm whitespace-nowrap">Verified</span>
+                            </div>
+                          )}
                         </div>
                         <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+                        {/* Required by Google's terms whenever the reCAPTCHA badge is
+                            hidden via CSS (see globals.css's .grecaptcha-badge rule). */}
+                        <p className="font-sans text-[11px] text-[#2C3E50]/50 mt-1">
+                          This site is protected by reCAPTCHA and the Google{' '}
+                          <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-[#2C3E50]/70">
+                            Privacy Policy
+                          </a>{' '}
+                          and{' '}
+                          <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-[#2C3E50]/70">
+                            Terms of Service
+                          </a>{' '}
+                          apply.
+                        </p>
                       </FormItem>
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="alternateMobileNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="font-sans text-[#1A1A1A] font-medium">Alternate Mobile Number (Optional)</FormLabel>
-                        <div className="flex">
-                          <div className="w-16 flex items-center justify-center border border-r-0 border-[#D4A843]/25 rounded-l-xl bg-[#F5E6C3]/50 font-sans text-sm text-[#2C3E50] font-medium">
-                            +91
-                          </div>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="tel"
-                              placeholder="9876543210"
-                              maxLength={10}
-                              pattern="[0-9]*"
-                              className="font-sans flex-1 h-12 rounded-l-none rounded-r-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
-                              onChange={(e) => {
-                                field.onChange(e);
-                                if (form.formState.errors.alternateMobileNumber) form.trigger('alternateMobileNumber');
-                              }}
-                            />
-                          </FormControl>
-                        </div>
-                        <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
-                      </FormItem>
-                    )}
-                  />
+                  {mobileVerificationStep === 'otp' && !mobileVerified && (
+                    <div className="space-y-3 p-4 bg-[#F5E6C3]/40 rounded-xl border border-[#D4A843]/30 border-l-4 border-l-[#D4A843]">
+                      <p className="font-sans text-sm text-[#2C3E50]">
+                        Enter the 6-digit code sent to <strong className="text-[#1A1A1A]">+91 {formData.mobileNumber}</strong>
+                      </p>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="000000"
+                        maxLength={6}
+                        value={mobileOtpValue}
+                        onChange={(e) => {
+                          const cleaned = e.target.value.replace(/\D/g, '').slice(0, 6);
+                          setMobileOtpValue(cleaned);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (!mobileOtpLoading && mobileOtpValue.length === 6) {
+                              verifyMobileOTP();
+                            }
+                          }
+                        }}
+                        className="text-center text-2xl tracking-[0.5em] font-sans h-12 rounded-xl bg-white border-[#D4A843]/40 focus-visible:ring-[#D4A843]/40"
+                      />
+                      <div className="flex gap-2.5">
+                        <Button
+                          type="button"
+                          onClick={verifyMobileOTP}
+                          disabled={mobileOtpLoading || !mobileOtpValue || mobileOtpValue.length !== 6}
+                          className="flex-1 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold h-11 rounded-xl shadow-sm"
+                        >
+                          {mobileOtpLoading ? 'Verifying...' : 'Verify OTP'}
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={resendMobileOTP}
+                          disabled={mobileResendTimer > 0}
+                          variant="outline"
+                          className="font-sans h-11 rounded-xl border-[#D4A843]/40 text-[#2C3E50] hover:bg-[#F5E6C3]/30"
+                        >
+                          {mobileResendTimer > 0 ? `Resend (${mobileResendTimer}s)` : 'Resend OTP'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <p className="font-sans text-sm font-medium text-[#1A1A1A]">Preferred Partner Age Range *</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <FormField
+                        control={form.control}
+                        name="ageFrom"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-sans text-xs text-[#2C3E50]/70">From</FormLabel>
+                            <Select value={field.value || ''} onValueChange={field.onChange}>
+                              <FormControl>
+                                <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                                  <SelectValue placeholder="Min age" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {Array.from({ length: 73 }, (_, i) => 18 + i).map(age => (
+                                  <SelectItem key={age} value={age.toString()}>
+                                    {age}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="ageTo"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-sans text-xs text-[#2C3E50]/70">To</FormLabel>
+                            <Select value={field.value || ''} onValueChange={field.onChange}>
+                              <FormControl>
+                                <SelectTrigger className="font-sans h-12 rounded-xl border-[#D4A843]/25 text-[#1A1A1A] focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50">
+                                  <SelectValue placeholder="Max age" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {Array.from({ length: 73 }, (_, i) => 18 + i).map(age => (
+                                  <SelectItem key={age} value={age.toString()}>
+                                    {age}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
                 </div>
               </Form>
             </CardContent>
@@ -1068,18 +1308,20 @@ export default function RegisterPage() {
               </Button>
               <Button
                 type="submit"
-                disabled={isLoading || !emailVerified}
+                disabled={isLoading || !mobileVerified}
                 className="flex-1 bg-gradient-to-r from-[#D4A843] to-[#C99A3A] hover:from-[#C99A3A] hover:to-[#B8860B] text-[#1A1A1A] font-sans font-semibold h-12 rounded-xl shadow-md hover:shadow-lg disabled:opacity-50 transition-all duration-200"
               >
-                {!emailVerified ? 'Verify Email to Continue' : isLoading ? 'Validating...' : 'Next'}
-                {!isLoading && emailVerified && <ChevronRight className="ml-2 w-4 h-4" />}
+                {!mobileVerified
+                  ? 'Verify Mobile to Continue'
+                  : isLoading ? 'Saving...' : 'Next'}
+                {!isLoading && mobileVerified && <ChevronRight className="ml-2 w-4 h-4" />}
               </Button>
             </div>
             </form>
           </Card>
         ) : (
           
-          /* STEPS 2 TO 6: DETAILS CARDS */
+          /* STEPS 2 TO 7: DETAILS CARDS */
           <Card className="border border-white/40 shadow-[0_25px_70px_-20px_rgba(0,0,0,0.55)] bg-white/97 backdrop-blur-xl ring-1 ring-[#D4A843]/15 w-full max-w-2xl mx-auto rounded-[28px] overflow-hidden py-0 gap-0">
             <CardHeader className="pb-7 pt-9 px-6 sm:px-10 bg-gradient-to-br from-[#2C3E50] via-[#233240] to-[#1A2733] relative overflow-hidden">
               {/* Subtle decorative texture */}
@@ -1100,7 +1342,7 @@ export default function RegisterPage() {
                   </span>
                   <div>
                     <p className="font-sans text-[11px] tracking-[0.18em] uppercase text-[#D4A843] font-semibold mb-0.5">
-                      Step {currentStep} of 6
+                      Step {currentStep} of 7
                     </p>
                     <CardTitle className="font-serif text-2xl text-white font-bold leading-tight tracking-tight">
                       {stepTitles[currentStep - 1].label}
@@ -1117,7 +1359,7 @@ export default function RegisterPage() {
                 <div className="space-y-6 py-8">
                   <FormAlert message={error} onDismiss={() => setError('')} />
 
-                  {currentStep === 2 && <PersonalDetailsStep form={form} horoscope={formData.horoscope} onFileUpdate={handleFileUpdate} />}
+                  {currentStep === 2 && <PersonalDetailsStep form={form} horoscope={formData.horoscope} onFileUpdate={handleFileUpdate} hideDateOfBirth hideGender />}
                   {currentStep === 3 && <LocationAddressStep form={form} />}
                   {currentStep === 4 && <ProfessionalDetailsStep form={form} />}
                   {currentStep === 5 && <FamilyDetailsStep form={form} />}
@@ -1129,7 +1371,224 @@ export default function RegisterPage() {
                       onFileUpdate={handleFileUpdate}
                       idProof={formData.idProof}
                       idProofRequired={idProofRequired}
+                      hidePreferredAgeRange
                     />
+                  )}
+                  {currentStep === 7 && (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-sans text-[#1A1A1A] font-medium">Email Address *</FormLabel>
+                            <div className="flex gap-2.5">
+                              <div className="relative flex-1">
+                                <Mail className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#2C3E50]/50" strokeWidth={1.75} />
+                                <FormControl>
+                                 <Input
+                                    {...field}
+                                    type="email"
+                                    placeholder="your@email.com"
+                                    className="font-sans pl-10 h-12 rounded-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+                                    disabled={emailVerified}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        const emailVal = e.currentTarget.value.trim();
+                                        const isValidEmail = z.string().email().safeParse(emailVal).success;
+                                        if (!emailVerified && !otpLoading && isValidEmail) {
+                                          sendOTP();
+                                        }
+                                      }
+                                    }}
+                                    onChange={(e) => {
+                                      field.onChange(e);
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        email: e.target.value
+                                      }));
+                                      if (emailVerified) {
+                                        setEmailVerified(false);
+                                        setVerificationToken('');
+                                        setEmailVerificationStep('input');
+                                      }
+                                    }}
+                                  />
+                                </FormControl>
+                              </div>
+                              {!emailVerified && (
+                                <Button
+                                  type="button"
+                                  onClick={sendOTP}
+                                  disabled={otpLoading || !formData.email || !z.string().email().safeParse(formData.email).success}
+                                  className="bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold whitespace-nowrap h-12 px-5 rounded-xl shadow-sm"
+                                >
+                                  {otpLoading ? 'Sending...' : 'Verify Email'}
+                                </Button>
+                              )}
+                              {emailVerified && (
+                                <div className="flex items-center gap-2 px-4 h-12 bg-green-50 text-green-700 rounded-xl border border-green-200">
+                                  <ShieldCheck className="w-4.5 h-4.5 shrink-0" strokeWidth={1.75} />
+                                  <span className="font-sans font-semibold text-sm whitespace-nowrap">Verified</span>
+                                </div>
+                              )}
+                            </div>
+                            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+                          </FormItem>
+                        )}
+                      />
+
+                      {emailVerificationStep === 'otp' && !emailVerified && (
+                        <div className="space-y-4 p-5 bg-[#F5E6C3]/40 rounded-xl border border-[#D4A843]/30 border-l-4 border-l-[#D4A843]">
+                          <p className="font-sans text-sm text-[#2C3E50]">
+                            Enter the 6-digit code sent to <strong className="text-[#1A1A1A]">{formData.email}</strong>
+                          </p>
+                          <Input
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="000000"
+                            maxLength={6}
+                            value={otpValue}
+                            onChange={(e) => {
+                              const cleaned = e.target.value.replace(/\D/g, '').slice(0, 6);
+                              setOtpValue(cleaned);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (!otpLoading && otpValue.length === 6) {
+                                  verifyOTP();
+                                }
+                              }
+                            }}
+                            className="text-center text-2xl tracking-[0.5em] font-sans h-14 rounded-xl bg-white border-[#D4A843]/40 focus-visible:ring-[#D4A843]/40"
+                          />
+                          <div className="flex gap-2.5">
+                            <Button
+                              type="button"
+                              onClick={verifyOTP}
+                              disabled={otpLoading || !otpValue || otpValue.length !== 6}
+                              className="flex-1 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold h-11 rounded-xl shadow-sm"
+                            >
+                              {otpLoading ? 'Verifying...' : 'Verify OTP'}
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={resendOTP}
+                              disabled={resendTimer > 0}
+                              variant="outline"
+                              className="font-sans h-11 rounded-xl border-[#D4A843]/40 text-[#2C3E50] hover:bg-[#F5E6C3]/30"
+                            >
+                              {resendTimer > 0 ? `Resend (${resendTimer}s)` : 'Resend OTP'}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-sans text-[#1A1A1A] font-medium">Password *</FormLabel>
+                            <div className="relative">
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  {...noPasteHandlers}
+                                  type={showPassword ? 'text' : 'password'}
+                                  autoComplete="new-password"
+                                  placeholder="At least 8 characters"
+                                  className="font-sans h-12 rounded-xl border-[#D4A843]/25 pr-11 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    if (form.formState.errors.password) form.trigger('password');
+                                    if (form.formState.errors.confirmPassword) form.trigger('confirmPassword');
+                                  }}
+                                />
+                              </FormControl>
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword((prev) => !prev)}
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                tabIndex={-1}
+                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#2C3E50]/50 hover:text-[#D4A843] transition-colors"
+                              >
+                                {showPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                              </button>
+                            </div>
+                            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="confirmPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-sans text-[#1A1A1A] font-medium">Confirm Password *</FormLabel>
+                            <div className="relative">
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  {...noPasteHandlers}
+                                  type={showConfirmPassword ? 'text' : 'password'}
+                                  autoComplete="new-password"
+                                  placeholder="Re-enter your password"
+                                  className="font-sans h-12 rounded-xl border-[#D4A843]/25 pr-11 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    if (form.formState.errors.confirmPassword) form.trigger('confirmPassword');
+                                  }}
+                                />
+                              </FormControl>
+                              <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                                aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                                tabIndex={-1}
+                                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#2C3E50]/50 hover:text-[#D4A843] transition-colors"
+                              >
+                                {showConfirmPassword ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
+                              </button>
+                            </div>
+                            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="alternateMobileNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="font-sans text-[#1A1A1A] font-medium">Alternate Mobile Number (Optional)</FormLabel>
+                            <div className="flex">
+                              <div className="w-16 flex items-center justify-center border border-r-0 border-[#D4A843]/25 rounded-l-xl bg-[#F5E6C3]/50 font-sans text-sm text-[#2C3E50] font-medium">
+                                +91
+                              </div>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  type="tel"
+                                  placeholder="9876543210"
+                                  maxLength={10}
+                                  pattern="[0-9]*"
+                                  className="font-sans flex-1 h-12 rounded-l-none rounded-r-xl border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    if (form.formState.errors.alternateMobileNumber) form.trigger('alternateMobileNumber');
+                                  }}
+                                />
+                              </FormControl>
+                            </div>
+                            <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+                          </FormItem>
+                        )}
+                      />
+                    </>
                   )}
                 </div>
               </Form>
@@ -1147,11 +1606,11 @@ export default function RegisterPage() {
 
               <Button
                 type="submit"
-                disabled={isLoading}
+                disabled={submitDisabled}
                 className="flex-1 bg-gradient-to-r from-[#D4A843] to-[#C99A3A] hover:from-[#C99A3A] hover:to-[#B8860B] text-[#1A1A1A] font-sans font-semibold h-12 rounded-xl shadow-md hover:shadow-lg disabled:opacity-50 transition-all duration-200"
               >
-                {isLoading ? 'Processing...' : currentStep === 6 ? 'Complete Registration' : 'Next'}
-                {!isLoading && currentStep < 6 && <ChevronRight className="ml-2 w-4 h-4" />}
+                {submitLabel}
+                {!isLoading && !isFinalStep && <ChevronRight className="ml-2 w-4 h-4" />}
               </Button>
             </div>
             </form>

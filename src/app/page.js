@@ -12,7 +12,7 @@ import { ShieldCheck, Users, Search, MessageCircle, Star, Heart, Award, CheckCir
 const DEFAULT_HERO_CONTENT = {
   badge: 'Welcome to SNGS Matrimonial',
   title: 'Find Your Perfect Match',
-  subtitle: 'Within the Malayali Ezhava Community',
+  subtitle: 'Within the Malayalee Community',
 };
 
 // Default content fallback
@@ -26,7 +26,7 @@ const DEFAULT_HOW_IT_WORKS = {
     },
     {
       title: 'Find Matches',
-      description: 'Browse profiles using deep filters like Sub-caste, Family Deity, and Nakshatra.',
+      description: 'Browse profiles using deep filters like Caste, Family Deity, and Nakshatra.',
     },
     {
       title: 'Connect & Chat',
@@ -131,7 +131,7 @@ export default function Home() {
         {/* 2. TRUST BAR: Key Statistics */}
         <section className="bg-[#2C3E50] py-8 border-b-4 border-[#D4A843]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center divide-x divide-white/10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center md:divide-x divide-white/10">
               <div className="px-4">
                 <div className="text-3xl font-serif text-[#D4A843] font-bold mb-1">5,000+</div>
                 <div className="text-sm text-[#F5E6C3] uppercase tracking-wider font-medium">Members</div>
@@ -245,7 +245,7 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
-                { names: "Rahul & Anjali", loc: "Bengaluru", quote: "We were looking for someone who shared our modern outlook but deeply respected our Ezhava traditions. SNGS made the search so seamless for our families." },
+                { names: "Rahul & Anjali", loc: "Bengaluru", quote: "We were looking for someone who shared our modern outlook but deeply respected our Malayalee traditions. SNGS made the search so seamless for our families." },
                 { names: "Arun & Meera", loc: "Dubai, UAE", quote: "Being an NRI, finding the right match from Kerala seemed difficult. The specific location and horoscope filters helped us connect across borders." },
                 { names: "Kiran & Divya", loc: "Kochi", quote: "The verification process gave my parents immense peace of mind. We met through the platform in January and were married by August." }
               ].map((review, idx) => (

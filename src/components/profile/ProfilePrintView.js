@@ -269,11 +269,14 @@ const ProfilePrintView = forwardRef(({ profile }, ref) => {
       >
         {/* Left Column */}
         <div>
-          {/* Contact Information */}
+          {/* Contact Information — the phone number is never shown in the
+              downloadable PDF, even for a viewer who has paid to unlock it
+              on-screen. This PDF gets shared/forwarded outside the app, so
+              there's no way to keep controlling who sees the number once
+              it's in someone's downloads folder. */}
           {(profile?.mobileNumber || profile?.alternateMobileNumber) && (
             <InfoCard title="Contact Information">
-              <InfoField label="Mobile" value={profile?.mobileNumber ? `+91 ${profile.mobileNumber}` : null} />
-              <InfoField label="Alternate" value={profile?.alternateMobileNumber ? `+91 ${profile.alternateMobileNumber}` : null} />
+              <InfoField label="Mobile" value="Hidden for privacy — available in-app only" />
             </InfoCard>
           )}
 

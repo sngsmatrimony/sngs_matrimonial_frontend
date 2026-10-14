@@ -74,6 +74,27 @@ const drawPageHeader = (pdf, fullName, currentPage, totalPages) => {
 };
 
 /**
+ * Draws a large, low-opacity, diagonal "sngsmatrimony.com" watermark across
+ * the current page, centered. Must be called AFTER the page's content image
+ * is added (jsPDF has no z-order — paint order is draw order, and the
+ * content slice is a near-opaque full-page JPEG that would otherwise hide
+ * anything drawn before it).
+ * @param {jsPDF} pdf - The jsPDF instance
+ */
+const drawWatermark = (pdf) => {
+  pdf.saveGraphicsState();
+  pdf.setGState(new pdf.GState({ opacity: 0.08 }));
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(56);
+  pdf.setTextColor(60, 60, 60);
+  pdf.text('sngsmatrimony.com', A4_WIDTH_MM / 2, A4_HEIGHT_MM / 2, {
+    align: 'center',
+    angle: 45,
+  });
+  pdf.restoreGraphicsState();
+};
+
+/**
  * Converts an image URL to base64 using the backend proxy to avoid CORS issues
  * @param {string} url - The image URL to convert
  * @returns {Promise<string|null>} - Base64 data URL or null if failed
@@ -216,6 +237,8 @@ const addHoroscopeImagePage = async (pdf, imageBase64, fullName, currentPage, to
     pdf.setTextColor(128, 128, 128);
     pdf.text('Horoscope image could not be loaded.', MARGIN_MM, contentStartY + 10);
   }
+
+  drawWatermark(pdf);
 };
 
 /**
@@ -223,6 +246,12 @@ const addHoroscopeImagePage = async (pdf, imageBase64, fullName, currentPage, to
  * @param {jsPDF} profilePdf - The generated profile PDF (jsPDF instance)
  * @param {ArrayBuffer} horoscopePdfBuffer - The horoscope PDF as ArrayBuffer
  * @returns {Promise<Uint8Array>} - Merged PDF as Uint8Array
+ *
+ * Note: the profile pages (drawn above via jsPDF) carry the sngsmatrimony.com
+ * watermark; these merged-in horoscope pages are copied verbatim from the
+ * member's own uploaded PDF via pdf-lib and do not get it — adding a
+ * watermark to someone else's already-generated document would need a
+ * separate pdf-lib drawText pass per page, not attempted here.
  */
 const mergeWithHoroscopePdf = async (profilePdf, horoscopePdfBuffer) => {
   try {
@@ -424,6 +453,8 @@ export const generateProfilePDF = async (element, fullName, horoscopeData = null
       // Add sliced image below header
       const contentStartY = MARGIN_MM + HEADER_HEIGHT_MM;
       pdf.addImage(sliceImgData, 'JPEG', MARGIN_MM, contentStartY, imgWidth, sliceHeightMm);
+
+      drawWatermark(pdf);
     }
 
     // Handle horoscope document if available

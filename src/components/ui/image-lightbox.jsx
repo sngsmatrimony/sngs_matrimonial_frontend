@@ -3,16 +3,13 @@
 import { useCallback, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import PhotoWatermark from '@/components/ui/photo-watermark';
 
 /**
  * Full-screen photo viewer. `index` is the open slide (or null/undefined when
  * closed); `images` is an array of { url, alt }. Controlled by the caller so
  * profile picture and gallery can each own their own lightbox state.
- * `watermarkText`, when provided, overlays a faint per-viewer watermark —
- * pass this only when viewing someone else's photos, never your own.
  */
-export default function ImageLightbox({ images = [], index, onOpenChange, watermarkText = null }) {
+export default function ImageLightbox({ images = [], index, onOpenChange }) {
   const open = index !== null && index !== undefined && images.length > 0;
   const total = images.length;
 
@@ -65,7 +62,6 @@ export default function ImageLightbox({ images = [], index, onOpenChange, waterm
             draggable={false}
             onContextMenu={(e) => e.preventDefault()}
           />
-          <PhotoWatermark text={watermarkText} />
         </div>
 
         {total > 1 && (

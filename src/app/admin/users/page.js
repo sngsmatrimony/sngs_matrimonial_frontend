@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { toastError, toastSuccess } from '@/lib/toast';
-import { Eye, Trash2, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, Search, Mail, ImageOff, Crown } from 'lucide-react';
+import { Eye, Trash2, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, Search, Mail, ImageOff, Crown, X } from 'lucide-react';
 
 const MISSING_DATA_FILTERS = [
   { key: 'missingProfilePicture', label: 'Missing Profile Picture' },
@@ -55,8 +55,19 @@ export default function AdminUsersPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialApprovalFilter = searchParams.get('approvalFilter') || 'all';
+  // Drill-down filters from dashboard chart clicks (e.g. "Top Cities" bar ->
+  // /admin/users?city=Kochi) — no dedicated UI control for these, just a
+  // clearable chip shown when one is active via a deep link.
+  const initialDrillDown = {
+    gender: searchParams.get('gender') || '',
+    maritalStatus: searchParams.get('maritalStatus') || '',
+    city: searchParams.get('city') || '',
+    state: searchParams.get('state') || '',
+  };
   const [page, setPage] = useState(1);
   const [approvalFilter, setApprovalFilter] = useState(initialApprovalFilter);
+  const [drillDown, setDrillDown] = useState(initialDrillDown);
+  const activeDrillDown = Object.entries(drillDown).find(([, v]) => v);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [missingFilters, setMissingFilters] = useState({
@@ -83,6 +94,22 @@ export default function AdminUsersPage() {
   const [reengageMessage, setReengageMessage] = useState('');
   const [isReengageSubmitting, setIsReengageSubmitting] = useState(false);
 
+  // The pending-approvals banner and dashboard chart links navigate here with
+  // query params; when the page is already open Next keeps it mounted, so
+  // re-read them instead of relying on the initial useState values only.
+  const searchParamsKey = searchParams.toString();
+  useEffect(() => {
+    setApprovalFilter(searchParams.get('approvalFilter') || 'all');
+    setDrillDown({
+      gender: searchParams.get('gender') || '',
+      maritalStatus: searchParams.get('maritalStatus') || '',
+      city: searchParams.get('city') || '',
+      state: searchParams.get('state') || '',
+    });
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParamsKey]);
+
   // Debounce the search box so we don't fire a request on every keystroke
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -95,7 +122,7 @@ export default function AdminUsersPage() {
   // Clear the current selection whenever the underlying result set changes
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [page, approvalFilter, search, missingFilters, premiumOnly]);
+  }, [page, approvalFilter, search, missingFilters, premiumOnly, drillDown]);
 
   // Build query params
   const queryParams = {
@@ -107,6 +134,10 @@ export default function AdminUsersPage() {
     ...(missingFilters.missingGalleryPhotos && { missingGalleryPhotos: 'true' }),
     ...(missingFilters.missingHoroscope && { missingHoroscope: 'true' }),
     ...(premiumOnly && { premium: 'true' }),
+    ...(drillDown.gender && { gender: drillDown.gender }),
+    ...(drillDown.maritalStatus && { maritalStatus: drillDown.maritalStatus }),
+    ...(drillDown.city && { city: drillDown.city }),
+    ...(drillDown.state && { state: drillDown.state }),
   };
 
   const queryClient = useQueryClient();
@@ -313,7 +344,7 @@ export default function AdminUsersPage() {
 
       {/* Approval Filter Tabs + Search */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <Tabs value={approvalFilter} onValueChange={handleFilterChange}>
+        <Tabs value={approvalFilter} onValueChange={handleFilterChange} className="max-w-full overflow-x-auto">
           <TabsList>
             <TabsTrigger value="all">All Users</TabsTrigger>
             <TabsTrigger value="pending" className="gap-1">
@@ -358,6 +389,25 @@ export default function AdminUsersPage() {
           Premium (bought any plan)
         </button>
       </div>
+
+      {/* Drill-down filter — set only via a dashboard chart click (e.g. Top
+          Cities -> /admin/users?city=Kochi), no dedicated dropdown for it. */}
+      {activeDrillDown && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-sans text-xs text-[#2C3E50]/60 uppercase tracking-wide mr-1">Filtered by:</span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium bg-[#2C3E50] text-white">
+            {activeDrillDown[0]}: {activeDrillDown[1]}
+            <button
+              type="button"
+              onClick={() => { setDrillDown({ gender: '', maritalStatus: '', city: '', state: '' }); setPage(1); router.replace('/admin/users'); }}
+              aria-label="Clear filter"
+              className="hover:text-[#D4A843]"
+            >
+              <X size={13} />
+            </button>
+          </span>
+        </div>
+      )}
 
       {/* Missing Data Filters */}
       <div className="flex flex-wrap items-center gap-2">
@@ -445,7 +495,7 @@ export default function AdminUsersPage() {
                       <TableCell className="font-medium font-sans text-[#1A1A1A]">{user.fullName}</TableCell>
                       <TableCell className="text-sm font-sans text-[#2C3E50]">{user.email}</TableCell>
                       <TableCell className="text-sm font-sans text-[#2C3E50]">{user.mobileNumber}</TableCell>
-                      <TableCell className="font-sans text-[#2C3E50]">{user.gender || '-'}</TableCell>
+                      <TableCell className="font-sans text-[#2C3E50] capitalize">{user.gender || '-'}</TableCell>
                       <TableCell>
                         {(() => {
                           const m = user.membership;
@@ -504,7 +554,7 @@ export default function AdminUsersPage() {
                         {formatDateDDMMYYYY(user.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                           {user.approvalStatus === 'pending' && (
                             <>
                               <Button
@@ -512,18 +562,18 @@ export default function AdminUsersPage() {
                                 variant="outline"
                                 className="text-[#2E7D32] hover:text-white hover:bg-[#2E7D32] border-[#2E7D32]/30"
                                 onClick={() => handleApproveUser(user._id)}
-                                title="Approve"
                               >
-                                <CheckCircle size={16} />
+                                <CheckCircle size={14} className="mr-1" />
+                                Approve
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 className="text-destructive hover:text-white hover:bg-destructive"
                                 onClick={() => handleOpenRejectDialog(user._id)}
-                                title="Reject"
                               >
-                                <XCircle size={16} />
+                                <XCircle size={14} className="mr-1" />
+                                Reject
                               </Button>
                             </>
                           )}
@@ -533,7 +583,8 @@ export default function AdminUsersPage() {
                             onClick={() => handleViewUser(user._id)}
                             title="View Details"
                           >
-                            <Eye size={16} />
+                            <Eye size={14} className="mr-1" />
+                            View
                           </Button>
                           <Button
                             size="sm"
@@ -545,7 +596,8 @@ export default function AdminUsersPage() {
                             }}
                             title="Delete"
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={14} className="mr-1" />
+                            Delete
                           </Button>
                         </div>
                       </TableCell>

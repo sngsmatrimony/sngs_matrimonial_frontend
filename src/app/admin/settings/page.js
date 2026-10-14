@@ -8,9 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Mail, Phone, Save, Loader2, Lock, Eye, EyeOff, FileText, UserPlus, Search, MessageCircle, Sparkles, ShieldAlert, IdCard } from 'lucide-react';
+import { Mail, Phone, Save, Loader2, Lock, Eye, EyeOff, FileText, UserPlus, Search, MessageCircle, Sparkles, ShieldAlert, IdCard, CalendarHeart } from 'lucide-react';
 import { toastSuccess, toastError } from '@/lib/toast';
 import adminClient from '@/lib/api/adminClient';
+import { noPasteHandlers } from '@/lib/noPasteHandlers';
+import PaymentSettingsSection from '@/components/admin/PaymentSettingsSection';
 
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
@@ -49,6 +51,10 @@ export default function AdminSettingsPage() {
 
   // Membership enforcement toggle state
   const [enforcementEnabled, setEnforcementEnabled] = useState(false);
+
+  // Alliance Meet settings state
+  const [allianceMeetEnabled, setAllianceMeetEnabled] = useState(true);
+  const [allianceMeetPrice, setAllianceMeetPrice] = useState('1500');
 
   // ID proof required toggle state
   const [idProofRequiredEnabled, setIdProofRequiredEnabled] = useState(false);
@@ -90,6 +96,15 @@ export default function AdminSettingsPage() {
     queryKey: ['enforcementSettings'],
     queryFn: async () => {
       const response = await adminApi.getEnforcementSettings();
+      return response.data.data;
+    },
+  });
+
+  // Fetch Alliance Meet setting
+  const { data: allianceMeetSettings, isLoading: isLoadingAllianceMeet } = useQuery({
+    queryKey: ['allianceMeetSettings'],
+    queryFn: async () => {
+      const response = await adminApi.getAllianceMeetSettings();
       return response.data.data;
     },
   });
@@ -158,6 +173,16 @@ export default function AdminSettingsPage() {
       setEnforcementEnabled(!!enforcementSettings.isEnabled);
     }
   }, [enforcementSettings]);
+
+  // Auto-fill Alliance Meet settings when data is loaded
+  useEffect(() => {
+    if (allianceMeetSettings) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- seeding editable local state from async-loaded server data
+      setAllianceMeetEnabled(!!allianceMeetSettings.isEnabled);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setAllianceMeetPrice(String(allianceMeetSettings.priceAmount ?? 1500));
+    }
+  }, [allianceMeetSettings]);
 
   // Auto-fill ID proof required toggle when data is loaded
   useEffect(() => {
@@ -333,6 +358,35 @@ export default function AdminSettingsPage() {
     const next = !enforcementEnabled;
     setEnforcementEnabled(next);
     updateEnforcementMutation.mutate(next);
+  };
+
+  // Alliance Meet update mutation
+  const updateAllianceMeetMutation = useMutation({
+    mutationFn: (data) => adminApi.updateAllianceMeetSettings(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['allianceMeetSettings'] });
+      toastSuccess('Alliance Meet settings updated');
+    },
+    onError: (error) => {
+      toastError(error.response?.data?.message || 'Failed to update Alliance Meet settings');
+      // Re-seed the switch/price from the server so the UI doesn't show an unsaved state.
+      queryClient.invalidateQueries({ queryKey: ['allianceMeetSettings'] });
+    },
+  });
+
+  const handleAllianceMeetToggle = () => {
+    const next = !allianceMeetEnabled;
+    setAllianceMeetEnabled(next);
+    updateAllianceMeetMutation.mutate({ isEnabled: next });
+  };
+
+  const handleAllianceMeetPriceSave = () => {
+    const price = parseInt(allianceMeetPrice, 10);
+    if (isNaN(price) || price < 1) {
+      toastError('Price must be at least ₹1 (Razorpay’s minimum).');
+      return;
+    }
+    updateAllianceMeetMutation.mutate({ priceAmount: price });
   };
 
   // ID proof required update mutation
@@ -541,6 +595,7 @@ export default function AdminSettingsPage() {
                     onChange={handlePasswordChange}
                     autoComplete="current-password"
                     className="font-sans pr-10"
+                    {...noPasteHandlers}
                   />
                   <button
                     type="button"
@@ -571,6 +626,7 @@ export default function AdminSettingsPage() {
                     onChange={handlePasswordChange}
                     autoComplete="new-password"
                     className="font-sans pr-10"
+                    {...noPasteHandlers}
                   />
                   <button
                     type="button"
@@ -604,6 +660,7 @@ export default function AdminSettingsPage() {
                     onChange={handlePasswordChange}
                     autoComplete="new-password"
                     className="font-sans pr-10"
+                    {...noPasteHandlers}
                   />
                   <button
                     type="button"
@@ -912,14 +969,87 @@ export default function AdminSettingsPage() {
               </p>
               <ul className="font-sans text-sm text-[#2C3E50] space-y-1 list-disc list-inside">
                 <li>Viewing another member&apos;s full profile details (contact info, horoscope, gallery)</li>
-                <li>Downloading horoscope documents</li>
-                <li>Browsing full search results (capped to a small teaser list with an upgrade prompt)</li>
-                <li>Starting a <strong>new</strong> chat conversation with a match</li>
+                <li>Unlocking phone numbers and starting a <strong>new</strong> chat</li>
+                <li>Downloading profiles and horoscope documents</li>
               </ul>
               <p className="font-sans text-xs text-[#2C3E50]/70 mt-2">
-                Conversations already started before the toggle was switched on stay fully accessible either way.
+                Searching and scrolling through matches is always free and unlimited — names stay
+                shortened until a profile is unlocked. Conversations already started stay accessible either way.
               </p>
             </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Credit packs + gateway charges */}
+        <PaymentSettingsSection />
+
+        {/* Alliance Meet — price + open/closed toggle */}
+        <AccordionItem value="allianceMeet" className="border rounded-lg bg-white shadow-sm">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                <CalendarHeart size={20} className="text-primary" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-serif text-lg text-secondary">Alliance Meet</h3>
+                <p className="font-sans text-sm text-gray-500">Set the ticket price and open/close member opt-in registration</p>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            {isLoadingAllianceMeet ? (
+              <p className="font-sans text-sm text-gray-500">Loading...</p>
+            ) : (
+              <>
+                <div className="flex items-start justify-between gap-6 p-4 rounded-lg border border-[#D4A843]/15 bg-gradient-to-br from-[#FDF8F0] to-[#F5E6C3]/30 mb-4">
+                  <div>
+                    <Label className="font-sans text-[#1A1A1A]">
+                      {allianceMeetEnabled ? 'Registration open' : 'Registration closed'}
+                    </Label>
+                    <p className="text-xs text-[#2C3E50]/60 font-sans mt-1 max-w-md">
+                      Off hides the opt-in from members&apos; Settings page entirely.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={allianceMeetEnabled}
+                    onClick={handleAllianceMeetToggle}
+                    disabled={updateAllianceMeetMutation.isPending}
+                    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                      allianceMeetEnabled ? 'bg-[#D4A843]' : 'bg-[#2C3E50]/20'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                        allianceMeetEnabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="font-sans text-sm">Ticket Price (₹)</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      value={allianceMeetPrice}
+                      onChange={(e) => setAllianceMeetPrice(e.target.value)}
+                      className="font-sans max-w-40"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleAllianceMeetPriceSave}
+                      disabled={updateAllianceMeetMutation.isPending}
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground font-sans"
+                    >
+                      Save Price
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </AccordionContent>
         </AccordionItem>
 

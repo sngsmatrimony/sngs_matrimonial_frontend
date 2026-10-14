@@ -62,7 +62,7 @@ export default function Footer() {
               <span className="font-serif text-xl font-bold text-white">SNGS Matrimonial</span>
             </div>
             <p className="text-sm leading-relaxed text-white/60">
-              A hyper-local matrimonial platform for the Malayali Ezhava community, connecting families across India and the NRI diaspora.
+              A hyper-local matrimonial platform for the Malayalee community, connecting families across India and the NRI diaspora.
             </p>
           </div>
 
@@ -105,7 +105,7 @@ export default function Footer() {
             <span className="font-serif text-xl font-bold text-white">SNGS Matrimonial</span>
           </div>
           <p className="text-sm leading-relaxed text-white/60 mb-2">
-            Connecting the Malayali Ezhava community across India and the NRI diaspora.
+            Connecting the Malayalee community across India and the NRI diaspora.
           </p>
 
           <Accordion type="single" collapsible className="w-full">
@@ -151,7 +151,7 @@ export default function Footer() {
           <p>&copy; {new Date().getFullYear()} SNGS Matrimonial. All rights reserved.</p>
           <p className="flex items-center gap-1.5">
             <Phone className="w-3.5 h-3.5" strokeWidth={1.75} />
-            Serving the Malayali Ezhava community since inception
+            Serving the Malayalee community since inception
           </p>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-5 flex justify-center">

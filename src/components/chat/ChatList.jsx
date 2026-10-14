@@ -1,37 +1,25 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import OnlineStatusBadge from "./OnlineStatusBadge";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
-import { Loader2, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Loader2, Search, MessageCircle, X } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
-import { useAuthStore } from "@/store/authStore";
-import { toastInfo } from "@/lib/toast";
+import { formatListTime, getInitials, senderIdOf } from "./chatTime";
 
 /**
  * ChatList Component
  *
- * Sidebar showing list of conversations. Each item shows:
- * profile picture, name, last message preview, timestamp, unread badge
+ * Sidebar of conversations: photo (with an online dot when known), name,
+ * last message preview ("You: …" for your own), short time, unread count.
  *
  * @param {Object} props - Component props
- * @param {Array<Object>} props.conversations - Array of conversation objects
- * @param {string} props.conversations[].id - Conversation ID
- * @param {Object} props.conversations[].user - Other user in the conversation
- * @param {string} props.conversations[].user.id - User ID
- * @param {string} props.conversations[].user.name - User name
- * @param {string} props.conversations[].user.profilePicture - User profile picture URL
- * @param {boolean} props.conversations[].user.isOnline - User online status
- * @param {Object} props.conversations[].lastMessage - Last message object
- * @param {string} props.conversations[].lastMessage.content - Message content
- * @param {string} props.conversations[].lastMessage.timestamp - Message timestamp
- * @param {number} props.conversations[].unreadCount - Number of unread messages
+ * @param {Array<Object>} props.conversations - Conversations (otherParticipant, lastMessage, unreadCount)
  * @param {string} props.activeConversationId - ID of the currently active conversation
  * @param {Function} props.onSelectConversation - Callback when a conversation is selected
+ * @param {string} [props.currentUserId] - Used to label your own last message "You:"
+ * @param {Set<string>} [props.onlineUsers] - IDs known to be online right now
  * @param {boolean} props.isLoading - Whether conversations are loading
  * @param {Object} props.error - Error object if any
  */
@@ -39,73 +27,66 @@ export default function ChatList({
   conversations = [],
   activeConversationId,
   onSelectConversation,
+  currentUserId,
+  onlineUsers,
   isLoading = false,
   error = null,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
-  const { membership } = useAuthStore();
-  const hasNoMembership = !membership?.isActive || membership?.isExpired || membership?.credits <= 0;
 
-  // Filter conversations based on search query
   const filteredConversations = conversations.filter((conversation) => {
     const otherParticipant = conversation.otherParticipant || {};
     const userName = otherParticipant.fullName || otherParticipant.name || '';
-    return userName.toLowerCase().includes(searchQuery.toLowerCase());
+    return userName.toLowerCase().includes(searchQuery.trim().toLowerCase());
   });
 
-  // Format timestamp (e.g., "2h ago", "Yesterday")
-  const formatTimestamp = (timestamp) => {
-    try {
-      return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
-    } catch {
-      return "";
-    }
-  };
-
-  // Get initials for avatar fallback
-  const getInitials = (name) => {
-    const parts = name.split(" ");
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    }
-    return name.substring(0, 2).toUpperCase();
-  };
-
-  // Truncate last message
-  const truncateMessage = (message, maxLength = 40) => {
-    if (message.length <= maxLength) return message;
-    return `${message.substring(0, maxLength)}...`;
-  };
+  const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+  const isOnline = (id) => !!id && typeof onlineUsers?.has === 'function' && onlineUsers.has(id.toString());
 
   return (
-    <div className="w-full h-full flex flex-col bg-white border-r border-[#D4A843]/15">
+    <div className="w-full h-full flex flex-col bg-white">
       {/* Header */}
-      <div className="px-4 py-4 border-b border-[#D4A843]/15 bg-white shrink-0">
-        <h2 className="text-xl font-serif text-[#2C3E50] mb-3">Messages</h2>
+      <div className="px-4 pt-4 pb-3 border-b border-[#D4A843]/15 shrink-0">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-2xl font-serif font-semibold text-[#1A1A1A]">Messages</h2>
+          {totalUnread > 0 && (
+            <span className="font-sans text-xs font-semibold text-[#1A1A1A] bg-[#F5E6C3] border border-[#D4A843]/40 rounded-full px-2.5 py-1">
+              {totalUnread} unread
+            </span>
+          )}
+        </div>
 
-        {/* Search Bar */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#2C3E50]/40" />
-          <Input
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#2C3E50]/40" aria-hidden="true" />
+          <input
             type="text"
-            placeholder="Search conversations..."
+            placeholder="Search by name"
+            aria-label="Search conversations by name"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 font-sans text-sm border-[#D4A843]/25 focus-visible:ring-[#D4A843]/40 focus-visible:border-[#D4A843]/50"
+            className="w-full h-11 pl-10 pr-9 rounded-xl border border-[#D4A843]/25 bg-[#FDF8F0] font-sans text-[15px] text-[#1A1A1A] placeholder:text-[#2C3E50]/45 focus:outline-none focus:ring-2 focus:ring-[#D4A843]/35 focus:border-[#D4A843]/60"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              aria-label="Clear search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#2C3E50]/50 hover:text-[#2C3E50]"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        {/* Loading State */}
-        {isLoading && (
+      <div className="flex-1 overflow-y-auto overscroll-contain min-h-0">
+        {isLoading && conversations.length === 0 && (
           <div className="flex items-center justify-center h-32">
             <Loader2 className="w-6 h-6 text-[#2C3E50] animate-spin" />
           </div>
         )}
 
-        {/* Error State */}
         {error && !isLoading && (
           <div className="px-4 py-8 text-center">
             <p className="text-sm font-sans text-[#C75B39] mb-2">
@@ -118,121 +99,99 @@ export default function ChatList({
         )}
 
         {/* Empty State */}
-        {!isLoading &&
-          !error &&
-          filteredConversations.length === 0 &&
-          conversations.length === 0 && (
-            <div className="px-4 py-12 text-center">
-              <p className="text-base font-sans text-[#2C3E50]/70">
-                No conversations yet
-              </p>
-              <p className="text-sm font-sans text-[#2C3E50]/60 mt-1">
-                Start messaging someone to begin
-              </p>
+        {!isLoading && !error && conversations.length === 0 && (
+          <div className="px-6 py-12 text-center">
+            <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-[#F5E6C3] ring-1 ring-[#D4A843]/40 flex items-center justify-center">
+              <MessageCircle className="w-6 h-6 text-[#B8860B]" strokeWidth={1.75} />
             </div>
-          )}
+            <p className="font-serif text-lg text-[#1A1A1A]">No conversations yet</p>
+            <p className="text-sm font-sans text-[#2C3E50]/70 mt-1 leading-relaxed">
+              When you find someone you like, open their profile and tap <span className="font-semibold">Chat</span> to start a conversation.
+            </p>
+            <Link
+              href="/browse"
+              className="inline-flex items-center justify-center mt-4 h-11 px-5 rounded-lg bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans text-sm font-semibold transition-colors"
+            >
+              Search Matches
+            </Link>
+          </div>
+        )}
 
         {/* No Search Results */}
-        {!isLoading &&
-          !error &&
-          filteredConversations.length === 0 &&
-          conversations.length > 0 &&
-          searchQuery && (
-            <div className="px-4 py-12 text-center">
-              <p className="text-sm font-sans text-[#2C3E50]/70">
-                No conversations found for &quot;{searchQuery}&quot;
-              </p>
-            </div>
-          )}
+        {!isLoading && !error && filteredConversations.length === 0 && conversations.length > 0 && searchQuery && (
+          <div className="px-4 py-12 text-center">
+            <p className="text-sm font-sans text-[#2C3E50]/70">
+              No conversations found for &quot;{searchQuery}&quot;
+            </p>
+          </div>
+        )}
 
         {/* Conversation Items */}
-        {!isLoading &&
-          !error &&
-          filteredConversations.map((conversation) => {
-            const otherUser = conversation.otherParticipant || {};
-            const userName = otherUser.fullName || otherUser.name || 'Unknown';
-            const profilePictureUrl = otherUser.profilePicture?.url || otherUser.profilePicture || undefined;
+        {!error && (
+          <ul>
+            {filteredConversations.map((conversation) => {
+              const otherUser = conversation.otherParticipant || {};
+              const userName = otherUser.fullName || otherUser.name || 'Unknown';
+              const profilePictureUrl = otherUser.profilePicture?.url || otherUser.profilePicture || undefined;
+              const unread = conversation.unreadCount || 0;
+              const isActive = activeConversationId === conversation._id;
+              const last = conversation.lastMessage;
+              const lastIsMine = !!last && !!currentUserId && senderIdOf(last) === currentUserId.toString();
+              const preview = last?.preview || last?.content || '';
 
-            return (
-              <button
-                key={conversation._id}
-                onClick={() => onSelectConversation(conversation._id)}
-                className={cn(
-                  "w-full px-4 py-3 flex items-start gap-3 hover:bg-[#F5E6C3]/30 transition-colors border-b border-[#D4A843]/10",
-                  activeConversationId === conversation._id &&
-                    "bg-[#F5E6C3]/40 border-l-4 border-l-[#D4A843]"
-                )}
-              >
-              {/* Avatar with Online Status - Clickable to view profile */}
-              <Link
-                href={`/profiles/${otherUser._id}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (hasNoMembership) {
-                    e.preventDefault();
-                    toastInfo('Get membership to view full profiles');
-                  }
-                }}
-                className="relative shrink-0 cursor-pointer group"
-              >
-                <Avatar className="w-12 h-12 ring-2 ring-transparent group-hover:ring-[#D4A843] transition-all">
-                  <AvatarImage
-                    src={profilePictureUrl}
-                    alt={userName}
-                  />
-                  <AvatarFallback className="bg-[#2C3E50] text-white font-sans">
-                    {getInitials(userName)}
-                  </AvatarFallback>
-                </Avatar>
-              </Link>
-
-              {/* Conversation Details */}
-              <div className="flex-1 min-w-0 text-left">
-                {/* Name and Timestamp */}
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <h3
+              return (
+                <li key={conversation._id}>
+                  <button
+                    type="button"
+                    onClick={() => onSelectConversation(conversation._id)}
+                    aria-current={isActive ? 'true' : undefined}
+                    aria-label={`${userName}${unread ? `, ${unread} unread` : ''}`}
                     className={cn(
-                      "font-sans font-semibold text-[15px] text-[#1A1A1A] truncate",
-                      conversation.unreadCount > 0 && "text-[#1A1A1A]"
+                      "relative w-full px-4 py-3 flex items-center gap-3 text-left transition-colors border-b border-[#D4A843]/10",
+                      isActive ? "bg-[#F5E6C3]/45" : "hover:bg-[#FDF8F0]"
                     )}
                   >
-                    {userName}
-                  </h3>
-                  <span className="text-[11px] font-sans text-[#2C3E50]/60 shrink-0">
-                    {conversation.lastMessage?.timestamp &&
-                      formatTimestamp(conversation.lastMessage.timestamp)}
-                  </span>
-                </div>
+                    {isActive && <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[#D4A843]" aria-hidden="true" />}
 
-                {/* Last Message and Unread Badge */}
-                <div className="flex items-center justify-between gap-2">
-                  <p
-                    className={cn(
-                      "text-sm font-sans text-[#2C3E50]/70 truncate",
-                      conversation.unreadCount > 0 &&
-                        "text-[#1A1A1A] font-medium"
-                    )}
-                  >
-                    {conversation.lastMessage?.preview
-                      ? truncateMessage(conversation.lastMessage.preview)
-                      : "No messages yet"}
-                  </p>
+                    <span className="relative shrink-0">
+                      <Avatar className="w-12 h-12 ring-1 ring-[#D4A843]/25">
+                        <AvatarImage src={profilePictureUrl} alt="" className="object-cover" />
+                        <AvatarFallback className="bg-[#2C3E50] text-white font-sans text-sm">
+                          {getInitials(userName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <OnlineStatusBadge isOnline={isOnline(otherUser._id)} size="md" className="absolute bottom-0 right-0" />
+                    </span>
 
-                  {conversation.unreadCount > 0 && (
-                    <Badge
-                      className="bg-[#D4A843] text-[#1A1A1A] font-sans text-[10px] px-1.5 py-0 min-w-5 h-5 flex items-center justify-center shrink-0"
-                    >
-                      {conversation.unreadCount > 99
-                        ? "99+"
-                        : conversation.unreadCount}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              </button>
-            );
-          })}
+                    <span className="flex-1 min-w-0">
+                      <span className="flex items-baseline justify-between gap-2">
+                        <span className={cn("font-sans text-[15px] text-[#1A1A1A] truncate", unread ? "font-bold" : "font-semibold")}>
+                          {userName}
+                        </span>
+                        <span className={cn("text-xs font-sans shrink-0 tabular-nums", unread ? "text-[#B8860B] font-semibold" : "text-[#2C3E50]/55")}>
+                          {formatListTime(last?.timestamp || conversation.updatedAt)}
+                        </span>
+                      </span>
 
+                      <span className="flex items-center justify-between gap-2 mt-0.5">
+                        <span className={cn("text-sm font-sans truncate", unread ? "text-[#1A1A1A] font-medium" : "text-[#2C3E50]/65")}>
+                          {preview
+                            ? <>{lastIsMine && <span className="text-[#2C3E50]/55">You: </span>}{preview}</>
+                            : <span className="italic">Say hello</span>}
+                        </span>
+                        {unread > 0 && (
+                          <span className="shrink-0 min-w-5 h-5 px-1.5 rounded-full bg-[#D4A843] text-[#1A1A1A] font-sans text-[11px] font-bold flex items-center justify-center">
+                            {unread > 99 ? "99+" : unread}
+                          </span>
+                        )}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </div>
   );

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { buildPlanDescription } from '@/lib/planDescription';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -31,37 +31,31 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Plus, Edit2, Trash2, Star } from 'lucide-react';
 
-// Named, code-backed entitlements — each one maps to exactly one real
-// enforcement check in the backend (see checkMembership.js's hasPlanFeature).
-const FEATURE_OPTIONS = [
+// The 3 metered activities — each maps to exactly one real credit-charging
+// point in the backend (see creditCost.service.js's chargeCredits). An admin
+// sets either a numeric per-use cost, or marks the activity unlimited (free
+// regardless of credit balance) for this plan.
+const COST_ACTIVITIES = [
   {
-    key: 'unlimitedProfileViews',
-    label: 'Unlimited Profile Views',
-    description: 'Members can view unlimited profiles without spending credits.',
+    key: 'profileView',
+    label: 'Profile View',
+    description: 'Credits spent the first time a member opens another profile\'s full details. Re-opening the same profile is free while the membership stays active; after a lapse and renewal it is charged again.',
   },
   {
-    key: 'unlimitedContactAccess',
-    label: 'Unlimited Contact Access',
-    description: "Phone numbers are never masked for this plan's members.",
+    key: 'phoneAndChat',
+    label: 'Phone Number & Chat',
+    description: "Credits spent to reveal a profile's phone number and start a chat with them, together as one unlock.",
   },
   {
-    key: 'unlimitedChat',
-    label: 'Unlimited Chat',
-    description: 'Members can start new conversations regardless of remaining credits.',
-  },
-  {
-    key: 'unlimitedHoroscopeDownload',
-    label: 'Unlimited Horoscope Downloads',
-    description: 'Members can download horoscope documents regardless of remaining credits.',
-  },
-  {
-    key: 'unlimitedBrowsing',
-    label: 'Unlimited Browsing',
-    description: 'Full search results — not capped to the non-member teaser list.',
+    key: 'profileDownload',
+    label: 'Profile Download',
+    description: 'Credits spent to download a profile as PDF/PPTX or download their horoscope document — one combined unlock covers both.',
   },
 ];
 
-const DEFAULT_FEATURES = Object.fromEntries(FEATURE_OPTIONS.map((f) => [f.key, false]));
+const DEFAULT_COSTS = Object.fromEntries(
+  COST_ACTIVITIES.map((a) => [a.key, { unlimited: false, cost: '' }])
+);
 
 export default function AdminMembershipPlansPage() {
   const router = useRouter();
@@ -80,7 +74,7 @@ export default function AdminMembershipPlansPage() {
     validityDays: '',
     isDefault: false,
     isUnlimited: false,
-    features: DEFAULT_FEATURES,
+    costs: DEFAULT_COSTS,
   });
 
   useEffect(() => {
@@ -103,6 +97,7 @@ export default function AdminMembershipPlansPage() {
   const handleOpenDialog = (plan = null) => {
     if (plan) {
       setEditingPlan(plan);
+      const planCosts = plan.costs || {};
       setFormData({
         name: plan.name,
         description: plan.description || '',
@@ -111,7 +106,15 @@ export default function AdminMembershipPlansPage() {
         validityDays: plan.validityDays === null ? '' : String(plan.validityDays),
         isDefault: plan.isDefault || false,
         isUnlimited: plan.validityDays === null,
-        features: { ...DEFAULT_FEATURES, ...(plan.features || {}) },
+        costs: Object.fromEntries(
+          COST_ACTIVITIES.map((a) => [
+            a.key,
+            {
+              unlimited: !!planCosts[a.key]?.unlimited,
+              cost: planCosts[a.key]?.unlimited ? '' : String(planCosts[a.key]?.cost ?? ''),
+            },
+          ])
+        ),
       });
     } else {
       setEditingPlan(null);
@@ -123,7 +126,7 @@ export default function AdminMembershipPlansPage() {
         validityDays: '',
         isDefault: false,
         isUnlimited: false,
-        features: DEFAULT_FEATURES,
+        costs: DEFAULT_COSTS,
       });
     }
     setIsDialogOpen(true);
@@ -147,6 +150,13 @@ export default function AdminMembershipPlansPage() {
       toastError('Validity days must be greater than 0 or set as unlimited');
       return;
     }
+    for (const activity of COST_ACTIVITIES) {
+      const entry = formData.costs[activity.key];
+      if (!entry.unlimited && (entry.cost === '' || parseInt(entry.cost) < 0)) {
+        toastError(`${activity.label} cost must be 0 or greater, or marked unlimited`);
+        return;
+      }
+    }
 
     try {
       setIsSaving(true);
@@ -160,7 +170,15 @@ export default function AdminMembershipPlansPage() {
         },
         validityDays: formData.isUnlimited ? null : parseInt(formData.validityDays),
         isDefault: formData.isDefault,
-        features: formData.features,
+        costs: Object.fromEntries(
+          COST_ACTIVITIES.map((a) => [
+            a.key,
+            {
+              unlimited: formData.costs[a.key].unlimited,
+              cost: formData.costs[a.key].unlimited ? 0 : parseInt(formData.costs[a.key].cost) || 0,
+            },
+          ])
+        ),
       };
 
       if (editingPlan) {
@@ -288,11 +306,9 @@ export default function AdminMembershipPlansPage() {
                     <CardTitle className="font-serif text-xl text-secondary">
                       {plan.name}
                     </CardTitle>
-                    {plan.description && (
-                      <CardDescription className="font-sans mt-1">
-                        {plan.description}
-                      </CardDescription>
-                    )}
+                    <CardDescription className="font-sans mt-1">
+                      {buildPlanDescription(plan)}
+                    </CardDescription>
                   </div>
                   <Badge
                     className={`ml-2 font-sans ${
@@ -324,6 +340,7 @@ export default function AdminMembershipPlansPage() {
                     <p className="font-serif text-2xl text-secondary">
                       ₹{plan.price.amount}
                     </p>
+                    <p className="font-sans text-[11px] text-gray-500">+ gateway charges paid by member</p>
                   </div>
                   <div>
                     <p className="font-sans text-xs text-gray-600 mb-1">
@@ -343,6 +360,18 @@ export default function AdminMembershipPlansPage() {
                       ₹{(plan.price.amount / plan.credits).toFixed(2)}
                     </p>
                   </div>
+                </div>
+
+                {/* Credit Costs summary */}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {COST_ACTIVITIES.map((activity) => {
+                    const entry = plan.costs?.[activity.key];
+                    return (
+                      <Badge key={activity.key} variant="outline" className="font-sans text-xs">
+                        {activity.label}: {entry?.unlimited ? 'Free' : `${entry?.cost ?? 0} cr`}
+                      </Badge>
+                    );
+                  })}
                 </div>
 
                 {/* Action Buttons */}
@@ -417,17 +446,23 @@ export default function AdminMembershipPlansPage() {
               />
             </div>
 
-            {/* Description */}
+            {/* Description — generated from the credit costs below so it always
+                matches the real prices; updates live as costs change. */}
             <div>
-              <Label className="font-sans text-sm">Description</Label>
-              <Textarea
-                placeholder="Brief description of this plan (optional)"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                className="font-sans mt-1 resize-none h-20"
-              />
+              <Label className="font-sans text-sm">Description (shown to members)</Label>
+              <p className="font-sans text-sm text-[#1A1A1A] mt-1 p-3 rounded-lg bg-[#FDF8F0] border border-[#D4A843]/20 leading-relaxed">
+                {buildPlanDescription({
+                  costs: Object.fromEntries(
+                    Object.entries(formData.costs).map(([key, entry]) => [
+                      key,
+                      { unlimited: entry.unlimited, cost: parseInt(entry.cost, 10) || 0 },
+                    ])
+                  ),
+                })}
+              </p>
+              <p className="font-sans text-xs text-gray-500 mt-1">
+                Written automatically from the credit costs you set below.
+              </p>
             </div>
 
             {/* Credits */}
@@ -504,30 +539,50 @@ export default function AdminMembershipPlansPage() {
               </Label>
             </div>
 
-            {/* Feature Access */}
-            <div className="pt-3 border-t border-[#D4A843]/15 space-y-3">
-              <Label className="font-sans text-sm font-semibold text-[#1A1A1A]">Feature Access</Label>
-              {FEATURE_OPTIONS.map((feature) => (
-                <div key={feature.key} className="flex items-start gap-3">
-                  <Checkbox
-                    id={feature.key}
-                    checked={!!formData.features[feature.key]}
-                    onCheckedChange={(checked) =>
-                      setFormData({
-                        ...formData,
-                        features: { ...formData.features, [feature.key]: checked },
-                      })
-                    }
-                    className="mt-0.5"
-                  />
-                  <div>
-                    <Label htmlFor={feature.key} className="font-sans text-sm cursor-pointer">
-                      {feature.label}
-                    </Label>
-                    <p className="font-sans text-xs text-gray-500 mt-0.5">{feature.description}</p>
+            {/* Credit Costs per activity */}
+            <div className="pt-3 border-t border-[#D4A843]/15 space-y-4">
+              <Label className="font-sans text-sm font-semibold text-[#1A1A1A]">Credit Costs</Label>
+              {COST_ACTIVITIES.map((activity) => {
+                const entry = formData.costs[activity.key];
+                return (
+                  <div key={activity.key} className="space-y-2 p-3 bg-[#FDF8F0] rounded-lg">
+                    <Label className="font-sans text-sm font-medium text-[#1A1A1A]">{activity.label}</Label>
+                    <p className="font-sans text-xs text-gray-500">{activity.description}</p>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="e.g., 10"
+                        value={entry.cost}
+                        disabled={entry.unlimited}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            costs: { ...formData.costs, [activity.key]: { ...entry, cost: e.target.value } },
+                          })
+                        }
+                        className="font-sans max-w-32"
+                      />
+                      <span className="font-sans text-xs text-gray-500">credits</span>
+                      <div className="flex items-center gap-2 ml-auto">
+                        <Checkbox
+                          id={`${activity.key}-unlimited`}
+                          checked={entry.unlimited}
+                          onCheckedChange={(checked) =>
+                            setFormData({
+                              ...formData,
+                              costs: { ...formData.costs, [activity.key]: { unlimited: checked, cost: checked ? '' : entry.cost } },
+                            })
+                          }
+                        />
+                        <Label htmlFor={`${activity.key}-unlimited`} className="font-sans text-xs cursor-pointer whitespace-nowrap">
+                          Free / Unlimited
+                        </Label>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
