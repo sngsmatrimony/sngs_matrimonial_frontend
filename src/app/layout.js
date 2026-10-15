@@ -6,6 +6,7 @@ import Header from '@/components/layout/Header'; // <-- Restored Global Header
 import Footer from '@/components/layout/Footer';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import Preloader from '@/components/layout/Preloader';
+import ScrollManager from '@/components/layout/ScrollManager';
 import { Analytics } from "@vercel/analytics/next";
 
 
@@ -44,6 +45,7 @@ export default function RootLayout({ children }) {
           <PromoBanner />
 
           {/* Global Header */}
+          <ScrollManager />
           <Header isFixed={true} />
           
           {/* Main Page Content */}

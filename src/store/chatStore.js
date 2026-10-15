@@ -4,6 +4,11 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axiosClient from '@/lib/api/client';
 
+// Adds a message unless one with the same _id is already in the list.
+const appendUnique = (messages, message) => (
+  message?._id && messages.some((m) => m._id === message._id) ? messages : [...messages, message]
+);
+
 // ChatList reads conversation.lastMessage.preview (that's the shape
 // GET /api/chat/conversations returns, built server-side from
 // content.substring(0, 100) - see chat.controller.js). A message object
@@ -269,7 +274,7 @@ const useChatStore = create(
        */
       addMessage: (message) => {
         set((state) => ({
-          messages: [...state.messages, message],
+          messages: appendUnique(state.messages, message),
         }));
       },
 
@@ -289,10 +294,13 @@ const useChatStore = create(
         if (!conversationExists) {
           get().loadConversations();
           if (get().activeConversationId === conversationId) {
-            set((state) => ({ messages: [...state.messages, message] }));
+            set((state) => ({ messages: appendUnique(state.messages, message) }));
           }
           return;
         }
+
+        // The same message delivered twice (e.g. a reconnect) is ignored.
+        if (message?._id && get().messages.some((m) => m._id === message._id)) return;
 
         set((state) => {
           // Only add to messages if this is the active conversation
@@ -318,7 +326,7 @@ const useChatStore = create(
 
           return {
             messages: isActiveConversation
-              ? [...state.messages, message]
+              ? appendUnique(state.messages, message)
               : state.messages,
             conversations: updatedConversations,
           };

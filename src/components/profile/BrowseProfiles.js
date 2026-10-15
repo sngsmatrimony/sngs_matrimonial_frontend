@@ -20,6 +20,7 @@ import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '@/co
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import ProfileCard from './ProfileCard';
+import { cameBackOrForward } from '@/components/layout/ScrollManager';
 import AllianceMeetBanner from '@/components/alliance-meet/AllianceMeetBanner';
 
 const EDUCATION_OPTIONS = getAllEducationOptions();
@@ -50,7 +51,7 @@ function FilterControls({
     <div className="space-y-3">
       <div>
         <label className="font-sans text-sm font-medium text-[#1A1A1A] block mb-1">Location</label>
-        <Select value={country || 'all'} onValueChange={(v) => { setCountry(v === 'all' ? '' : v); if (v !== 'India') setState(''); }}>
+        <Select value={country || 'all'} onValueChange={(v) => setCountry(v === 'all' ? '' : v)}>
           <SelectTrigger className="font-sans h-11 rounded-lg border-[#D4A843]/25">
             <SelectValue placeholder="Any location" />
           </SelectTrigger>
@@ -182,15 +183,41 @@ export default function BrowseProfiles() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [country, setCountry] = useState('');
-  const [state, setState] = useState('');
-  const [education, setEducation] = useState('');
-  const [caste, setCaste] = useState('');
-  const [maritalStatus, setMaritalStatus] = useState('');
-  const [motherTongue, setMotherTongue] = useState('');
-  const [sortBy, setSortBy] = useState('newest');
-  const [ignoreAge, setIgnoreAge] = useState(false);
-  const [searchInput, setSearchInput] = useState('');
+
+  // Filters, search and the "outside your age range" list live in the URL
+  // (/browse?country=India&outside=1…), so going into a profile and pressing
+  // Back brings the member back to exactly the same view.
+  const country = searchParams.get('country') || '';
+  const state = searchParams.get('state') || '';
+  const education = searchParams.get('education') || '';
+  const caste = searchParams.get('caste') || '';
+  const maritalStatus = searchParams.get('marital') || '';
+  const motherTongue = searchParams.get('tongue') || '';
+  const sortBy = searchParams.get('sort') || 'newest';
+  const ignoreAge = searchParams.get('outside') === '1';
+
+  // One URL update per change (two back-to-back updates would each start from
+  // the old URL and the second would undo the first).
+  const setParams = (updates) => {
+    const next = new URLSearchParams(searchParams.toString());
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === '' || value == null || value === false || (key === 'sort' && value === 'newest')) next.delete(key);
+      else next.set(key, value === true ? '1' : value);
+    }
+    const qs = next.toString();
+    router.replace(qs ? `/browse?${qs}` : '/browse', { scroll: false });
+  };
+  const setCountry = (v) => setParams({ country: v, ...(v !== 'India' && { state: '' }) });
+  const setState = (v) => setParams({ state: v });
+  const setEducation = (v) => setParams({ education: v });
+  const setCaste = (v) => setParams({ caste: v });
+  const setMaritalStatus = (v) => setParams({ marital: v });
+  const setMotherTongue = (v) => setParams({ tongue: v });
+  const setSortBy = (v) => setParams({ sort: v });
+  // Saved scroll position for this exact view (filters included).
+  const scrollKey = `browseScroll:${searchParams.toString()}`;
+
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('q') || '');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef(null);
   const debouncedSearch = useDebouncedValue(searchInput.trim(), 350);
@@ -274,23 +301,57 @@ export default function BrowseProfiles() {
   // Scroll the newly-revealed section into view below the existing grid,
   // instead of leaving the page where it was (which reads as "nothing
   // happened" when the new profiles render off-screen further down).
+  const scrollToOutsideRef = useRef(false);
   useEffect(() => {
-    if (!ignoreAge) return;
+    if (!ignoreAge || !scrollToOutsideRef.current) return;
+    scrollToOutsideRef.current = false;
     const frame = requestAnimationFrame(() => {
       outsideRangeSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
     return () => cancelAnimationFrame(frame);
   }, [ignoreAge]);
 
+  // Back from a profile: once the (cached) results are on screen again,
+  // return to the saved position.
+  const restoreRef = useRef(cameBackOrForward(3000));
+  useEffect(() => {
+    if (!restoreRef.current || isLoading || (ignoreAge && isExtraLoading)) return;
+    restoreRef.current = false;
+    let y = 0;
+    try { y = Number(sessionStorage.getItem(scrollKey)) || 0; } catch { /* not critical */ }
+    if (y > 0) requestAnimationFrame(() => window.scrollTo({ top: y, behavior: 'instant' }));
+  }, [isLoading, isExtraLoading, ignoreAge, scrollKey]);
+
   // The mobile bottom nav's "Search" tab links here with ?focusSearch=1 to
   // jump straight into the text search box instead of the filter sheet.
   useEffect(() => {
     if (searchParams.get('focusSearch') === '1') {
       searchInputRef.current?.focus();
-      router.replace('/browse');
+      setParams({ focusSearch: '' });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  // Keep the (debounced) search text in the URL too.
+  useEffect(() => {
+    if ((searchParams.get('q') || '') !== debouncedSearch) setParams({ q: debouncedSearch });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
+  // Remember how far down the member was, and put them back there when they
+  // return with Back (e.g. after opening a profile from the outside-range list).
+  useEffect(() => {
+    let frame = 0;
+    const onScroll = () => {
+      if (restoreRef.current) return; // don't overwrite the position we are about to restore
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        try { sessionStorage.setItem(scrollKey, String(window.scrollY)); } catch { /* not critical */ }
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => { cancelAnimationFrame(frame); window.removeEventListener('scroll', onScroll); };
+  }, [scrollKey]);
 
   useEffect(() => {
     if (!error) return;
@@ -320,15 +381,8 @@ export default function BrowseProfiles() {
   }, [extraPages, profilesData]);
 
   const resetFilters = () => {
-    setCountry('');
-    setState('');
-    setEducation('');
-    setCaste('');
-    setMaritalStatus('');
-    setMotherTongue('');
-    setSortBy('newest');
-    setIgnoreAge(false);
     setSearchInput('');
+    router.replace('/browse', { scroll: false });
   };
 
   const activeFilterCount = [country, state, education, caste, maritalStatus, motherTongue, ignoreAge].filter(Boolean).length;
@@ -339,7 +393,7 @@ export default function BrowseProfiles() {
     <div className="mt-6 text-center">
       <button
         type="button"
-        onClick={() => setIgnoreAge(true)}
+        onClick={() => { scrollToOutsideRef.current = true; setParams({ outside: true }); }}
         className="font-sans text-sm text-[#D4A843] hover:text-[#B8860B] underline underline-offset-2"
       >
         See more profiles outside your preferred age range

@@ -59,7 +59,13 @@ export function SocketProvider({ children }) {
       setSocket(socketInstance);
       isInitializedRef.current = true;
 
-      // Handle connection state
+      // Handle connection state. The socket is shared and can outlive this
+      // provider, so replace any handlers from an earlier mount instead of
+      // stacking them (each reconnect would otherwise reload conversations
+      // once per stacked handler).
+      socketInstance.off('connect');
+      socketInstance.off('disconnect');
+      socketInstance.off('connect_error');
       socketInstance.on('connect', () => {
         setIsConnected(true);
         reconnectAttemptRef.current = 0;

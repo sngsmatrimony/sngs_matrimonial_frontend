@@ -37,18 +37,21 @@ const MISSING_DATA_FILTERS = [
   { key: 'missingProfilePicture', label: 'Missing Profile Picture' },
   { key: 'missingGalleryPhotos', label: 'Missing Gallery Photos' },
   { key: 'missingHoroscope', label: 'Missing Horoscope' },
+  { key: 'missingIdProof', label: 'Missing ID Proof' },
 ];
 
 const CANNED_SUBJECTS = {
   missingProfilePicture: 'Please add your profile picture',
   missingGalleryPhotos: 'Add a few more photos to your profile',
   missingHoroscope: 'Complete your horoscope details',
+  missingIdProof: 'Add your ID proof to get the Verified badge',
 };
 
 const CANNED_MESSAGES = {
   missingProfilePicture: "We noticed your profile doesn't have a photo yet. Adding one helps other members recognize and connect with you — profiles with a photo get far more interest.\n\nPlease log in and add your profile picture when you get a chance.",
   missingGalleryPhotos: "A few more photos on your profile go a long way in helping potential matches get to know you better.\n\nPlease log in and add some gallery photos when you get a chance.",
   missingHoroscope: "Adding your horoscope details helps us find more compatible matches for you.\n\nPlease log in and complete your horoscope information when you get a chance.",
+  missingIdProof: "Families feel more confident reaching out to profiles they know are genuine. Once you upload a government ID (Aadhaar, Passport, Driving Licence or Voter ID) and our team verifies it, your profile shows the Verified badge.\n\nYour ID is seen only by our team — never by other members. Please log in, open your profile and choose Upload ID Proof when you get a chance.",
 };
 
 export default function AdminUsersPage() {
@@ -74,6 +77,7 @@ export default function AdminUsersPage() {
     missingProfilePicture: false,
     missingGalleryPhotos: false,
     missingHoroscope: false,
+    missingIdProof: false,
   });
   const [premiumOnly, setPremiumOnly] = useState(false);
   const [idProofPendingOnly, setIdProofPendingOnly] = useState(searchParams.get('idProofPending') === 'true');
@@ -135,6 +139,7 @@ export default function AdminUsersPage() {
     ...(missingFilters.missingProfilePicture && { missingProfilePicture: 'true' }),
     ...(missingFilters.missingGalleryPhotos && { missingGalleryPhotos: 'true' }),
     ...(missingFilters.missingHoroscope && { missingHoroscope: 'true' }),
+    ...(missingFilters.missingIdProof && { missingIdProof: 'true' }),
     ...(premiumOnly && { premium: 'true' }),
     ...(idProofPendingOnly && { idProofPending: 'true' }),
     ...(drillDown.gender && { gender: drillDown.gender }),

@@ -93,6 +93,9 @@ export const broadcastTypingStop = (data) => {
  */
 export const onMessageReceived = (callback) => {
   if (!socket) return;
+  // Replace, never stack: re-initialising the chat must not attach a second
+  // handler (that showed every incoming message twice).
+  socket.off('message:received');
   socket.on('message:received', callback);
 };
 
@@ -102,6 +105,9 @@ export const onMessageReceived = (callback) => {
  */
 export const onMessageDelivered = (callback) => {
   if (!socket) return;
+  // Replace, never stack: re-initialising the chat must not attach a second
+  // handler (that showed every incoming message twice).
+  socket.off('message:delivered');
   socket.on('message:delivered', callback);
 };
 
@@ -111,6 +117,9 @@ export const onMessageDelivered = (callback) => {
  */
 export const onMessageReadReceipt = (callback) => {
   if (!socket) return;
+  // Replace, never stack: re-initialising the chat must not attach a second
+  // handler (that showed every incoming message twice).
+  socket.off('message:readReceipt');
   socket.on('message:readReceipt', callback);
 };
 
@@ -120,6 +129,9 @@ export const onMessageReadReceipt = (callback) => {
  */
 export const onTypingIndicator = (callback) => {
   if (!socket) return;
+  // Replace, never stack: re-initialising the chat must not attach a second
+  // handler (that showed every incoming message twice).
+  socket.off('typing:indicator');
   socket.on('typing:indicator', callback);
 };
 
@@ -129,6 +141,9 @@ export const onTypingIndicator = (callback) => {
  */
 export const onUserOnline = (callback) => {
   if (!socket) return;
+  // Replace, never stack: re-initialising the chat must not attach a second
+  // handler (that showed every incoming message twice).
+  socket.off('user:online');
   socket.on('user:online', callback);
 };
 
@@ -138,6 +153,9 @@ export const onUserOnline = (callback) => {
  */
 export const onUserOffline = (callback) => {
   if (!socket) return;
+  // Replace, never stack: re-initialising the chat must not attach a second
+  // handler (that showed every incoming message twice).
+  socket.off('user:offline');
   socket.on('user:offline', callback);
 };
 
@@ -147,6 +165,9 @@ export const onUserOffline = (callback) => {
  */
 export const onMessageError = (callback) => {
   if (!socket) return;
+  // Replace, never stack: re-initialising the chat must not attach a second
+  // handler (that showed every incoming message twice).
+  socket.off('message:error');
   socket.on('message:error', callback);
 };
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image'; // <-- Added for the background image
+import AuthBackground from '@/components/auth/AuthBackground';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -270,6 +270,12 @@ export default function RegisterPage() {
       await client.post('/api/auth/register/check-mobile', { mobileNumber: mobile });
     } catch (error) {
       setCheckingMobile(false);
+      // 404 = a server without this check yet (e.g. mid-deploy): don't block
+      // sign-ups over it; the final registration step still rejects duplicates.
+      if (error.response?.status === 404) {
+        sendMobileOTP(mobile);
+        return;
+      }
       if (error.response?.status === 409) {
         setMobileTaken(true);
         form.setError('mobileNumber', { type: 'manual', message: 'This mobile number is already registered.' });
@@ -1006,17 +1012,7 @@ export default function RegisterPage() {
   return (
     <>
       {/* 1. FIXED EDGE-TO-EDGE BACKGROUND (behind everything, including portaled dropdowns) */}
-      <div className="fixed inset-0 w-full h-full -z-10 pointer-events-none">
-        <Image
-          src="/images/reception.png"
-          alt="SNGS Matrimonial Registration Background"
-          fill
-          priority
-          className="object-cover"
-        />
-        {/* Charcoal overlay with blur applied directly over the image */}
-        <div className="absolute inset-0 bg-[#1A1A1A]/50" />
-      </div>
+      <AuthBackground alt="SNGS Matrimonial Registration Background" />
 
       {/* 2. CONTENT WRAPPER (z-10) */}
       <div className="relative z-10 flex items-center justify-center min-h-screen w-full p-4 py-24">
@@ -1028,7 +1024,7 @@ export default function RegisterPage() {
              else. Clearing this step saves a "started filling" lead to
              Supabase (see startRegistrationLead) so an admin can follow up
              even if the person never comes back. */
-          <Card className="border border-white/40 shadow-[0_25px_70px_-20px_rgba(0,0,0,0.55)] bg-white/97 backdrop-blur-xl ring-1 ring-[#D4A843]/15 w-full max-w-2xl mx-auto rounded-[28px] overflow-hidden py-0 gap-0">
+          <Card className="border border-white/40 shadow-[0_25px_70px_-20px_rgba(0,0,0,0.55)] bg-white/97 ring-1 ring-[#D4A843]/15 w-full max-w-2xl mx-auto rounded-[28px] overflow-hidden py-0 gap-0">
             <CardHeader className="pb-7 pt-9 px-6 sm:px-10 bg-gradient-to-br from-[#2C3E50] via-[#233240] to-[#1A2733] relative overflow-hidden">
               {/* Subtle decorative texture */}
               <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_15%_20%,#D4A843_0%,transparent_45%),radial-gradient(circle_at_85%_80%,#D4A843_0%,transparent_45%)]" />
@@ -1477,7 +1473,7 @@ export default function RegisterPage() {
         ) : (
           
           /* STEPS 2 TO 7: DETAILS CARDS */
-          <Card className="border border-white/40 shadow-[0_25px_70px_-20px_rgba(0,0,0,0.55)] bg-white/97 backdrop-blur-xl ring-1 ring-[#D4A843]/15 w-full max-w-2xl mx-auto rounded-[28px] overflow-hidden py-0 gap-0">
+          <Card className="border border-white/40 shadow-[0_25px_70px_-20px_rgba(0,0,0,0.55)] bg-white/97 ring-1 ring-[#D4A843]/15 w-full max-w-2xl mx-auto rounded-[28px] overflow-hidden py-0 gap-0">
             <CardHeader className="pb-7 pt-9 px-6 sm:px-10 bg-gradient-to-br from-[#2C3E50] via-[#233240] to-[#1A2733] relative overflow-hidden">
               {/* Subtle decorative texture */}
               <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_15%_20%,#D4A843_0%,transparent_45%),radial-gradient(circle_at_85%_80%,#D4A843_0%,transparent_45%)]" />

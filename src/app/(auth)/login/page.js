@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image'; // Added Next.js Image component
+import AuthBackground from '@/components/auth/AuthBackground';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -125,19 +125,7 @@ export default function LoginPage() {
     <>
       {/* 1. FIXED BACKGROUND CONTAINER (behind everything, including portaled dropdowns) */}
       {/* This breaks out of layout padding and stays securely visible above the body tag */}
-      <div className="fixed inset-0 w-full h-full -z-10 pointer-events-none">
-        <Image
-  src="/images/reception.png"
-  alt="SNGS Matrimonial Login Background"
-  fill
-  priority
-  sizes="100vw"
-  quality={90}
-  className="object-cover"
-/>
-        {/* Charcoal overlay with blur applied directly over the image[cite: 10] */}
-        <div className="absolute inset-0 bg-[#1A1A1A]/50" />
-      </div>
+      <AuthBackground alt="SNGS Matrimonial Login Background" />
 
       {/* 2. CONTENT WRAPPER (z-10) */}
       {/* Keeps the card centered and floating above the fixed background */}
