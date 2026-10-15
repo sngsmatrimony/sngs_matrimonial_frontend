@@ -164,6 +164,21 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
   const { setUserProfile } = useLandingStore();
   const idProofRequired = useIdProofRequired();
 
+  // Documents deleted during this edit session. `userProfile` is a snapshot
+  // taken when the form opened, so without this a deleted ID proof/horoscope
+  // keeps showing (and a second Remove hits a 404).
+  const [removedDocs, setRemovedDocs] = useState({});
+  // A gallery photo uploads as soon as it's picked; hold Save until it lands.
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const withoutRemoved = (profile) => {
+    if (!profile) return profile;
+    const next = { ...profile };
+    for (const key of Object.keys(removedDocs)) next[key] = undefined;
+    return next;
+  };
+  const docsUser = withoutRemoved(user);
+  const docsUserProfile = withoutRemoved(userProfile);
+
   // Full name, mobile number, and email live outside the step wizard's
   // react-hook-form state: all three carry consequences (re-approval, OTP
   // verification) that don't fit the "every step's fields always resubmit
@@ -317,6 +332,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
           ...prev,
           horoscope: null
         }));
+        setRemovedDocs(prev => ({ ...prev, horoscopeDocument: true }));
         toastSuccess('Horoscope document deleted successfully');
       } else {
         toastError(result.error || 'Failed to delete horoscope document');
@@ -334,6 +350,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
           ...prev,
           idProof: null
         }));
+        setRemovedDocs(prev => ({ ...prev, idProof: true }));
         toastSuccess('ID proof deleted successfully');
       } else {
         toastError(result.error || 'Failed to delete ID proof');
@@ -370,7 +387,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
     setError('');
 
     if (currentStep === 5) {
-      const hasExistingIdProof = !!(user?.idProof?.url || userProfile?.idProof?.url);
+      const hasExistingIdProof = !!(docsUser?.idProof?.url || docsUserProfile?.idProof?.url);
       if (idProofRequired && !formData.idProof?.file && !hasExistingIdProof) {
         toastError('Please upload an ID proof document to continue.');
         return;
@@ -844,8 +861,8 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
 
                 <PersonalDetailsStep
                   form={form}
-                  user={user}
-                  userProfile={userProfile}
+                  user={docsUser}
+                  userProfile={docsUserProfile}
                   horoscope={formData.horoscope}
                   onFileUpdate={handleFileUpdate}
                   onDeleteHoroscope={handleDeleteHoroscope}
@@ -858,14 +875,16 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
             {currentStep === 5 && (
               <PreferencesMediaStep
                 form={form}
-                user={user}
-                userProfile={userProfile}
+                user={docsUser}
+                userProfile={docsUserProfile}
                 profilePicture={formData.profilePicture}
                 galleryPhotos={formData.galleryPhotos}
                 onFileUpdate={handleFileUpdate}
                 idProof={formData.idProof}
                 idProofRequired={idProofRequired}
                 onDeleteIdProof={handleDeleteIdProof}
+                uploadGalleryImmediately
+                onGalleryUploadingChange={setGalleryUploading}
               />
             )}
           </div>
@@ -890,10 +909,10 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
 
         <Button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || galleryUploading}
           className="flex-1 bg-primary text-primary-foreground font-sans font-semibold"
         >
-          {isLoading ? 'Saving...' : currentStep === 5 ? 'Save Profile' : 'Next'}
+          {isLoading ? 'Saving...' : galleryUploading ? 'Uploading photo...' : currentStep === 5 ? 'Save Profile' : 'Next'}
           {!isLoading && currentStep < 5 && <ChevronRight className="ml-2 w-4 h-4" />}
         </Button>
       </div>

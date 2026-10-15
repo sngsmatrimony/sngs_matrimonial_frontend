@@ -145,7 +145,7 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
         {verification === 'notVerified' && (
           <span className="absolute top-3 left-3 inline-flex items-center gap-1 bg-white/95 text-[#2C3E50]/75 text-xs font-sans font-medium px-2.5 py-1 rounded-full shadow-sm">
             <ShieldAlert size={13} strokeWidth={2} />
-            Not ID verified
+            ID not verified
           </span>
         )}
 

@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { toastError, toastSuccess } from '@/lib/toast';
-import { Eye, Trash2, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, Search, Mail, ImageOff, Crown, X } from 'lucide-react';
+import { Eye, Trash2, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, Search, Mail, ImageOff, Crown, ShieldCheck, X } from 'lucide-react';
 
 const MISSING_DATA_FILTERS = [
   { key: 'missingProfilePicture', label: 'Missing Profile Picture' },
@@ -76,6 +76,7 @@ export default function AdminUsersPage() {
     missingHoroscope: false,
   });
   const [premiumOnly, setPremiumOnly] = useState(false);
+  const [idProofPendingOnly, setIdProofPendingOnly] = useState(searchParams.get('idProofPending') === 'true');
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectingUserId, setRejectingUserId] = useState(null);
@@ -106,6 +107,7 @@ export default function AdminUsersPage() {
       city: searchParams.get('city') || '',
       state: searchParams.get('state') || '',
     });
+    setIdProofPendingOnly(searchParams.get('idProofPending') === 'true');
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParamsKey]);
@@ -122,7 +124,7 @@ export default function AdminUsersPage() {
   // Clear the current selection whenever the underlying result set changes
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [page, approvalFilter, search, missingFilters, premiumOnly, drillDown]);
+  }, [page, approvalFilter, search, missingFilters, premiumOnly, idProofPendingOnly, drillDown]);
 
   // Build query params
   const queryParams = {
@@ -134,6 +136,7 @@ export default function AdminUsersPage() {
     ...(missingFilters.missingGalleryPhotos && { missingGalleryPhotos: 'true' }),
     ...(missingFilters.missingHoroscope && { missingHoroscope: 'true' }),
     ...(premiumOnly && { premium: 'true' }),
+    ...(idProofPendingOnly && { idProofPending: 'true' }),
     ...(drillDown.gender && { gender: drillDown.gender }),
     ...(drillDown.maritalStatus && { maritalStatus: drillDown.maritalStatus }),
     ...(drillDown.city && { city: drillDown.city }),
@@ -141,6 +144,14 @@ export default function AdminUsersPage() {
   };
 
   const queryClient = useQueryClient();
+
+  // Shares the admin header badge's query (same key), so no extra polling.
+  const { data: pendingCounts } = useQuery({
+    queryKey: ['adminPendingApprovalCount'],
+    queryFn: async () => (await adminApi.getPendingApprovalCount()).data,
+    refetchInterval: 60 * 1000,
+  });
+  const idProofPendingCount = pendingCounts?.data?.idProofPendingCount || 0;
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['adminUsers', queryParams],
@@ -387,6 +398,20 @@ export default function AdminUsersPage() {
         >
           <Crown size={13} />
           Premium (bought any plan)
+        </button>
+        <span className="font-sans text-xs text-[#2C3E50]/60 uppercase tracking-wide ml-3 mr-1">ID proof:</span>
+        <button
+          type="button"
+          onClick={() => { setIdProofPendingOnly((prev) => !prev); setPage(1); }}
+          aria-pressed={idProofPendingOnly}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium border transition-colors ${
+            idProofPendingOnly
+              ? 'bg-[#D4A843] border-[#D4A843] text-[#1A1A1A]'
+              : 'bg-white border-[#D4A843]/30 text-[#2C3E50] hover:border-[#D4A843]'
+          }`}
+        >
+          <ShieldCheck size={13} />
+          Awaiting verification{idProofPendingCount > 0 ? ` (${idProofPendingCount})` : ''}
         </button>
       </div>
 

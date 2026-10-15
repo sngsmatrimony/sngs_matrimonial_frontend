@@ -31,6 +31,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { FormAlert } from '@/components/ui/form-alert';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useAuthStore } from '@/store/authStore';
 import { useIdProofRequired } from '@/hooks/useIdProofRequired';
 import { toastSuccess, toastError } from '@/lib/toast';
@@ -250,6 +258,133 @@ export default function RegisterPage() {
     resendMobileOTP,
     resetMobileVerification,
   } = useFirebasePhoneAuth('recaptcha-container');
+
+  // Check the number isn't already a member BEFORE sending a Firebase OTP —
+  // same as the email check. An existing member is pointed to sign in.
+  const [checkingMobile, setCheckingMobile] = useState(false);
+  const [mobileTaken, setMobileTaken] = useState(false);
+  const checkAndSendMobileOTP = async (mobile) => {
+    setCheckingMobile(true);
+    setMobileTaken(false);
+    try {
+      await client.post('/api/auth/register/check-mobile', { mobileNumber: mobile });
+    } catch (error) {
+      setCheckingMobile(false);
+      if (error.response?.status === 409) {
+        setMobileTaken(true);
+        form.setError('mobileNumber', { type: 'manual', message: 'This mobile number is already registered.' });
+      } else {
+        toastError(getFriendlyErrorMessage(error, 'Could not check this number. Please try again.'));
+      }
+      return;
+    }
+    setCheckingMobile(false);
+    sendMobileOTP(mobile);
+  };
+
+  // Saved progress ("draft"): stored after every completed step, keyed by the
+  // verified mobile number. Verifying the same number again offers to
+  // continue. Password, email OTP token and files are never saved.
+  const draftTokenRef = useRef('');
+  // Highest step saved in THIS visit — re-verifying the number mid-way
+  // (e.g. the OTP expired near the end) must not offer to "continue".
+  const sessionStepsRef = useRef(0);
+  const [resumeOffer, setResumeOffer] = useState(null);
+  const [resumeBusy, setResumeBusy] = useState(false);
+
+  // Draft calls use fetch rather than the shared client: its 401 handler
+  // treats any 401 as "signed out" and redirects to /login.
+  const draftRequest = (method, body, { keepalive = false } = {}) => fetch(`${client.defaults.baseURL}/api/auth/register/draft`, {
+    method,
+    keepalive,
+    headers: { 'Content-Type': 'application/json', 'X-Draft-Token': draftTokenRef.current },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  const loadDraft = async (mobile, idToken) => {
+    try {
+      const res = await client.post('/api/auth/register/draft/resume', { mobileNumber: mobile, mobileIdToken: idToken });
+      draftTokenRef.current = res.data.draftToken || '';
+      const draft = res.data.draft;
+      if (draft?.completedSteps > 0 && draft.completedSteps > sessionStepsRef.current) setResumeOffer(draft);
+    } catch {
+      // Saving progress is a convenience — registration works without it.
+      draftTokenRef.current = '';
+    }
+  };
+
+  const verifyMobileAndLoadDraft = async () => {
+    const idToken = await verifyMobileOTP();
+    if (idToken) await loadDraft(form.getValues('mobileNumber') || formData.mobileNumber, idToken);
+  };
+
+  // The step form also holds (stale, empty) copies of the file fields, so
+  // merging its values must never overwrite the files actually chosen.
+  const withFiles = (merged) => ({
+    ...merged,
+    profilePicture: formData.profilePicture,
+    galleryPhotos: formData.galleryPhotos,
+    horoscope: formData.horoscope,
+    idProof: formData.idProof,
+  });
+
+  const saveDraft = (completedSteps, data) => {
+    sessionStepsRef.current = Math.max(sessionStepsRef.current, completedSteps);
+    if (!draftTokenRef.current) return;
+    const {
+      password, confirmPassword, profilePicture, galleryPhotos, horoscope, idProof, // never saved
+      ...rest
+    } = data;
+    const dob = rest.dateOfBirth;
+    const body = {
+      completedSteps,
+      data: {
+        ...rest,
+        dateOfBirth: dob instanceof Date && !Number.isNaN(dob.getTime()) ? format(dob, 'yyyy-MM-dd') : (dob || null),
+      },
+    };
+    // keepalive lets the save finish even if the tab is closed right after
+    // Next (browsers cap keepalive bodies at 64 KB).
+    const keepalive = JSON.stringify(body).length < 60000;
+    draftRequest('PUT', body, { keepalive }).catch(() => {});
+  };
+
+  const continueFromDraft = () => {
+    const { completedSteps, data } = resumeOffer;
+    const restored = { ...formData, ...data };
+    if (typeof data.dateOfBirth === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.dateOfBirth)) {
+      const [y, m, d] = data.dateOfBirth.split('-').map(Number);
+      restored.dateOfBirth = new Date(y, m - 1, d);
+    }
+    // Keep the number just verified and any files chosen in this visit.
+    restored.mobileNumber = form.getValues('mobileNumber') || formData.mobileNumber;
+    restored.profilePicture = formData.profilePicture;
+    restored.galleryPhotos = formData.galleryPhotos;
+    restored.horoscope = formData.horoscope;
+    restored.idProof = formData.idProof;
+    setFormData(restored);
+    sessionStepsRef.current = Math.max(sessionStepsRef.current, completedSteps);
+    // Photos aren't kept in a draft, so a finished step 6 resumes there.
+    setCurrentStep(Math.min(completedSteps + 1, 6));
+    setResumeOffer(null);
+    toastSuccess(completedSteps >= 6
+      ? 'Welcome back! Please add your photos again to finish.'
+      : 'Welcome back! Continuing where you left off.');
+  };
+
+  const startFresh = async () => {
+    setResumeBusy(true);
+    try {
+      const res = await draftRequest('DELETE');
+      if (!res.ok) throw new Error(String(res.status));
+      setResumeOffer(null);
+    } catch {
+      // Keep the choice open: otherwise the old step count would survive.
+      toastError('We couldn’t clear your saved progress. Please check your connection and try again.');
+    } finally {
+      setResumeBusy(false);
+    }
+  };
 
   // Password visibility toggles
   const [showPassword, setShowPassword] = useState(false);
@@ -566,21 +701,23 @@ export default function RegisterPage() {
       setIsLoading(false);
       if (!saved) return;
 
-      setFormData(prev => ({
-        ...prev,
+      const next = {
+        ...formData,
         ...values,
         // Prefill the later address step's country/city from this quick
         // answer so the user isn't asked for the same thing twice.
         presentResidentialAddress: {
-          ...prev.presentResidentialAddress,
+          ...formData.presentResidentialAddress,
           country: values.placeCountry,
           city: values.placeCity,
         },
-        profilePicture: prev.profilePicture,
-        galleryPhotos: prev.galleryPhotos,
-        horoscope: prev.horoscope,
-        idProof: prev.idProof,
-      }));
+        profilePicture: formData.profilePicture,
+        galleryPhotos: formData.galleryPhotos,
+        horoscope: formData.horoscope,
+        idProof: formData.idProof,
+      };
+      setFormData(next);
+      saveDraft(1, next);
       setCurrentStep(currentStep + 1);
       return;
     }
@@ -613,14 +750,9 @@ export default function RegisterPage() {
       }
 
       const values = form.getValues();
-      setFormData(prev => ({
-        ...prev,
-        ...values,
-        profilePicture: prev.profilePicture,
-        galleryPhotos: prev.galleryPhotos,
-        horoscope: prev.horoscope,
-        idProof: prev.idProof,
-      }));
+      const next = withFiles({ ...formData, ...values });
+      setFormData(next);
+      saveDraft(6, next);
       setCurrentStep(currentStep + 1);
       return;
     }
@@ -642,6 +774,13 @@ export default function RegisterPage() {
         horoscope: formData.horoscope,
         idProof: formData.idProof,
       };
+      // Safety net: never create an account without the required photos.
+      if (!updatedFormData.profilePicture || !(updatedFormData.galleryPhotos || []).length) {
+        toastError('Please add your profile photo and at least one gallery photo.');
+        setFormData(updatedFormData);
+        setCurrentStep(6);
+        return;
+      }
       setFormData(updatedFormData);
       setIsLoading(true);
       await submitRegistration(updatedFormData);
@@ -656,14 +795,9 @@ export default function RegisterPage() {
     }
 
     const values = form.getValues();
-    setFormData(prev => ({
-      ...prev,
-      ...values,
-      profilePicture: prev.profilePicture,
-      galleryPhotos: prev.galleryPhotos,
-      horoscope: prev.horoscope,
-      idProof: prev.idProof,
-    }));
+    const next = withFiles({ ...formData, ...values });
+    setFormData(next);
+    saveDraft(currentStep, next);
     setCurrentStep(currentStep + 1);
   };
 
@@ -1142,14 +1276,15 @@ export default function RegisterPage() {
                                   if (e.key === 'Enter') {
                                     e.preventDefault();
                                     const mobileVal = e.currentTarget.value.trim();
-                                    if (!mobileVerified && !mobileOtpLoading && /^[6-9]\d{9}$/.test(mobileVal)) {
-                                      sendMobileOTP(mobileVal);
+                                    if (!mobileVerified && !mobileOtpLoading && !checkingMobile && /^[6-9]\d{9}$/.test(mobileVal)) {
+                                      checkAndSendMobileOTP(mobileVal);
                                     }
                                   }
                                 }}
                                 onChange={(e) => {
                                   field.onChange(e);
                                   setFormData(prev => ({ ...prev, mobileNumber: e.target.value }));
+                                  if (mobileTaken) setMobileTaken(false);
                                   if (mobileVerified) {
                                     resetMobileVerification();
                                   }
@@ -1161,11 +1296,11 @@ export default function RegisterPage() {
                           {!mobileVerified && (
                             <Button
                               type="button"
-                              onClick={() => sendMobileOTP(formData.mobileNumber)}
-                              disabled={mobileOtpLoading || !/^[6-9]\d{9}$/.test(formData.mobileNumber)}
+                              onClick={() => checkAndSendMobileOTP(formData.mobileNumber)}
+                              disabled={mobileOtpLoading || checkingMobile || !/^[6-9]\d{9}$/.test(formData.mobileNumber)}
                               className="bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold whitespace-nowrap h-12 px-5 rounded-xl shadow-sm"
                             >
-                              {mobileOtpLoading ? 'Sending...' : 'Verify Mobile'}
+                              {checkingMobile ? 'Checking...' : mobileOtpLoading ? 'Sending...' : 'Verify Mobile'}
                             </Button>
                           )}
                           {mobileVerified && (
@@ -1176,6 +1311,26 @@ export default function RegisterPage() {
                           )}
                         </div>
                         <FormMessage className="font-sans text-xs font-normal text-[#C75B39] mt-1" />
+                        {mobileVerified && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              // Progress from here on belongs to the new number,
+                              // once it's verified (that issues a new draft token).
+                              draftTokenRef.current = '';
+                              resetMobileVerification();
+                            }}
+                            className="font-sans text-sm font-medium text-[#B8860B] hover:text-[#1A1A1A] underline underline-offset-4 mt-1"
+                          >
+                            Change number
+                          </button>
+                        )}
+                        {mobileTaken && (
+                          <p className="font-sans text-sm text-[#2C3E50] mt-1">
+                            Already a member?{' '}
+                            <a href="/login" className="font-semibold text-[#B8860B] underline underline-offset-2">Sign in with this number</a>
+                          </p>
+                        )}
                         {/* Required by Google's terms whenever the reCAPTCHA badge is
                             hidden via CSS (see globals.css's .grecaptcha-badge rule). */}
                         <p className="font-sans text-[11px] text-[#2C3E50]/50 mt-1">
@@ -1212,7 +1367,7 @@ export default function RegisterPage() {
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             if (!mobileOtpLoading && mobileOtpValue.length === 6) {
-                              verifyMobileOTP();
+                              verifyMobileAndLoadDraft();
                             }
                           }
                         }}
@@ -1221,7 +1376,7 @@ export default function RegisterPage() {
                       <div className="flex gap-2.5">
                         <Button
                           type="button"
-                          onClick={verifyMobileOTP}
+                          onClick={verifyMobileAndLoadDraft}
                           disabled={mobileOtpLoading || !mobileOtpValue || mobileOtpValue.length !== 6}
                           className="flex-1 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold h-11 rounded-xl shadow-sm"
                         >
@@ -1617,6 +1772,50 @@ export default function RegisterPage() {
           </Card>
         )}
       </div>
+
+      {/* A choice is required: closing without one would let the next save
+          overwrite saved steps while the step count stays. */}
+      <AlertDialog open={!!resumeOffer}>
+        <AlertDialogContent className="font-sans" onEscapeKeyDown={(e) => e.preventDefault()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-serif text-2xl text-[#1A1A1A]">
+              Welcome back{resumeOffer?.data?.fullName ? `, ${resumeOffer.data.fullName.split(' ')[0]}` : ''}!
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-[15px] leading-relaxed text-[#2C3E50]">
+                <p>
+                  You have already completed <strong className="text-[#1A1A1A]">{resumeOffer?.completedSteps} of 7 steps</strong>
+                  {resumeOffer?.updatedAt ? ` (last saved ${new Date(resumeOffer.updatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })})` : ''}.
+                  Would you like to continue with your saved details or start fresh?
+                </p>
+                <Progress value={((resumeOffer?.completedSteps || 0) / 7) * 100} className="h-2" />
+                <p className="text-sm text-[#2C3E50]/70">
+                  For your privacy, photos and documents are not saved until you finish, so you will add those again.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={startFresh}
+              disabled={resumeBusy}
+              className="h-11 border-2 border-[#D4A843] text-[#1A1A1A] hover:bg-[#F5E6C3]/40"
+            >
+              {resumeBusy ? 'Clearing...' : 'Start fresh'}
+            </Button>
+            <Button
+              type="button"
+              onClick={continueFromDraft}
+              disabled={resumeBusy}
+              className="h-11 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-semibold"
+            >
+              Continue where I left off
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

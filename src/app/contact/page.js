@@ -13,6 +13,17 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import client from '@/lib/api/client';
 import { toastSuccess, toastError } from '@/lib/toast';
 
+// Office contact details shown on this page.
+const OFFICE_PHONE_DISPLAY = '+91 97303 54904';
+const OFFICE_PHONE_TEL = '+919730354904';
+const OFFICE_ADDRESS_LINES = [
+  'SNGS Pune',
+  '307, Mohol Market, 3rd Floor',
+  'Near Ashok Chitra Mandir (Ashok Theatre)',
+  'Pimpri, Pune - 411017',
+];
+const OFFICE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('Mohol Market, Near Ashok Theatre, Pimpri, Pune 411017')}`;
+
 // Form validation schema matching the premium design constraints
 const contactSchema = z.object({
   name: z.string().min(2, 'Please enter your full name'),
@@ -114,7 +125,9 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <h4 className="font-sans font-bold text-[#1A1A1A]">Phone</h4>
-                        <p className="font-sans text-[#2C3E50]">{contactInfo?.phone || '+91 98765 43210'}</p>
+                        <a href={`tel:${OFFICE_PHONE_TEL}`} className="font-sans text-[#2C3E50] hover:text-[#B8860B] underline-offset-4 hover:underline">
+                          {OFFICE_PHONE_DISPLAY}
+                        </a>
                       </div>
                     </div>
 
@@ -125,7 +138,9 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <h4 className="font-sans font-bold text-[#1A1A1A]">Email</h4>
-                        <p className="font-sans text-[#2C3E50]">{contactInfo?.email || 'sngsmatrimony@gmail.com'}</p>
+                        <a href={`mailto:${contactInfo?.contactEmail || 'sngsmatrimony@gmail.com'}`} className="font-sans text-[#2C3E50] hover:text-[#B8860B] underline-offset-4 hover:underline break-all">
+                          {contactInfo?.contactEmail || 'sngsmatrimony@gmail.com'}
+                        </a>
                       </div>
                     </div>
 
@@ -136,9 +151,19 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <h4 className="font-sans font-bold text-[#1A1A1A]">Office</h4>
-                        <p className="font-sans text-[#2C3E50] leading-relaxed">
-                          {contactInfo?.address || 'SNGS Matrimony Headquarters\nKerala, India'}
-                        </p>
+                        <address className="font-sans not-italic text-[#2C3E50] leading-relaxed">
+                          {OFFICE_ADDRESS_LINES.map((line) => (
+                            <span key={line} className="block">{line}</span>
+                          ))}
+                        </address>
+                        <a
+                          href={OFFICE_MAPS_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block mt-1.5 font-sans text-sm font-medium text-[#B8860B] hover:text-[#1A1A1A] underline underline-offset-4"
+                        >
+                          Open in Google Maps
+                        </a>
                       </div>
                     </div>
 

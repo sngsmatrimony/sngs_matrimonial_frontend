@@ -20,6 +20,7 @@ import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle } from '@/co
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import ProfileCard from './ProfileCard';
+import AllianceMeetBanner from '@/components/alliance-meet/AllianceMeetBanner';
 
 const EDUCATION_OPTIONS = getAllEducationOptions();
 
@@ -434,6 +435,8 @@ export default function BrowseProfiles() {
             </SheetContent>
           </Sheet>
         </div>
+
+        <AllianceMeetBanner />
 
         {/* Text search — matches on name, occupation, and city. Suggestions
             dropdown surfaces the top few matches while typing; the full grid

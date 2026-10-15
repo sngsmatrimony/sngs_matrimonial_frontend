@@ -231,7 +231,7 @@ export default function UserProfileView() {
   const displayProfile = userProfile || profileData;
   const profile = displayProfile ? { ...user, ...displayProfile } : user;
 
-  // No verified ID proof = no Verified tick (others see "Not ID verified");
+  // No verified ID proof = no Verified tick (others see "ID not verified");
   // the profile itself stays visible either way.
   const needsIdProof = !isLoading && !userIsRejected && !!profile?.fullName && !profile?.idProof?.url;
 
@@ -351,7 +351,7 @@ export default function UserProfileView() {
             <div className="flex-1">
               <p className="font-serif font-semibold text-[#1A1A1A]">Get the Verified tick on your profile</p>
               <p className="font-sans text-sm text-[#2C3E50] mt-0.5 leading-relaxed">
-                Upload a government ID proof. Until it&apos;s verified, other members see your profile as &ldquo;Not ID verified&rdquo;
+                Upload a government ID proof. Until it&apos;s verified, other members see your profile as &ldquo;ID not verified&rdquo;
                 &mdash; your profile stays visible the whole time. The tick appears once our team checks your ID.
               </p>
             </div>

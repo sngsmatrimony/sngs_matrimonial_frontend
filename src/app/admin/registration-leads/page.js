@@ -64,19 +64,20 @@ export default function AdminRegistrationLeadsPage() {
                   <TableHead>Place</TableHead>
                   <TableHead>Date of Birth</TableHead>
                   <TableHead>Preferred Age Range</TableHead>
+                  <TableHead>Progress</TableHead>
                   <TableHead>Started</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan="7" className="text-center py-8 font-sans text-[#2C3E50]/60">
+                    <TableCell colSpan="8" className="text-center py-8 font-sans text-[#2C3E50]/60">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : isError ? (
                   <TableRow>
-                    <TableCell colSpan="7" className="text-center py-8 font-sans text-[#C75B39]">
+                    <TableCell colSpan="8" className="text-center py-8 font-sans text-[#C75B39]">
                       Couldn&apos;t load this list right now. Please refresh the page to try again.
                     </TableCell>
                   </TableRow>
@@ -105,6 +106,18 @@ export default function AdminRegistrationLeadsPage() {
                           ? `${lead.preferred_age_from} - ${lead.preferred_age_to}`
                           : '—'}
                       </TableCell>
+                      <TableCell className="text-sm font-sans text-[#2C3E50] whitespace-nowrap">
+                        {lead.steps_completed
+                          ? <>
+                              <span className="font-semibold text-[#1A1A1A]">{lead.steps_completed} of 7 steps</span>
+                              {lead.last_saved_at && (
+                                <span className="block text-xs text-[#2C3E50]/60">
+                                  saved {new Date(lead.last_saved_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                                </span>
+                              )}
+                            </>
+                          : '1 of 7 steps'}
+                      </TableCell>
                       <TableCell className="text-sm font-sans text-[#2C3E50]">
                         {new Date(lead.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                       </TableCell>
@@ -112,7 +125,7 @@ export default function AdminRegistrationLeadsPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan="7" className="text-center py-8 font-sans text-[#2C3E50]/60">
+                    <TableCell colSpan="8" className="text-center py-8 font-sans text-[#2C3E50]/60">
                       No one has started filling out registration yet.
                     </TableCell>
                   </TableRow>

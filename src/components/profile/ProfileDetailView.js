@@ -82,24 +82,30 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
   const [pendingDownload, setPendingDownload] = useState(null); // null | 'pdf' | 'horoscope'
   const [isUnlockingDownload, setIsUnlockingDownload] = useState(false);
   const [downloadUnlocked, setDownloadUnlocked] = useState(!!profile?.downloadUnlocked);
+  // The server holds back the horoscope link until the download is unlocked;
+  // the unlock call returns it.
+  const [unlockedHoroscope, setUnlockedHoroscope] = useState(null);
+  const horoscopeDocument = unlockedHoroscope || profile?.horoscopeDocument;
   const enforcementActive = useEnforcementStatus();
 
   const downloadCost = membership?.planId?.costs?.profileDownload;
   const unlimitedDownload = !!downloadCost?.unlimited;
   const downloadCreditCost = downloadCost?.cost ?? 0;
 
-  const runDownload = (action) => {
-    if (action === 'pdf') downloadPDF(profile?.fullName, profile?.horoscopeDocument, profileId);
+  const runDownload = (action, horoscope = horoscopeDocument) => {
+    if (action === 'pdf') downloadPDF(profile?.fullName, horoscope?.url ? horoscope : null, profileId);
     else handleDownloadHoroscope(profileId);
   };
 
   const unlockAndDownload = async (action) => {
     setIsUnlockingDownload(true);
     try {
-      await client.post(`/api/profiles/${profileId}/unlock-download`);
+      const res = await client.post(`/api/profiles/${profileId}/unlock-download`);
+      const horoscope = res.data?.horoscopeDocument || horoscopeDocument;
+      if (res.data?.horoscopeDocument) setUnlockedHoroscope(res.data.horoscopeDocument);
       setDownloadUnlocked(true);
       setPendingDownload(null);
-      runDownload(action);
+      runDownload(action, horoscope);
     } catch (error) {
       const data = error.response?.data;
       if (data?.requiresCredits) {
@@ -166,7 +172,7 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
 
           <div className="px-4 sm:px-6 pb-6 pt-2">
             <ProfileTabs
-              profile={profile}
+              profile={unlockedHoroscope ? { ...profile, horoscopeDocument: unlockedHoroscope } : profile}
               mode="other"
               contactMasked={!!profile.contactMasked}
               onDownloadHoroscope={() => requestDownload('horoscope')}

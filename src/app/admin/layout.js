@@ -31,7 +31,10 @@ export default function AdminLayout({ children }) {
         enabled: !isAuthRoute && !!admin,
         refetchInterval: 60 * 1000,
     });
-    const pendingApprovalCount = pendingApprovalData?.data?.pendingCount || 0;
+    // Badge = profiles awaiting approval + ID proofs uploaded after approval
+    // that still need a check.
+    const idProofPendingCount = pendingApprovalData?.data?.idProofPendingCount || 0;
+    const pendingApprovalCount = (pendingApprovalData?.data?.pendingCount || 0) + idProofPendingCount;
 
     // Initialize auth and determine authorization
     useEffect(() => {

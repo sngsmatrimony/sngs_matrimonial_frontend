@@ -46,7 +46,7 @@ export default function ProfileHeader({ profile, mode = 'self', primaryAction })
 
       {/* Overlapped info row */}
       <div className="px-4 sm:px-6">
-        <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 sm:-mt-14">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-start gap-4 -mt-12 sm:-mt-14">
           <div
             className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-4 border-white overflow-hidden shadow-lg bg-[#F5E6C3]/40 flex items-center justify-center shrink-0 ${profileImageUrl ? 'cursor-pointer' : ''}`}
             onClick={() => profileImageUrl && setLightboxIndex(0)}
@@ -78,9 +78,11 @@ export default function ProfileHeader({ profile, mode = 'self', primaryAction })
             />
           )}
 
-          <div className="flex-1 pb-1">
+          {/* Starts just below the banner edge (the photo overlaps the banner by
+              56px) so a long name or extra badges can never slide under it. */}
+          <div className="flex-1 min-w-0 sm:pt-[64px]">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1A1A1A]">
+              <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1A1A1A] break-words">
                 {profile?.fullName}
               </h1>
               {verification === 'verified' && (
@@ -92,7 +94,7 @@ export default function ProfileHeader({ profile, mode = 'self', primaryAction })
               {verification === 'notVerified' && (
                 <span className="inline-flex items-center gap-1 bg-[#2C3E50]/8 text-[#2C3E50]/80 text-xs font-sans font-medium px-2.5 py-1 rounded-full border border-[#2C3E50]/15">
                   <ShieldAlert size={14} strokeWidth={2} />
-                  Not ID verified
+                  ID not verified
                 </span>
               )}
             </div>
@@ -108,7 +110,7 @@ export default function ProfileHeader({ profile, mode = 'self', primaryAction })
             </p>
           </div>
 
-          {primaryAction && <div className="pb-1 shrink-0">{primaryAction}</div>}
+          {primaryAction && <div className="shrink-0 sm:pt-[64px]">{primaryAction}</div>}
         </div>
 
         {/* Below the overlapping photo row (not inside it) so extra text can't

@@ -84,14 +84,17 @@ export function useFirebasePhoneAuth(containerId) {
     }
   };
 
-  const verifyMobileOTP = async () => {
+  // Resolves to the Firebase ID token on success (null otherwise), so a
+  // caller can continue straight away — e.g. login signs in automatically.
+  // { quiet: true } skips the "verified" toast when the caller shows its own.
+  const verifyMobileOTP = async ({ quiet = false } = {}) => {
     if (!mobileOtpValue || mobileOtpValue.length !== 6) {
       toastError('Please enter a valid 6-digit OTP');
-      return;
+      return null;
     }
     if (!mobileConfirmationResultRef.current) {
       toastError('Please request a new OTP.');
-      return;
+      return null;
     }
 
     setMobileOtpLoading(true);
@@ -105,11 +108,13 @@ export function useFirebasePhoneAuth(containerId) {
       setMobileIdToken(idToken);
       setMobileVerified(true);
       setMobileVerificationStep('verified');
-      toastSuccess('Mobile number verified successfully.');
+      if (!quiet) toastSuccess('Mobile number verified successfully.');
+      return idToken;
     } catch (error) {
       console.error('Firebase phone OTP verify error:', error);
       toastError(getFriendlyErrorMessage(error, 'That code didn’t match. Please check it and try again.'));
       setMobileOtpValue('');
+      return null;
     } finally {
       setMobileOtpLoading(false);
     }

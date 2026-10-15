@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api/admin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -190,13 +190,19 @@ export default function AdminUserDetailPage() {
       return response.data.data;
     },
   });
+  const queryClient = useQueryClient();
+  // Approve / reject / verify-ID also change the admin header's pending badge.
+  const refreshUser = () => {
+    refetch();
+    queryClient.invalidateQueries({ queryKey: ['adminPendingApprovalCount'] });
+  };
 
   const updateMutation = useMutation({
     mutationFn: (updateData) => adminApi.updateUser(userId, updateData),
     onSuccess: () => {
       toastSuccess('User updated successfully');
       setIsEditMode(false);
-      refetch();
+      refreshUser();
     },
     onError: (error) => {
       toastError(error.response?.data?.message || 'Failed to update user');
@@ -207,7 +213,7 @@ export default function AdminUserDetailPage() {
     mutationFn: () => adminApi.deactivateUser(userId),
     onSuccess: () => {
       toastSuccess('User deactivated successfully');
-      refetch();
+      refreshUser();
     },
     onError: (error) => {
       toastError(error.response?.data?.message || 'Failed to deactivate user');
@@ -218,7 +224,7 @@ export default function AdminUserDetailPage() {
     mutationFn: () => adminApi.activateUser(userId),
     onSuccess: () => {
       toastSuccess('User activated successfully');
-      refetch();
+      refreshUser();
     },
     onError: (error) => {
       toastError(error.response?.data?.message || 'Failed to activate user');
@@ -263,7 +269,7 @@ export default function AdminUserDetailPage() {
     mutationFn: () => adminApi.approveUser(userId),
     onSuccess: () => {
       toastSuccess('User approved successfully');
-      refetch();
+      refreshUser();
     },
     onError: (error) => {
       toastError(error.response?.data?.message || 'Failed to approve user');
@@ -274,7 +280,7 @@ export default function AdminUserDetailPage() {
     mutationFn: () => adminApi.verifyIdProof(userId),
     onSuccess: () => {
       toastSuccess('ID proof verified — the member now has the Verified tick.');
-      refetch();
+      refreshUser();
     },
     onError: (error) => {
       toastError(error.response?.data?.message || 'Failed to verify ID proof');
@@ -287,7 +293,7 @@ export default function AdminUserDetailPage() {
       toastSuccess('User rejected successfully');
       setShowApprovalRejectDialog(false);
       setApprovalRejectionReason('');
-      refetch();
+      refreshUser();
     },
     onError: (error) => {
       toastError(error.response?.data?.message || 'Failed to reject user');
@@ -327,7 +333,7 @@ export default function AdminUserDetailPage() {
     try {
       await adminApi.uploadUserProfilePicture(userId, file);
       toastSuccess('Profile picture uploaded successfully');
-      refetch();
+      refreshUser();
     } catch (error) {
       toastError(error.response?.data?.message || 'Failed to upload profile picture');
     } finally {
@@ -360,7 +366,7 @@ export default function AdminUserDetailPage() {
     try {
       await adminApi.uploadUserPhoto(userId, file);
       toastSuccess('Photo uploaded successfully');
-      refetch();
+      refreshUser();
     } catch (error) {
       toastError(error.response?.data?.message || 'Failed to upload photo');
     } finally {
@@ -374,7 +380,7 @@ export default function AdminUserDetailPage() {
     try {
       await adminApi.deleteUserPhoto(userId, photoIndex);
       toastSuccess('Photo deleted successfully');
-      refetch();
+      refreshUser();
     } catch (error) {
       toastError(error.response?.data?.message || 'Failed to delete photo');
     } finally {
@@ -401,7 +407,7 @@ export default function AdminUserDetailPage() {
     try {
       await adminApi.uploadUserHoroscope(userId, file);
       toastSuccess('Horoscope document uploaded successfully');
-      refetch();
+      refreshUser();
     } catch (error) {
       toastError(error.response?.data?.message || 'Failed to upload horoscope');
     } finally {
@@ -415,7 +421,7 @@ export default function AdminUserDetailPage() {
     try {
       await adminApi.deleteUserHoroscope(userId);
       toastSuccess('Horoscope document deleted successfully');
-      refetch();
+      refreshUser();
     } catch (error) {
       toastError(error.response?.data?.message || 'Failed to delete horoscope');
     } finally {

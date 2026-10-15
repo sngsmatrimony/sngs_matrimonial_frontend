@@ -96,11 +96,11 @@ export default function LoginPage() {
     setIsLoading(false);
   }
 
-  async function handleMobileLogin() {
+  async function handleMobileLogin(idToken = mobileIdToken) {
     setIsLoading(true);
     setError('');
 
-    const result = await loginWithMobileOtp(mobileNumberInput, mobileIdToken);
+    const result = await loginWithMobileOtp(mobileNumberInput, idToken);
 
     if (result.success) {
       toastSuccess('Signed in successfully. Redirecting...');
@@ -112,6 +112,13 @@ export default function LoginPage() {
     }
 
     setIsLoading(false);
+  }
+
+  // Verified OTP = signed in: no extra "Sign In" click needed. The button
+  // stays as a fallback (e.g. to retry after an error).
+  async function verifyAndSignIn() {
+    const idToken = await verifyMobileOTP({ quiet: true });
+    if (idToken) await handleMobileLogin(idToken);
   }
 
   return (
@@ -380,8 +387,8 @@ export default function LoginPage() {
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
-                              if (!mobileOtpLoading && mobileOtpValue.length === 6) {
-                                verifyMobileOTP();
+                              if (!mobileOtpLoading && !isLoading && mobileOtpValue.length === 6) {
+                                verifyAndSignIn();
                               }
                             }
                           }}
@@ -390,11 +397,11 @@ export default function LoginPage() {
                         <div className="flex gap-2.5">
                           <Button
                             type="button"
-                            onClick={verifyMobileOTP}
-                            disabled={mobileOtpLoading || !mobileOtpValue || mobileOtpValue.length !== 6}
+                            onClick={verifyAndSignIn}
+                            disabled={mobileOtpLoading || isLoading || !mobileOtpValue || mobileOtpValue.length !== 6}
                             className="flex-1 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold h-11 rounded-xl shadow-sm"
                           >
-                            {mobileOtpLoading ? 'Verifying...' : 'Verify OTP'}
+                            {mobileOtpLoading ? 'Verifying...' : isLoading ? 'Signing in...' : 'Verify & Sign In'}
                           </Button>
                           <Button
                             type="button"
@@ -414,7 +421,7 @@ export default function LoginPage() {
                 <div className="flex flex-col gap-4 px-6 sm:px-10 py-6 border-t border-[#D4A843]/20 bg-[#F5E6C3]/25">
                   <Button
                     type="button"
-                    onClick={handleMobileLogin}
+                    onClick={() => handleMobileLogin()}
                     disabled={isLoading || !mobileVerified}
                     className="w-full bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold h-12 rounded-xl shadow-sm disabled:opacity-50 transition-all duration-200"
                   >

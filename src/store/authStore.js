@@ -322,16 +322,16 @@ export const useAuthStore = create(
       // Delete horoscope document
       deleteHoroscopeDocument: async () => {
         try {
-          const response = await client.delete('/api/auth/horoscope-document');
-          set((state) => ({
-            user: {
-              ...state.user,
-              horoscopeDocument: undefined
-            }
-          }));
+          await client.delete('/api/auth/horoscope-document');
+          set((state) => ({ user: { ...state.user, horoscopeDocument: undefined } }));
           return { success: true };
-        } catch {
-          return { success: false, error: 'Delete failed' };
+        } catch (error) {
+          // 404 = nothing on the server any more (e.g. already removed) - treat as removed.
+          if (error.response?.status === 404) {
+            set((state) => ({ user: { ...state.user, horoscopeDocument: undefined } }));
+            return { success: true };
+          }
+          return { success: false, error: error.response?.data?.message || 'Delete failed' };
         }
       },
 
@@ -357,16 +357,16 @@ export const useAuthStore = create(
       // Delete ID proof document
       deleteIdProof: async () => {
         try {
-          const response = await client.delete('/api/auth/id-proof');
-          set((state) => ({
-            user: {
-              ...state.user,
-              idProof: undefined
-            }
-          }));
+          await client.delete('/api/auth/id-proof');
+          set((state) => ({ user: { ...state.user, idProof: undefined } }));
           return { success: true };
-        } catch {
-          return { success: false, error: 'Delete failed' };
+        } catch (error) {
+          // 404 = nothing on the server any more (e.g. already removed) - treat as removed.
+          if (error.response?.status === 404) {
+            set((state) => ({ user: { ...state.user, idProof: undefined } }));
+            return { success: true };
+          }
+          return { success: false, error: error.response?.data?.message || 'Delete failed' };
         }
       },
 

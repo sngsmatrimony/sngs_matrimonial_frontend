@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { client } from '@/lib/api/client';
@@ -26,9 +26,23 @@ export default function ProfileViewPage() {
     fetchProfile();
   }, [params.id]);
 
-  const fetchProfile = async () => {
+  // Always open a profile at the top. Coming from far down Search (e.g. the
+  // "outside your preferred age range" list) the browser otherwise keeps the
+  // old scroll position and lands near the bottom of the profile. Only on
+  // the first load of each profile — silent refreshes keep the position.
+  const scrolledForIdRef = useRef(null);
+  useEffect(() => {
+    if (!loading && scrolledForIdRef.current !== params.id) {
+      scrolledForIdRef.current = params.id;
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, [loading, params.id]);
+
+  // silent: refresh in place (e.g. after unlocking contact) without the
+  // loading skeleton replacing the page.
+  const fetchProfile = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError(null);
 
       const response = await client.get(`/api/profiles/${params.id}`);
@@ -153,7 +167,7 @@ export default function ProfileViewPage() {
     <div className="min-h-screen bg-[#FDF8F0]">
       {/* Profile Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ProfileDetailView profileId={params.id} profile={profile} onProfileRefresh={fetchProfile} />
+        <ProfileDetailView profileId={params.id} profile={profile} onProfileRefresh={() => fetchProfile(true)} />
       </div>
     </div>
   );

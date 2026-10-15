@@ -283,21 +283,26 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
               </div>
             </div>
           )}
-          {profile?.horoscopeDocument?.url && (
+          {(profile?.horoscopeDocument?.url || profile?.horoscopeDocument?.locked) && (
             <div className="flex items-center justify-between py-2.5 border-t border-[#D4A843]/10 mt-1">
               <span className="font-sans text-[#2C3E50]/70 text-sm flex items-center gap-2">
                 <FileText size={15} className="text-[#D4A843]" />
                 Horoscope Document
               </span>
-              <div className="flex gap-4">
-                <a
-                  href={profile.horoscopeDocument.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#D4A843] hover:text-[#B8860B] font-sans font-medium text-sm underline"
-                >
-                  View
-                </a>
+              <div className="flex items-center gap-4">
+                {/* Viewing comes with the (paid) download unlock. */}
+                {profile.horoscopeDocument.url ? (
+                  <a
+                    href={profile.horoscopeDocument.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#D4A843] hover:text-[#B8860B] font-sans font-medium text-sm underline"
+                  >
+                    View
+                  </a>
+                ) : (
+                  <span className="font-sans text-xs text-[#2C3E50]/60">Available after download</span>
+                )}
                 {onDownloadHoroscope && (
                   <button
                     onClick={onDownloadHoroscope}

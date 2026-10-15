@@ -55,6 +55,11 @@ export function PreferencesMediaStep({
   idProofRequired = false,
   onDeleteIdProof = null,
   hidePreferredAgeRange = false,
+  // Edit Profile: upload gallery photos as soon as they're picked, so an old
+  // photo can be removed straight away (the server won't delete the last
+  // saved photo, and a photo waiting for "Save" doesn't count yet).
+  uploadGalleryImmediately = false,
+  onGalleryUploadingChange = null,
 }) {
   const { user: authUser } = useAuthStore();
   const hasInitialized = useRef(false);
@@ -104,6 +109,17 @@ export function PreferencesMediaStep({
   const [localProfilePicture, setLocalProfilePicture] = useState(null);
   const [localGalleryPhotos, setLocalGalleryPhotos] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+
+  // Saved photos (server order, so their index matches DELETE /photo/:index)
+  // followed by any still waiting to be uploaded.
+  const syncGalleryFromServer = (pending = []) => {
+    const saved = (useAuthStore.getState().user?.gallery?.photos || []).map((photo) => ({
+      preview: photo.url,
+      existing: true,
+    }));
+    onFileUpdate?.('galleryPhotos', [...saved, ...pending]);
+  };
 
   // Initialize with existing media on mount (only once)
   useEffect(() => {
@@ -133,7 +149,7 @@ export function PreferencesMediaStep({
 
   }, [onFileUpdate, userProfile, authUser]);
 
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     const files = Array.from(e.target.files || []).filter((file) => {
       const problem = photoProblem(file);
       if (problem) toastError(problem);
@@ -151,6 +167,30 @@ export function PreferencesMediaStep({
 
     if (currentPhotos + files.length > 10) {
       toastWarning('Maximum 10 photos allowed');
+      return;
+    }
+
+    if (onFileUpdate && uploadGalleryImmediately) {
+      if (e.target) e.target.value = '';
+      const pending = (galleryPhotos || []).filter((photo) => !photo.existing);
+      setIsUploadingGallery(true);
+      onGalleryUploadingChange?.(true);
+      try {
+        let failed = 0;
+        let lastError = '';
+        for (const file of files) {
+          const result = await useAuthStore.getState().uploadPhoto(file);
+          if (!result?.success) {
+            failed++;
+            lastError = result?.error || 'Upload failed';
+          }
+        }
+        if (failed) toastError(failed === files.length ? lastError : `${failed} photo(s) could not be uploaded: ${lastError}`);
+        if (failed < files.length) syncGalleryFromServer(pending);
+      } finally {
+        setIsUploadingGallery(false);
+        onGalleryUploadingChange?.(false);
+      }
       return;
     }
 
@@ -218,7 +258,9 @@ export function PreferencesMediaStep({
       }
 
       // Remove from local state (works for both new and existing after API call)
-      if (onFileUpdate) {
+      if (onFileUpdate && photo.existing) {
+        syncGalleryFromServer(photos.filter((p) => !p.existing));
+      } else if (onFileUpdate) {
         const newPhotos = photos.filter((_, i) => i !== index);
         onFileUpdate('galleryPhotos', newPhotos);
       } else {
@@ -473,8 +515,12 @@ export function PreferencesMediaStep({
           multiple
           accept="image/jpeg,image/png"
           onChange={handlePhotoUpload}
+          disabled={isUploadingGallery || isDeleting}
           className="font-sans"
         />
+        {isUploadingGallery && (
+          <p className="text-sm font-sans text-[#2C3E50]" role="status">Uploading photo...</p>
+        )}
         <p className="flex items-start gap-1.5 text-xs text-gray-500 font-sans">
           <ImageIcon className="w-3.5 h-3.5 mt-0.5 shrink-0 text-gray-400" strokeWidth={1.75} />
           JPEG or PNG, up to 10 MB each. Add at least one clear, good-quality photo — blurry, dark, or heavily filtered photos may delay admin approval.
@@ -498,10 +544,12 @@ export function PreferencesMediaStep({
                   <button
                     type="button"
                     onClick={() => removePhoto(idx)}
-                    disabled={isDeleting}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isDeleting || isUploadingGallery}
+                    aria-label={`Remove photo ${idx + 1}`}
+                    className="absolute top-1 right-1 flex items-center gap-1 bg-white/95 text-[#C75B39] border border-[#C75B39]/30 rounded-full pl-1.5 pr-2 py-0.5 shadow-sm hover:bg-[#FBEAE5] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <X size={16} />
+                    <X size={12} />
+                    <span className="font-sans text-[11px] font-medium">Remove</span>
                   </button>
                 </div>
               );
@@ -542,7 +590,7 @@ export function PreferencesMediaStep({
               <FileText className="text-red-500" size={32} />
             ) : (
               <div className="relative w-24 h-24 rounded overflow-hidden">
-                <Image src={existingIdProof.url} alt="Current ID proof" fill className="object-cover" />
+                <Image src={existingIdProof.url} alt="Current ID proof" fill sizes="96px" className="object-cover" />
               </div>
             )}
             <div className="flex-1">
@@ -570,7 +618,7 @@ export function PreferencesMediaStep({
               <FileText className="text-red-500" size={32} />
             ) : (idProof.preview || idProof.url) ? (
               <div className="relative w-24 h-24 rounded overflow-hidden">
-                <Image src={idProof.preview || idProof.url} alt="ID proof preview" fill className="object-cover" />
+                <Image src={idProof.preview || idProof.url} alt="ID proof preview" fill sizes="96px" className="object-cover" />
               </div>
             ) : null}
             <div className="flex-1">
