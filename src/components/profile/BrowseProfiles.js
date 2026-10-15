@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { SlidersHorizontal, X, Search as SearchIcon, User as UserIcon } from 'lucide-react';
+import { SlidersHorizontal, X, Search as SearchIcon, User as UserIcon, Users as UsersIcon } from 'lucide-react';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
 import {
@@ -390,12 +390,15 @@ export default function BrowseProfiles() {
   // Shown below the in-range grid, and below the empty state when nothing
   // matches the preferred age range.
   const outsideRangeBlock = !ignoreAge ? (
-    <div className="mt-6 text-center">
+    <div className="mt-8 text-center">
+      {/* A clear secondary button (gold outline, dark text) rather than a small
+          gold link, which was hard to spot on the cream background. */}
       <button
         type="button"
         onClick={() => { scrollToOutsideRef.current = true; setParams({ outside: true }); }}
-        className="font-sans text-sm text-[#D4A843] hover:text-[#B8860B] underline underline-offset-2"
+        className="inline-flex items-center justify-center gap-2 min-h-12 px-6 py-3 rounded-lg border-2 border-[#D4A843] bg-white text-[#1A1A1A] font-sans text-base font-semibold shadow-sm hover:bg-[#F5E6C3]/50 hover:border-[#B8860B] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#D4A843]/60"
       >
+        <UsersIcon className="w-5 h-5 text-[#B8860B]" strokeWidth={1.75} aria-hidden="true" />
         See more profiles outside your preferred age range
       </button>
     </div>
