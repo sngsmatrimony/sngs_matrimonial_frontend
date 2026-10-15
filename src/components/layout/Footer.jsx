@@ -39,11 +39,10 @@ const CONTACT_ITEMS = [
   { icon: MapPin, text: 'Pimpri, Pune, Maharashtra' },
 ];
 
-// Admin portal has its own dedicated shell; app/dashboard routes have their
-// own tab bar + mobile bottom nav, so the marketing footer stays out of the
-// way there too (mirrors Header.js's same route gating). Auth pages use a
-// fixed full-viewport background image the footer would visually clash with.
-const HIDDEN_ROUTE_PREFIXES = ['/admin', '/browse', '/liked', '/messages', '/profile', '/settings', '/chat', '/profiles', '/membership', '/payment', '/login', '/register', '/forgot-password'];
+// Shown on every page (public, signed-in and sign-in pages), except the admin
+// portal (its own separate shell) and the chat, which fills the screen and
+// locks page scrolling, so a footer there could never be reached.
+const HIDDEN_ROUTE_PREFIXES = ['/admin', '/messages', '/chat'];
 
 export default function Footer() {
   const pathname = usePathname();

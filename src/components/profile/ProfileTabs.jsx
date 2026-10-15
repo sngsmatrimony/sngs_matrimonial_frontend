@@ -153,6 +153,18 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
 
       {/* ABOUT */}
       <TabsContent value="about" className="pt-5">
+        {profile?.profileAbout?.trim() ? (
+          <Section title="About Me">
+            <p className="font-sans text-[15px] text-[#1A1A1A] leading-relaxed whitespace-pre-line">{profile.profileAbout}</p>
+          </Section>
+        ) : mode === 'self' && (
+          <Section title="About Me">
+            <p className="font-sans text-[15px] text-[#2C3E50]/70 leading-relaxed">
+              You haven&apos;t written about yourself yet. Add a few lines from Edit Profile — members read this first.
+            </p>
+          </Section>
+        )}
+
         <Section title="Personal Details">
           <Field label="Mother Tongue" value={profile?.motherTongue} />
           <Field label="Height" value={profile?.height} />

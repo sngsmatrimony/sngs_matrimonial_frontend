@@ -20,6 +20,24 @@ import {
 // stack two bottom bars on mobile.
 const APP_ROUTE_PREFIXES = ['/browse', '/liked', '/messages', '/profile', '/settings', '/chat'];
 
+/** Whether the fixed mobile bottom nav is on screen for this page. */
+export function useMobileBottomNavVisible() {
+  const pathname = usePathname();
+  const { token, user } = useAuthStore();
+  return !!token && !!user && APP_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname?.startsWith(`${prefix}/`)
+  );
+}
+
+/**
+ * Space at the very bottom of the page (below the footer) so nothing ends up
+ * hidden behind the fixed mobile bottom nav.
+ */
+export function BottomNavSpacer() {
+  const visible = useMobileBottomNavVisible();
+  return visible ? <div aria-hidden="true" className="h-[calc(4rem+env(safe-area-inset-bottom))] md:hidden" /> : null;
+}
+
 /**
  * Fixed mobile bottom nav for logged-in users on app routes. Mirrors the
  * dashboard's own tab bar but in a touch-friendly, always-visible position,

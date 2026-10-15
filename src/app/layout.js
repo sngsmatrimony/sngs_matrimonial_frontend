@@ -4,7 +4,7 @@ import { Providers } from "./providers";
 import PromoBanner from '@/components/layout/PromoBanner';
 import Header from '@/components/layout/Header'; // <-- Restored Global Header
 import Footer from '@/components/layout/Footer';
-import MobileBottomNav from '@/components/layout/MobileBottomNav';
+import MobileBottomNav, { BottomNavSpacer } from '@/components/layout/MobileBottomNav';
 import Preloader from '@/components/layout/Preloader';
 import ScrollManager from '@/components/layout/ScrollManager';
 import { Analytics } from "@vercel/analytics/next";
@@ -49,13 +49,14 @@ export default function RootLayout({ children }) {
           <Header isFixed={true} />
           
           {/* Main Page Content */}
-          <main className="flex-1 pb-16 md:pb-0 relative z-0">
-            {/* The pb-16 ensures content doesn't hide behind the 64px mobile bottom nav */}
+          <main className="flex-1 relative z-0">
             {children}
           </main>
 
-          {/* Global Footer (hidden on admin and app/dashboard routes) */}
+          {/* Global Footer (everywhere except the admin portal and the chat) */}
           <Footer />
+          {/* Keeps the end of the page clear of the fixed mobile bottom nav */}
+          <BottomNavSpacer />
 
           {/* Mobile Bottom Nav (app routes, logged-in users only) */}
           <MobileBottomNav />

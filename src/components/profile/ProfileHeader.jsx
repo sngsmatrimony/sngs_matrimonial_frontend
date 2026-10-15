@@ -126,11 +126,6 @@ export default function ProfileHeader({ profile, mode = 'self', primaryAction })
           </p>
         )}
 
-        {profile?.profileAbout && (
-          <p className="font-sans text-[#2C3E50] text-sm leading-relaxed mt-4 max-w-2xl">
-            {profile.profileAbout}
-          </p>
-        )}
       </div>
     </div>
   );

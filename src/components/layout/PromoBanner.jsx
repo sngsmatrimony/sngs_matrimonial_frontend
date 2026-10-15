@@ -24,7 +24,7 @@ export default function PromoBanner() {
         <Sparkles className="w-4 h-4 shrink-0 text-[#D4A843]" strokeWidth={2} />
         <span>
           <span className="text-[#D4A843] mr-1">Special Offer:</span>
-          Register for <span className="text-white font-semibold">free</span> until November 1st — premium charges apply thereafter.
+          Register for <span className="text-white font-semibold">free</span> until December 31st — premium charges apply thereafter.
         </span>
       </div>
 
