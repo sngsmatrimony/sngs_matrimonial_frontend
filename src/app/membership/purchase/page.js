@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store/authStore';
 import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
 import { buildPlanDescription } from '@/lib/planDescription';
 import BuyCreditsCard from '@/components/membership/BuyCreditsCard';
+import PaymentTermsDialog from '@/components/payment/PaymentTermsDialog';
 import { formatDate, formatRupees } from '@/lib/money';
 
 // Real, plan-specific cost bullets — describes exactly what each of the 3
@@ -55,6 +56,8 @@ export default function PurchaseMembershipPage() {
   const [plans, setPlans] = useState([]);
   const [planLoading, setPlanLoading] = useState(true);
   const [processingPlanId, setProcessingPlanId] = useState(null);
+  // Plan waiting for the member to accept the payment terms.
+  const [termsPlan, setTermsPlan] = useState(null);
   const [showSkip, setShowSkip] = useState(false);
 
   // Fetch all membership plans from backend
@@ -103,7 +106,11 @@ export default function PurchaseMembershipPage() {
     router.push('/login');
   };
 
-  const handlePurchase = async (plan) => {
+  // Buy Now first shows the payment terms; the order is created only after
+  // the member agrees.
+  const handlePurchase = (plan) => setTermsPlan(plan);
+
+  const startPurchase = async (plan) => {
     setProcessingPlanId(plan._id);
 
     try {
@@ -112,6 +119,7 @@ export default function PurchaseMembershipPage() {
       // Create Razorpay order
       const orderRes = await client.post('/api/membership/create-order', {
         planId: plan._id,
+        acceptTerms: true,
       });
 
       const { orderId } = orderRes.data.data;
@@ -133,6 +141,7 @@ export default function PurchaseMembershipPage() {
         toastError(errorMessage);
       }
       setProcessingPlanId(null);
+      setTermsPlan(null);
     }
   };
 
@@ -394,6 +403,23 @@ export default function PurchaseMembershipPage() {
 
         </div>
       </div>
+
+      {termsPlan && (
+        <PaymentTermsDialog
+          open
+          onOpenChange={(open) => { if (!open) setTermsPlan(null); }}
+          itemName={`${termsPlan.name} — ${termsPlan.credits} credits${termsPlan.validityDays ? `, ${termsPlan.validityDays} days` : ''}`}
+          pricing={termsPlan.pricing || { baseAmount: termsPlan.price?.amount, gatewayCharges: 0, totalAmount: termsPlan.price?.amount }}
+          terms={[
+            termsPlan.validityDays
+              ? `The plan is valid for ${termsPlan.validityDays} days from payment. Credits can be used only while it is active — any left when it ends expire with it.`
+              : 'Credits can be used only while the plan is active.',
+            'Profile views, contact unlocks and downloads use credits as shown on each action, and are not refundable once used.',
+          ]}
+          busy={processingPlanId === termsPlan._id}
+          onAgree={() => startPurchase(termsPlan)}
+        />
+      )}
     </>
   );
 }

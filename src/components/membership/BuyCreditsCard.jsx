@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { client } from '@/lib/api/client';
 import { toastError, toastInfo } from '@/lib/toast';
 import { formatDate, formatRupees } from '@/lib/money';
+import PaymentTermsDialog from '@/components/payment/PaymentTermsDialog';
 
 /**
  * "Buy More Credits" — top-up packs for a member whose plan is active.
@@ -48,16 +49,22 @@ export default function BuyCreditsCard({ id = 'credits' }) {
     [info, selected]
   );
 
-  const handleBuy = async () => {
+  // Buy first shows the payment terms; the order is created only after the
+  // member agrees.
+  const [showTerms, setShowTerms] = useState(false);
+  const handleBuy = () => { if (pack) setShowTerms(true); };
+
+  const startPayment = async () => {
     if (!pack) return;
     setBuying(true);
     try {
       toastInfo('Creating payment order...');
-      const res = await client.post('/api/membership/create-credit-order', { credits: pack.credits });
+      const res = await client.post('/api/membership/create-credit-order', { credits: pack.credits, acceptTerms: true });
       router.push(`/payment/${res.data.data.orderId}`);
     } catch (error) {
       toastError(error.response?.data?.message || 'Could not start the payment. Please try again.');
       setBuying(false);
+      setShowTerms(false);
     }
   };
 
@@ -136,6 +143,22 @@ export default function BuyCreditsCard({ id = 'credits' }) {
           )}
         </Button>
       </CardContent>
+      {pack && (
+        <PaymentTermsDialog
+          open={showTerms}
+          onOpenChange={setShowTerms}
+          itemName={`${pack.credits} credits`}
+          pricing={pack}
+          terms={[
+            info.expiryDate
+              ? `Credits are added to your current plan and can be used until it ends on ${formatDate(info.expiryDate)}. Any left at that point expire with the plan.`
+              : 'Credits are added to your current plan and expire when it ends.',
+            'Credits are not refundable once used.',
+          ]}
+          busy={buying}
+          onAgree={startPayment}
+        />
+      )}
     </Card>
   );
 }

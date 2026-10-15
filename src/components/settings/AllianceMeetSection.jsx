@@ -8,6 +8,13 @@ import { Button } from '@/components/ui/button';
 import { CalendarHeart, Loader2, CheckCircle2 } from 'lucide-react';
 import { client } from '@/lib/api/client';
 import { toastError, toastInfo } from '@/lib/toast';
+import { formatRupees } from '@/lib/money';
+import PaymentTermsDialog from '@/components/payment/PaymentTermsDialog';
+
+const ALLIANCE_MEET_TERMS = [
+  'A one-time registration for the upcoming SNGS Alliance Meet. Our team will share the event details with you.',
+  'The registration fee is non-refundable, unless SNGS cancels the event.',
+];
 
 /**
  * Opt-in card for the SNGS Alliance Meet, shown below MembershipSection on
@@ -18,6 +25,7 @@ import { toastError, toastInfo } from '@/lib/toast';
 export default function AllianceMeetSection() {
   const router = useRouter();
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['allianceMeetPublicSettings'],
@@ -35,18 +43,25 @@ export default function AllianceMeetSection() {
     },
   });
 
-  const handleRegister = async () => {
+  // Register first shows the payment terms; the order is created only after
+  // the member agrees.
+  const handleRegister = () => setShowTerms(true);
+
+  const startPayment = async () => {
     setIsCreatingOrder(true);
     try {
       toastInfo('Creating payment order...');
-      const res = await client.post('/api/alliance-meet/create-order');
+      const res = await client.post('/api/alliance-meet/create-order', { acceptTerms: true });
       const { orderId } = res.data.data;
       router.push(`/alliance-meet/payment/${orderId}`);
     } catch (error) {
       toastError(error.response?.data?.message || 'Failed to start registration. Please try again.');
       setIsCreatingOrder(false);
+      setShowTerms(false);
     }
   };
+
+  const pricing = settings?.pricing || { baseAmount: settings?.priceAmount, gatewayCharges: 0, totalAmount: settings?.priceAmount };
 
   if (isLoading || !settings?.isEnabled) {
     return null;
@@ -66,8 +81,11 @@ export default function AllianceMeetSection() {
       <CardContent>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-[#FDF8F0] border border-[#D4A843]/20 rounded-lg">
           <div>
-            <p className="font-serif text-2xl text-[#1A1A1A]">₹{settings.priceAmount.toLocaleString('en-IN')}</p>
-            <p className="font-sans text-xs text-[#2C3E50]/60 mt-0.5">Per registration</p>
+            <p className="font-serif text-2xl text-[#1A1A1A]">{formatRupees(settings.priceAmount)}</p>
+            <p className="font-sans text-xs text-[#2C3E50]/60 mt-0.5">
+              Per registration
+              {pricing.gatewayCharges > 0 && ` · + ${formatRupees(pricing.gatewayCharges)} payment gateway charges (incl. GST)`}
+            </p>
           </div>
           {myRegistration?.registered ? (
             <div className="flex items-center gap-2 px-4 h-11 rounded-lg bg-green-50 border border-green-200 text-[#2E7D32] font-sans font-semibold text-sm">
@@ -86,6 +104,15 @@ export default function AllianceMeetSection() {
           )}
         </div>
       </CardContent>
+      <PaymentTermsDialog
+        open={showTerms}
+        onOpenChange={setShowTerms}
+        itemName="SNGS Alliance Meet registration"
+        pricing={pricing}
+        terms={ALLIANCE_MEET_TERMS}
+        busy={isCreatingOrder}
+        onAgree={startPayment}
+      />
     </Card>
   );
 }

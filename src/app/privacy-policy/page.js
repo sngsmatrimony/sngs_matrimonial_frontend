@@ -1,200 +1,166 @@
-'use client';
+import LegalPage, { ContactBlock, List, P, Section, Sub } from '@/components/legal/LegalPage';
+import { OPERATOR, SITE_NAME, SITE_URL } from '@/lib/siteInfo';
 
-import Link from 'next/link';
-import Image from 'next/image';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+export const metadata = {
+  title: 'Privacy Policy | SNGS Matrimony',
+  description: 'What personal information SNGS Matrimony collects, who can see it, which service providers process it, how long it is kept and your rights.',
+};
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-[#FDF8F0]">
-      {/* Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="font-serif text-3xl sm:text-4xl text-secondary mb-2">
-          Privacy Policy
-        </h1>
-        <p className="font-sans text-sm text-[#2C3E50]/60 mb-8">
-          Effective Date: January 2026
-        </p>
+    <LegalPage title="Privacy Policy" current="/privacy-policy">
+      <Section title="Introduction">
+        <P>
+          {SITE_NAME} ({SITE_URL}) is operated by {OPERATOR} (&quot;we&quot;, &quot;us&quot;). This policy explains what personal information we
+          collect, why, who can see it, and how long we keep it. We handle your information in line with applicable Indian law, including the
+          Digital Personal Data Protection Act, 2023.
+        </P>
+      </Section>
 
-        <div className="space-y-8">
-          {/* Introduction */}
-          <section>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed">
-              At SNGS Matrimonial, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our matrimonial platform and services.
-            </p>
-          </section>
+      <Section title="1. Information we collect">
+        <Sub>Account and verification</Sub>
+        <List items={[
+          'Your name, mobile number and email address. Both are verified by one-time password (OTP).',
+          'Your password, which is stored only in a scrambled (hashed) form that we cannot read.',
+          'An ID proof, if you upload one, to verify your identity.',
+        ]} />
+        <Sub>Your profile</Sub>
+        <List items={[
+          'Personal details: date, time and place of birth, gender, height, weight, physical status, complexion, blood group, diet, marital status, mother tongue and languages.',
+          'Community and horoscope details: religion, caste, nakshatra, raasi, shuddha jathakam, dosham and any horoscope document you upload.',
+          'Education, employment, occupation and income.',
+          "Family details: parents' names and occupations, family and residential status.",
+          'Your present address and native place (Tharavadu).',
+          'Partner preferences, interests and the description you write about yourself.',
+          'Profile and gallery photos.',
+        ]} />
+        <Sub>Unfinished registrations</Sub>
+        <List items={[
+          'The details from the first registration step (name, date of birth, gender, place, mobile number and preferred partner age) are saved as soon as you complete that step, even if you do not finish registering, so our team can help you complete it.',
+          'Details from later steps are saved as you go, so you can continue where you left off. Photos, documents and your password are not saved until you finish.',
+        ]} />
+        <Sub>Activity on the website</Sub>
+        <List items={[
+          'Profiles you like, shortlist, open, unlock or download, the messages you send, and when you were last active.',
+          'Profile downloads are logged to help us prevent misuse.',
+        ]} />
+        <Sub>Payments</Sub>
+        <List items={[
+          'What you bought, the amount, the payment status, Razorpay order and payment IDs, and when you accepted the payment terms.',
+          'Card, UPI and bank details are entered on and handled only by Razorpay. We never see or store them.',
+        ]} />
+        <Sub>Technical information</Sub>
+        <List items={[
+          'Your IP address and browser or device details, which appear in our server logs.',
+          'Anonymous usage statistics (pages visited) from Vercel Analytics, which does not use cookies or identify you.',
+          'Google reCAPTCHA checks your browser for automated activity when you verify a mobile number.',
+        ]} />
+      </Section>
 
-          {/* Information We Collect */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">1. Information We Collect</h2>
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-sans font-semibold text-[#1A1A1A] mb-2">Personal Information</h3>
-                <p className="font-sans text-[#2C3E50]/80 leading-relaxed">
-                  When you register on SNGS Matrimonial, we collect personal information including but not limited to:
-                </p>
-                <ul className="list-disc list-inside font-sans text-[#2C3E50]/80 mt-2 space-y-1 ml-4">
-                  <li>Full name, date of birth, and gender</li>
-                  <li>Contact information (email address, phone number)</li>
-                  <li>Physical address and location details</li>
-                  <li>Educational qualifications and occupation</li>
-                  <li>Religious and community background</li>
-                  <li>Family details and preferences</li>
-                  <li>Photographs and profile images</li>
-                </ul>
-              </div>
-              <div>
-                <h3 className="font-sans font-semibold text-[#1A1A1A] mb-2">Payment Information</h3>
-                <p className="font-sans text-[#2C3E50]/80 leading-relaxed">
-                  When you purchase a membership plan, we collect payment-related information. Please note that all payment transactions are processed through Razorpay, our trusted payment gateway partner. We do not store your complete credit/debit card details on our servers. Razorpay handles all payment data in compliance with PCI-DSS standards.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-sans font-semibold text-[#1A1A1A] mb-2">Usage Information</h3>
-                <p className="font-sans text-[#2C3E50]/80 leading-relaxed">
-                  We automatically collect certain information when you access our platform, including IP address, browser type, device information, pages viewed, and interaction data to improve our services.
-                </p>
-              </div>
-            </div>
-          </section>
+      <Section title="2. How we use your information">
+        <List items={[
+          'To create your profile and show it to suitable members',
+          'To review and approve profiles and verify ID proofs',
+          'To suggest matches and calculate the match percentage shown on profiles',
+          'To let members send each other messages',
+          'To process payments, add credits and send receipts',
+          'To send service emails: verification codes, approval updates, receipts, reminders about unread messages, and a reminder if you have not visited for a while',
+          'To help you finish an incomplete registration',
+          'To prevent fraud and misuse, and to meet legal obligations',
+          'To improve the website',
+        ]} />
+        <P>We do not sell your personal information, and we do not show advertisements.</P>
+      </Section>
 
-          {/* How We Use Your Information */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">2. How We Use Your Information</h2>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed mb-3">
-              We use the information we collect for the following purposes:
-            </p>
-            <ul className="list-disc list-inside font-sans text-[#2C3E50]/80 space-y-2 ml-4">
-              <li>To create and manage your matrimonial profile</li>
-              <li>To match you with compatible profiles based on your preferences</li>
-              <li>To facilitate communication between members</li>
-              <li>To process membership payments and subscriptions</li>
-              <li>To send important notifications about your account and matches</li>
-              <li>To improve our platform and services</li>
-              <li>To prevent fraud and ensure platform security</li>
-              <li>To comply with legal obligations</li>
-            </ul>
-          </section>
+      <Section title="3. Who can see your information">
+        <Sub>Other members</Sub>
+        <P>
+          Your profile appears only to approved members looking for someone of your gender, and only after our team has approved it.
+          While paid features are switched on, what a member sees depends on what they have unlocked with credits:
+        </P>
+        <List items={[
+          'In search results: your profile photo, first name and the initial of your last name, age, city, state or country, education, occupation and a match percentage. Your full name is shown once a member has unlocked your profile.',
+          'On your full profile: the details you entered — including your photos, family details, horoscope details and your present and native addresses as you wrote them.',
+          'Your phone number: only to members who have unlocked your contact details.',
+          'Your horoscope document: only to members who have unlocked downloads for your profile.',
+          'A downloaded profile (PDF) contains your profile details but never your phone number.',
+        ]} />
+        <P>
+          When paid features are switched off — for example during a free promotional period — nothing is locked: every approved member who
+          can see your profile can see your full name, phone number and horoscope document.
+        </P>
+        <P>Your ID proof, email address and password are never shown to other members.</P>
+        <Sub>Our team</Sub>
+        <P>
+          Authorised members of our team can see account and profile details, including contact details and ID proofs, so they can review
+          profiles, verify identities, handle payments and refunds, and support you.
+        </P>
+        <Sub>Service providers</Sub>
+        <P>We use these providers to run the website. They process your information only to provide their service to us:</P>
+        <List items={[
+          'MongoDB Atlas — our main database',
+          'Supabase — storage for photos and documents, nightly backup copies of member and payment records, and registration progress (some older photos are stored with Amazon Web Services)',
+          'Razorpay — payment processing',
+          'Google Firebase and reCAPTCHA — mobile number verification',
+          'Resend — sending emails',
+          'Vercel — website hosting and anonymous analytics',
+          'Hostinger — server hosting',
+        ]} />
+        <P>We may also disclose information when required by law, a court order or a government authority.</P>
+      </Section>
 
-          {/* Data Protection & Security */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">3. Data Protection & Security</h2>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed">
-              We implement industry-standard security measures to protect your personal information:
-            </p>
-            <ul className="list-disc list-inside font-sans text-[#2C3E50]/80 mt-3 space-y-2 ml-4">
-              <li>SSL/TLS encryption for all data transmission</li>
-              <li>Secure encrypted storage of personal data</li>
-              <li>Regular security audits and vulnerability assessments</li>
-              <li>Access controls and authentication mechanisms</li>
-              <li>Employee training on data protection practices</li>
-            </ul>
-          </section>
+      <Section title="4. Security">
+        <List items={[
+          'All connections to the website are encrypted (HTTPS).',
+          'Passwords are stored only in hashed form.',
+          'Access to member data is limited to authorised team members.',
+          'Payment card data is handled by Razorpay, which is PCI-DSS compliant.',
+        ]} />
+        <P>No online service can be completely secure, but we work to protect your information and will act promptly on any security issue.</P>
+      </Section>
 
-          {/* Payment Information Security */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">4. Payment Information Security</h2>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed">
-              All payment transactions on SNGS Matrimonial are processed through Razorpay, a PCI-DSS compliant payment gateway. Your payment card details are encrypted and processed directly by Razorpay. We only receive transaction confirmation and basic payment details (last 4 digits of card, transaction ID) for our records. We never have access to your complete card information.
-            </p>
-          </section>
+      <Section title="5. How long we keep your information">
+        <List items={[
+          'While your account is active, we keep your profile and account information.',
+          'Messages are deleted automatically 30 days after they are sent.',
+          'Activity logs (such as download records) are deleted after 90 days.',
+          'Saved registration progress is deleted when you finish registering, or 30 days after it was last updated.',
+          'When you delete your account, your profile is hidden immediately. After 30 days we permanently delete your account, photos, documents, conversations and backup copies.',
+          'Payment records are kept even after an account is deleted, as required for accounting and tax purposes.',
+        ]} />
+      </Section>
 
-          {/* Third-Party Services */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">5. Third-Party Services</h2>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed mb-3">
-              We may share your information with trusted third-party service providers who assist us in operating our platform:
-            </p>
-            <ul className="list-disc list-inside font-sans text-[#2C3E50]/80 space-y-2 ml-4">
-              <li><strong>Razorpay:</strong> For secure payment processing</li>
-              <li><strong>Cloud Service Providers:</strong> For secure data hosting and storage</li>
-              <li><strong>Analytics Services:</strong> To understand platform usage and improve services</li>
-              <li><strong>Communication Services:</strong> For sending emails and notifications</li>
-            </ul>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed mt-3">
-              All third-party service providers are contractually bound to protect your data and use it only for specified purposes.
-            </p>
-          </section>
+      <Section title="6. Your rights and choices">
+        <List items={[
+          'View and correct your information at any time with Edit Profile.',
+          'Delete your account from Settings → Delete Account.',
+          'Ask us for a copy of your information, or to delete details from an unfinished registration.',
+          'Withdraw your consent to us using your information by deleting your account. Some information may still be kept where the law requires it.',
+        ]} />
+        <P>To make a request, contact us using the details below.</P>
+      </Section>
 
-          {/* User Rights */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">6. Your Rights</h2>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed mb-3">
-              As a user of SNGS Matrimonial, you have the following rights regarding your personal data:
-            </p>
-            <ul className="list-disc list-inside font-sans text-[#2C3E50]/80 space-y-2 ml-4">
-              <li><strong>Access:</strong> Request access to your personal data we hold</li>
-              <li><strong>Correction:</strong> Update or correct inaccurate information</li>
-              <li><strong>Deletion:</strong> Request deletion of your account and associated data</li>
-              <li><strong>Portability:</strong> Request a copy of your data in a portable format</li>
-              <li><strong>Opt-out:</strong> Unsubscribe from marketing communications</li>
-              <li><strong>Restriction:</strong> Request limitation of data processing in certain circumstances</li>
-            </ul>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed mt-3">
-              To exercise any of these rights, please contact us using the details provided below.
-            </p>
-          </section>
+      <Section title="7. Cookies and browser storage">
+        <P>
+          We use your browser&apos;s local storage to keep you signed in and to remember small preferences, such as a banner you have closed.
+          We do not use advertising or tracking cookies. Vercel Analytics does not use cookies. Google reCAPTCHA may set its own cookies when
+          you verify a mobile number.
+        </P>
+      </Section>
 
-          {/* Cookies and Tracking */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">7. Cookies and Tracking Technologies</h2>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed">
-              SNGS Matrimonial uses cookies and similar tracking technologies to enhance your experience on our platform. Cookies help us remember your preferences, maintain your login session, and analyze platform usage. You can manage cookie preferences through your browser settings. Please note that disabling certain cookies may affect the functionality of our services.
-            </p>
-          </section>
+      <Section title="8. Children">
+        <P>{SITE_NAME} is only for people aged 18 and over. We do not knowingly collect information from anyone under 18.</P>
+      </Section>
 
-          {/* Data Retention */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">8. Data Retention</h2>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed">
-              We retain your personal information for as long as your account is active or as needed to provide you services. If you request account deletion, we will delete your personal data within 30 days, except where we are required to retain certain information for legal, regulatory, or legitimate business purposes.
-            </p>
-          </section>
+      <Section title="9. Changes to this policy">
+        <P>
+          We may update this policy. The updated version will be posted on this page with a new effective date.
+        </P>
+      </Section>
 
-          {/* Changes to Privacy Policy */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">9. Changes to This Privacy Policy</h2>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed">
-              We may update this Privacy Policy from time to time to reflect changes in our practices or for legal, regulatory, or operational reasons. We will notify you of any material changes by posting the updated policy on this page with a new effective date. We encourage you to review this policy periodically.
-            </p>
-          </section>
-
-          {/* Contact Information */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">10. Contact Us</h2>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed mb-3">
-              If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please contact us at:
-            </p>
-            <div className="bg-[#F5E6C3]/30 p-4 rounded-lg font-sans text-[#2C3E50]/80">
-              <p><strong>SNGS Matrimonial</strong></p>
-              <p>Email: contact@sngsmatrimony.com</p>
-              <p>Phone: +91-XXXXXXXXXX</p>
-              <p>Address: [Your Business Address]</p>
-            </div>
-          </section>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-[#D4A843]/15 py-8 mt-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="font-sans text-sm text-[#2C3E50]/60 text-center">
-            Last updated: January 2026
-          </p>
-          <div className="flex flex-wrap justify-center gap-4 mt-4">
-            <Link href="/terms-and-conditions" className="font-sans text-sm text-secondary hover:text-accent transition-colors">
-              Terms and Conditions
-            </Link>
-            <Link href="/cancellation-and-refund" className="font-sans text-sm text-secondary hover:text-accent transition-colors">
-              Cancellation & Refund
-            </Link>
-            <Link href="/shipping-and-delivery" className="font-sans text-sm text-secondary hover:text-accent transition-colors">
-              Shipping & Delivery
-            </Link>
-          </div>
-        </div>
-      </footer>
-    </div>
+      <Section title="10. Contact and grievances">
+        <ContactBlock intro="For privacy questions, requests or complaints, please contact us:" />
+      </Section>
+    </LegalPage>
   );
 }

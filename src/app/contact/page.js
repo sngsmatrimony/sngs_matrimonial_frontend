@@ -12,17 +12,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import client from '@/lib/api/client';
 import { toastSuccess, toastError } from '@/lib/toast';
-
-// Office contact details shown on this page.
-const OFFICE_PHONE_DISPLAY = '+91 97303 54904';
-const OFFICE_PHONE_TEL = '+919730354904';
-const OFFICE_ADDRESS_LINES = [
-  'SNGS Pune',
-  '307, Mohol Market, 3rd Floor',
-  'Near Ashok Chitra Mandir (Ashok Theatre)',
-  'Pimpri, Pune - 411017',
-];
-const OFFICE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent('Mohol Market, Near Ashok Theatre, Pimpri, Pune 411017')}`;
+import {
+  CONTACT_EMAIL,
+  CONTACT_PHONE_DISPLAY as OFFICE_PHONE_DISPLAY,
+  CONTACT_PHONE_TEL as OFFICE_PHONE_TEL,
+  OFFICE_ADDRESS_LINES,
+  OFFICE_MAPS_URL,
+  SUPPORT_HOURS,
+} from '@/lib/siteInfo';
 
 // Form validation schema matching the premium design constraints
 const contactSchema = z.object({
@@ -138,8 +135,8 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <h4 className="font-sans font-bold text-[#1A1A1A]">Email</h4>
-                        <a href={`mailto:${contactInfo?.contactEmail || 'sngsmatrimony@gmail.com'}`} className="font-sans text-[#2C3E50] hover:text-[#B8860B] underline-offset-4 hover:underline break-all">
-                          {contactInfo?.contactEmail || 'sngsmatrimony@gmail.com'}
+                        <a href={`mailto:${contactInfo?.contactEmail || CONTACT_EMAIL}`} className="font-sans text-[#2C3E50] hover:text-[#B8860B] underline-offset-4 hover:underline break-all">
+                          {contactInfo?.contactEmail || CONTACT_EMAIL}
                         </a>
                       </div>
                     </div>
@@ -174,7 +171,7 @@ export default function ContactPage() {
                       </div>
                       <div>
                         <h4 className="font-sans font-bold text-[#1A1A1A]">Working Hours</h4>
-                        <p className="font-sans text-[#2C3E50]">Mon - Sat: 9:00 AM - 6:00 PM</p>
+                        <p className="font-sans text-[#2C3E50]">{SUPPORT_HOURS}</p>
                       </div>
                     </div>
                   </div>

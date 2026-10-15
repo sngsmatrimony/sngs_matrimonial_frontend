@@ -9,6 +9,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { CONTACT_EMAIL, CONTACT_PHONE_DISPLAY } from '@/lib/siteInfo';
 
 const LINK_COLUMNS = [
   {
@@ -33,8 +34,9 @@ const LINK_COLUMNS = [
 ];
 
 const CONTACT_ITEMS = [
-  { icon: Mail, text: 'contact@sngsmatrimony.com' },
-  { icon: MapPin, text: 'Kerala, India' },
+  { icon: Mail, text: CONTACT_EMAIL },
+  { icon: Phone, text: CONTACT_PHONE_DISPLAY },
+  { icon: MapPin, text: 'Pimpri, Pune, Maharashtra' },
 ];
 
 // Admin portal has its own dedicated shell; app/dashboard routes have their

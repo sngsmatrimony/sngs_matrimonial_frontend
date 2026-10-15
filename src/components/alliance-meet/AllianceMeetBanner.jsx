@@ -7,6 +7,8 @@ import { CalendarHeart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
+import { formatRupees } from '@/lib/money';
+import PaymentTermsDialog from '@/components/payment/PaymentTermsDialog';
 
 const DISMISS_KEY = 'allianceMeetBannerDismissedAt';
 const DISMISS_DAYS = 7;
@@ -30,6 +32,7 @@ export default function AllianceMeetBanner() {
   const router = useRouter();
   const [dismissed, setDismissed] = useState(dismissedRecently);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   // Same query keys as the Settings card, so both share one cache entry.
   const { data: settings } = useQuery({
@@ -52,14 +55,21 @@ export default function AllianceMeetBanner() {
     setDismissed(true);
   };
 
-  const handleRegister = async () => {
+  const pricing = settings.pricing || { baseAmount: settings.priceAmount, gatewayCharges: 0, totalAmount: settings.priceAmount };
+
+  // Register first shows the payment terms; the order is created only after
+  // the member agrees.
+  const handleRegister = () => setShowTerms(true);
+
+  const startPayment = async () => {
     setIsCreatingOrder(true);
     try {
-      const res = await client.post('/api/alliance-meet/create-order');
+      const res = await client.post('/api/alliance-meet/create-order', { acceptTerms: true });
       router.push(`/alliance-meet/payment/${res.data.data.orderId}`);
     } catch (error) {
       toastError(error.response?.data?.message || 'Failed to start registration. Please try again.');
       setIsCreatingOrder(false);
+      setShowTerms(false);
     }
   };
 
@@ -79,7 +89,8 @@ export default function AllianceMeetBanner() {
             </h3>
             <p className="font-sans text-[15px] leading-relaxed text-[#2C3E50]/80 mt-0.5">
               Meet families from the community in person. Registration is open —{' '}
-              <span className="font-semibold text-[#1A1A1A]">₹{Number(settings.priceAmount || 0).toLocaleString('en-IN')}</span> per registration.
+              <span className="font-semibold text-[#1A1A1A]">{formatRupees(settings.priceAmount)}</span> per registration
+              {pricing.gatewayCharges > 0 && <> (+ {formatRupees(pricing.gatewayCharges)} payment gateway charges)</>}.
             </p>
           </div>
         </div>
@@ -102,6 +113,18 @@ export default function AllianceMeetBanner() {
           </Button>
         </div>
       </div>
+      <PaymentTermsDialog
+        open={showTerms}
+        onOpenChange={setShowTerms}
+        itemName="SNGS Alliance Meet registration"
+        pricing={pricing}
+        terms={[
+          'A one-time registration for the upcoming SNGS Alliance Meet. Our team will share the event details with you.',
+          'The registration fee is non-refundable, unless SNGS cancels the event.',
+        ]}
+        busy={isCreatingOrder}
+        onAgree={startPayment}
+      />
     </section>
   );
 }

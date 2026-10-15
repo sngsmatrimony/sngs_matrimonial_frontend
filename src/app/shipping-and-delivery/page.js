@@ -1,254 +1,73 @@
-'use client';
+import LegalPage, { ContactBlock, List, Note, P, Section, Sub } from '@/components/legal/LegalPage';
+import { SITE_NAME } from '@/lib/siteInfo';
 
-import Link from 'next/link';
-import Image from 'next/image';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft, Monitor, Zap, Clock, Globe, Shield, Headphones } from 'lucide-react';
+export const metadata = {
+  title: 'Shipping & Delivery Policy | SNGS Matrimony',
+  description: 'SNGS Matrimony is a digital service: how plans, credits, downloads and Alliance Meet registrations are delivered.',
+};
 
 export default function ShippingAndDeliveryPage() {
   return (
-    <div className="min-h-screen bg-[#FDF8F0]">
-      {/* Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="font-serif text-3xl sm:text-4xl text-secondary mb-2">
-          Shipping and Delivery Policy
-        </h1>
-        <p className="font-sans text-sm text-[#2C3E50]/60 mb-8">
-          Effective Date: January 2026
-        </p>
+    <LegalPage title="Shipping & Delivery Policy" current="/shipping-and-delivery">
+      <Section title="Introduction">
+        <Note>
+          {SITE_NAME} is an online service. We do not sell or ship physical products, so there are no shipping charges, delivery addresses or
+          tracking numbers. This policy explains how what you buy is delivered.
+        </Note>
+      </Section>
 
-        <div className="space-y-8">
-          {/* Introduction */}
-          <section>
-            <div className="bg-[#F5E6C3]/30 border border-[#D4A843]/25 p-4 rounded-lg mb-6">
-              <p className="font-sans text-[#1A1A1A] leading-relaxed">
-                <strong>Important:</strong> SNGS Matrimonial is a digital platform providing online matrimonial services. We do not sell or ship any physical products. This policy explains how our digital services are delivered to you.
-              </p>
-            </div>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed">
-              SNGS Matrimonial is an online matrimonial platform that connects individuals seeking life partners. All our services are delivered digitally through our website and mobile-responsive platform. This Shipping and Delivery Policy outlines how you receive and access our services.
-            </p>
-          </section>
+      <Section title="1. What we provide">
+        <List items={[
+          'Free registration, profile creation and match browsing',
+          'Credits (through membership plans and credit packs) to open full profiles, unlock contact details and chat, and download profiles and horoscopes',
+          'Messaging between members',
+          'Registration for community events such as the SNGS Alliance Meet',
+        ]} />
+      </Section>
 
-          {/* Nature of Service */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">1. Nature of Our Services</h2>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed mb-3">
-              SNGS Matrimonial offers the following digital services:
-            </p>
-            <ul className="list-disc list-inside font-sans text-[#2C3E50]/80 space-y-2 ml-4">
-              <li>Profile creation and management</li>
-              <li>Profile browsing and search functionality</li>
-              <li>Partner matching based on preferences</li>
-              <li>Secure messaging between matched profiles</li>
-              <li>Contact information sharing (premium feature)</li>
-              <li>Profile highlighting and boosting (premium feature)</li>
-              <li>Advanced search filters (premium feature)</li>
-            </ul>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed mt-3">
-              All these services are accessible online and do not require any physical delivery.
-            </p>
-          </section>
+      <Section title="2. How each service is delivered">
+        <Sub>Your profile</Sub>
+        <P>
+          Your account is created as soon as you finish registering. Your profile becomes visible to other members after our team has
+          reviewed and approved it.
+        </P>
+        <Sub>Membership plans and credit packs</Sub>
+        <P>
+          Credits are added to your account as soon as Razorpay confirms your payment — usually within a few seconds. A receipt showing the
+          price, the payment gateway charges and the total is emailed to your registered email address. If the credits do not appear within
+          30 minutes of a successful payment, please contact us.
+        </P>
+        <Sub>Downloads</Sub>
+        <P>Profile and horoscope downloads are generated and downloaded in your browser straight away.</P>
+        <Sub>Alliance Meet</Sub>
+        <P>
+          Your registration is confirmed on screen and by email as soon as the payment succeeds. The event itself takes place in person; our
+          team shares the date, venue and other details by email or phone.
+        </P>
+      </Section>
 
-          {/* Service Delivery */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">2. Service Delivery</h2>
+      <Section title="3. What you need">
+        <List items={[
+          'A phone, tablet or computer with an internet connection',
+          'An up-to-date web browser (Chrome, Safari, Firefox or Edge) with JavaScript enabled',
+          'A mobile number and email address that can receive verification codes',
+        ]} />
+      </Section>
 
-            {/* Service Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-[#F5E6C3]/30 p-4 rounded-lg">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-primary" />
-                  </div>
-                  <h3 className="font-sans font-semibold text-[#1A1A1A]">Instant Activation</h3>
-                </div>
-                <p className="font-sans text-sm text-[#2C3E50]/80">
-                  Upon successful registration, your account is activated immediately, allowing you to create your profile and browse other profiles.
-                </p>
-              </div>
+      <Section title="4. Availability">
+        <P>
+          The website is available 24 hours a day, from India and abroad. It may occasionally be unavailable for maintenance or for reasons
+          beyond our control; we try to keep any interruption short.
+        </P>
+      </Section>
 
-              <div className="bg-[#F5E6C3]/30 p-4 rounded-lg">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center">
-                    <Monitor className="w-5 h-5 text-accent" />
-                  </div>
-                  <h3 className="font-sans font-semibold text-[#1A1A1A]">Digital Access</h3>
-                </div>
-                <p className="font-sans text-sm text-[#2C3E50]/80">
-                  All services are delivered through our secure online platform. No physical shipping is involved in any of our services.
-                </p>
-              </div>
+      <Section title="5. Changes to this policy">
+        <P>We may update this policy. The updated version will be posted on this page with a new effective date.</P>
+      </Section>
 
-              <div className="bg-[#F5E6C3]/30 p-4 rounded-lg">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-success/10 rounded-full flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-success" />
-                  </div>
-                  <h3 className="font-sans font-semibold text-[#1A1A1A]">24/7 Availability</h3>
-                </div>
-                <p className="font-sans text-sm text-[#2C3E50]/80">
-                  Our platform is available 24 hours a day, 7 days a week. Access your account and use our services anytime, anywhere.
-                </p>
-              </div>
-
-              <div className="bg-[#F5E6C3]/30 p-4 rounded-lg">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-secondary/10 rounded-full flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-secondary" />
-                  </div>
-                  <h3 className="font-sans font-semibold text-[#1A1A1A]">Global Access</h3>
-                </div>
-                <p className="font-sans text-sm text-[#2C3E50]/80">
-                  Access our services from anywhere in the world with an internet connection. No geographical restrictions apply.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Premium Membership Activation */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">3. Premium Membership Activation</h2>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed mb-3">
-              When you purchase a premium membership:
-            </p>
-            <div className="bg-[#E3F1E4] border border-[#2E7D32]/25 p-4 rounded-lg">
-              <ul className="font-sans text-[#2E7D32] space-y-2">
-                <li className="flex items-start gap-2">
-                  <span className="text-[#2E7D32] mt-1">&#10003;</span>
-                  <span><strong>Immediate Activation:</strong> Premium features are activated instantly upon successful payment</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#2E7D32] mt-1">&#10003;</span>
-                  <span><strong>Email Confirmation:</strong> You will receive a confirmation email with your membership details within minutes</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#2E7D32] mt-1">&#10003;</span>
-                  <span><strong>Dashboard Update:</strong> Your account dashboard will reflect your premium status immediately</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#2E7D32] mt-1">&#10003;</span>
-                  <span><strong>Payment Receipt:</strong> A digital receipt/invoice will be sent to your registered email</span>
-                </li>
-              </ul>
-            </div>
-          </section>
-
-          {/* Technical Requirements */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">4. Technical Requirements</h2>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed mb-3">
-              To access SNGS Matrimonial services, you need:
-            </p>
-            <ul className="list-disc list-inside font-sans text-[#2C3E50]/80 space-y-2 ml-4">
-              <li>A device with internet access (computer, smartphone, or tablet)</li>
-              <li>A modern web browser (Chrome, Firefox, Safari, Edge - latest versions recommended)</li>
-              <li>Stable internet connection for optimal experience</li>
-              <li>JavaScript enabled in your browser</li>
-              <li>Cookies enabled for session management</li>
-            </ul>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed mt-3">
-              Our platform is optimized for both desktop and mobile devices to ensure a seamless experience across all screen sizes.
-            </p>
-          </section>
-
-          {/* Service Availability */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">5. Service Availability</h2>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed mb-3">
-              We strive to maintain 99.9% uptime for our platform. However, services may be temporarily unavailable due to:
-            </p>
-            <ul className="list-disc list-inside font-sans text-[#2C3E50]/80 space-y-2 ml-4">
-              <li>Scheduled maintenance (usually during low-traffic hours with prior notice)</li>
-              <li>Emergency technical updates</li>
-              <li>Circumstances beyond our control (server issues, natural disasters)</li>
-            </ul>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed mt-3">
-              In case of any extended downtime, we will notify users via email and extend premium memberships accordingly.
-            </p>
-          </section>
-
-          {/* No Physical Products */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">6. No Physical Products or Shipping</h2>
-            <div className="bg-[#F5E6C3]/50 border border-[#D4A843]/30 p-4 rounded-lg">
-              <p className="font-sans text-[#8A6215] leading-relaxed">
-                <strong>Please Note:</strong> SNGS Matrimonial is a purely digital service platform. We do not sell, distribute, or ship any physical products. All services are delivered electronically through our website. Therefore:
-              </p>
-              <ul className="list-disc list-inside font-sans text-[#B8860B] mt-3 space-y-1 ml-4">
-                <li>No shipping charges apply</li>
-                <li>No delivery address is required for service activation</li>
-                <li>No courier or postal services are involved</li>
-                <li>No tracking numbers are provided (as there is nothing to track)</li>
-              </ul>
-            </div>
-          </section>
-
-          {/* Support */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">7. Customer Support</h2>
-            <div className="flex items-start gap-4 mb-4">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                <Headphones className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <p className="font-sans text-[#2C3E50]/80 leading-relaxed">
-                  If you experience any issues accessing our services or activating your membership, our support team is here to help. We aim to resolve all technical issues within 24 hours.
-                </p>
-              </div>
-            </div>
-            <div className="bg-[#F5E6C3]/30 p-4 rounded-lg font-sans text-[#2C3E50]/80">
-              <p><strong>SNGS Matrimonial Support Team</strong></p>
-              <p>Email: contact@sngsmatrimony.com</p>
-              <p>Phone: +91-XXXXXXXXXX</p>
-              <p>Support Hours: Monday to Saturday, 9:00 AM to 6:00 PM IST</p>
-            </div>
-          </section>
-
-          {/* Security */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">8. Secure Service Delivery</h2>
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-success/10 rounded-full flex items-center justify-center shrink-0">
-                <Shield className="w-6 h-6 text-success" />
-              </div>
-              <div>
-                <p className="font-sans text-[#2C3E50]/80 leading-relaxed">
-                  All our services are delivered through a secure, encrypted connection (HTTPS). Your personal information and communications on our platform are protected using industry-standard security measures. Payment processing is handled securely through Razorpay, our PCI-DSS compliant payment partner.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Policy Changes */}
-          <section>
-            <h2 className="font-serif text-xl text-secondary mb-4">9. Changes to This Policy</h2>
-            <p className="font-sans text-[#2C3E50]/80 leading-relaxed">
-              We reserve the right to modify this Shipping and Delivery Policy at any time. Any changes will be posted on this page with an updated effective date. We encourage you to review this policy periodically to stay informed about how we deliver our services.
-            </p>
-          </section>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-[#D4A843]/15 py-8 mt-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="font-sans text-sm text-[#2C3E50]/60 text-center">
-            Last updated: January 2026
-          </p>
-          <div className="flex flex-wrap justify-center gap-4 mt-4">
-            <Link href="/privacy-policy" className="font-sans text-sm text-secondary hover:text-accent transition-colors">
-              Privacy Policy
-            </Link>
-            <Link href="/terms-and-conditions" className="font-sans text-sm text-secondary hover:text-accent transition-colors">
-              Terms and Conditions
-            </Link>
-            <Link href="/cancellation-and-refund" className="font-sans text-sm text-secondary hover:text-accent transition-colors">
-              Cancellation & Refund
-            </Link>
-          </div>
-        </div>
-      </footer>
-    </div>
+      <Section title="6. Contact us">
+        <ContactBlock intro="If something you paid for has not reached your account, please contact us:" />
+      </Section>
+    </LegalPage>
   );
 }
