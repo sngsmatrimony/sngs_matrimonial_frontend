@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import ReceiptDownloadButton from '@/components/payment/ReceiptDownloadButton';
 import Script from 'next/script';
 import { CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 import { client } from '@/lib/api/client';
@@ -249,7 +250,9 @@ export default function AllianceMeetPaymentPage() {
 
               <p className="font-sans text-[#2C3E50]/70 mb-6">
                 You&apos;re registered for the SNGS Alliance Meet. We&apos;ll be in touch with event details.
+                {' '}A receipt has been sent to your email.
               </p>
+              <ReceiptDownloadButton orderId={params.orderId} className="w-full mb-6" />
 
               {transactionData && (
                 <div className="bg-[#FDF8F0] border border-[#D4A843]/15 rounded-lg p-4 mb-6 space-y-3 text-left">

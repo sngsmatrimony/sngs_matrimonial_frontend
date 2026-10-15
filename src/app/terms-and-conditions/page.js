@@ -66,7 +66,7 @@ export default function TermsAndConditionsPage() {
         <List items={[
           'Prices are in Indian Rupees (INR). Payment gateway charges (the Razorpay fee plus GST on that fee — currently 2.36% of the amount charged) are added at checkout and shown before you pay.',
           'Before every payment you are asked to review and accept these Terms; the payment starts only after you agree.',
-          'All payments are processed by Razorpay. A receipt is sent to your registered email address after each successful payment.',
+          'All payments are processed by Razorpay. After each successful payment a receipt is emailed to your registered email address (with a PDF copy), and you can download the PDF again any time from My Profile → Payment receipts.',
           'We may change prices or credit costs at any time. Changes apply to future purchases, not to plans or packs you have already paid for.',
           'From time to time we may offer features free for a limited period (for example, free registration during a launch offer). We will announce on the website before charges begin.',
         ]} />

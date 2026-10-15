@@ -34,7 +34,7 @@ export default function ShippingAndDeliveryPage() {
         <Sub>Membership plans and credit packs</Sub>
         <P>
           Credits are added to your account as soon as Razorpay confirms your payment — usually within a few seconds. A receipt showing the
-          price, the payment gateway charges and the total is emailed to your registered email address. If the credits do not appear within
+          price, the payment gateway charges and the total is emailed to your registered email address with a PDF copy attached; you can also download it from the payment screen, the Transactions page or My Profile → Payment receipts. If the credits do not appear within
           30 minutes of a successful payment, please contact us.
         </P>
         <Sub>Downloads</Sub>

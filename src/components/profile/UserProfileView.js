@@ -10,6 +10,7 @@ import { toastError, toastInfo } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import EditProfileForm from './EditProfileForm';
+import PaymentReceiptsSection from './PaymentReceiptsSection';
 import ProfileHeader from './ProfileHeader';
 import ProfileTabs from './ProfileTabs';
 import { Pencil, AlertTriangle, Eye, Heart, X, Lock, ShieldCheck, ImageOff } from 'lucide-react';
@@ -400,6 +401,8 @@ export default function UserProfileView() {
             />
           </div>
         </div>
+
+        <PaymentReceiptsSection />
       </div>
     </div>
   );

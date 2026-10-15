@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import ReceiptDownloadButton from '@/components/payment/ReceiptDownloadButton';
 import Script from 'next/script';
 import { CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 import { client } from '@/lib/api/client';
@@ -344,6 +345,7 @@ export default function PaymentPage() {
                   : 'Your membership has been activated.'}
                 {' '}A receipt has been sent to your email.
               </p>
+              <ReceiptDownloadButton orderId={params.orderId} className="w-full mb-6" />
 
               {typeof transactionData?.credits === 'number' && (
                 <div className="grid grid-cols-2 gap-3 mb-6">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import ReceiptDownloadButton from '@/components/payment/ReceiptDownloadButton';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,8 +27,24 @@ export default function TransactionHistory() {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const res = await client.get('/api/membership/transactions');
-        setTransactions(res.data.data || []);
+        const [res, receipts] = await Promise.all([
+          client.get('/api/membership/transactions'),
+          client.get('/api/receipts').catch(() => ({ data: { data: [] } })),
+        ]);
+        // Alliance Meet registrations are paid separately; list them too.
+        const alliance = (receipts.data.data || [])
+          .filter((r) => r.kind === 'alliance')
+          .map((r) => ({
+            _id: r.orderId,
+            kind: 'alliance',
+            razorpayOrderId: r.orderId,
+            receiptNumber: r.receiptNumber,
+            createdAt: r.date,
+            amount: r.amount,
+            status: 'success',
+          }));
+        setTransactions([...(res.data.data || []), ...alliance]
+          .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
       } catch (error) {
         console.error('Error fetching transactions:', error);
         toastError('Failed to load your purchase history');
@@ -87,7 +104,9 @@ export default function TransactionHistory() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-serif text-lg font-semibold text-[#1A1A1A]">
-                        {txn.type === 'credits' ? `${txn.creditsGranted} Credits` : `${txn.planId?.name || 'Membership'} plan`}
+                        {txn.kind === 'alliance'
+                          ? 'SNGS Alliance Meet registration'
+                          : txn.type === 'credits' ? `${txn.creditsGranted} Credits` : `${txn.planId?.name || 'Membership'} plan`}
                       </h3>
                       <Badge className={`font-sans text-xs capitalize ${STATUS_STYLES[displayTransactionStatus(txn)] || 'bg-gray-400 text-white'}`}>
                         {displayTransactionStatus(txn)}
@@ -109,7 +128,7 @@ export default function TransactionHistory() {
                         {formatRupees(txn.baseAmount)} + {formatRupees(txn.gatewayCharges)} gateway charges
                       </p>
                     )}
-                    {txn.status === 'success' && !txn.autoRefunded && (
+                    {txn.status === 'success' && !txn.autoRefunded && txn.kind !== 'alliance' && (
                       <p className="font-sans text-xs text-[#2C3E50]/60">
                         {txn.type === 'credits'
                           ? `${txn.creditsGranted} credits added to your plan`
@@ -118,6 +137,12 @@ export default function TransactionHistory() {
                     )}
                   </div>
                 </div>
+
+                {txn.status === 'success' && !txn.autoRefunded && txn.razorpayOrderId && (
+                  <div className="mt-3 pt-3 border-t border-[#D4A843]/10">
+                    <ReceiptDownloadButton orderId={txn.razorpayOrderId} />
+                  </div>
+                )}
 
                 {txn.status === 'failed' && txn.failureReason && (
                   <p className="font-sans text-sm text-[#C75B39] mt-3 pt-3 border-t border-[#D4A843]/10">
