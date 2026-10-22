@@ -116,6 +116,7 @@ export const adminApi = {
    * registration wizard's Quick Start step but haven't finished yet.
    */
   getRegistrationLeads: (params) => adminClient.get('/api/admin/registration-leads', { params }),
+  getAllianceRegistrations: (params) => adminClient.get('/api/admin/alliance-meet/registrations', { params }),
 
   // ==================== Settings ====================
 

@@ -15,6 +15,7 @@ import { buildPlanDescription } from '@/lib/planDescription';
 import BuyCreditsCard from '@/components/membership/BuyCreditsCard';
 import PaymentTermsDialog from '@/components/payment/PaymentTermsDialog';
 import { formatDate, formatRupees } from '@/lib/money';
+import { isPlanLapsed, planIdOf } from '@/lib/membershipStatus';
 
 // Real, plan-specific cost bullets — describes exactly what each of the 3
 // metered activities (profileView, phoneAndChat, profileDownload) costs on
@@ -59,6 +60,10 @@ export default function PurchaseMembershipPage() {
   // Plan waiting for the member to accept the payment terms.
   const [termsPlan, setTermsPlan] = useState(null);
   const [showSkip, setShowSkip] = useState(false);
+  // Plans can only be bought once the profile is approved — validity starts at
+  // payment, so paying while the profile is in review would waste plan days
+  // (the backend refuses the order too).
+  const awaitingApproval = !!user && user.approvalStatus !== 'approved';
 
   // Fetch all membership plans from backend
   useEffect(() => {
@@ -86,7 +91,14 @@ export default function PurchaseMembershipPage() {
   // no name/features) — refetch the fully-populated version so the current
   // plan's name and perks below are actually accurate, not stale or blank.
   useEffect(() => {
-    refreshMembership();
+    // Fresh approval status too (a member approved while this tab was open
+    // must not still see "Available after approval"). In this order:
+    // refreshUser also writes the lightweight membership, which the
+    // populated one from refreshMembership must then replace.
+    (async () => {
+      await useAuthStore.getState().refreshUser?.();
+      await refreshMembership();
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -145,6 +157,102 @@ export default function PurchaseMembershipPage() {
     }
   };
 
+  // Renew mode: a member whose plan ended sees that plan first (if it is
+  // still offered), with every other plan below it.
+  const lapsed = isPlanLapsed(membership);
+  const renewPlan = lapsed ? plans.find((p) => String(p._id) === String(planIdOf(membership))) || null : null;
+  const gridPlans = renewPlan ? plans.filter((p) => p._id !== renewPlan._id) : plans;
+
+  const renderPlanCard = (plan, renew = false) => (
+    <Card
+      key={plan._id}
+      className={`h-full flex flex-col border-2 transition-all hover:shadow-xl ${
+        plan.isDefault
+          ? 'border-[#D4A843] shadow-2xl relative'
+          : 'border-[#D4A843]/15 hover:border-[#D4A843]/50'
+      }`}
+    >
+      {plan.isDefault && (
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+          <Badge className="bg-[#D4A843] text-[#1A1A1A] font-sans font-semibold px-3 py-1">
+            Most Popular
+          </Badge>
+        </div>
+      )}
+
+      <CardHeader className="text-center pb-4">
+        <CardTitle className="font-serif text-2xl font-bold text-[#1A1A1A] mb-2">
+          {plan.name}
+        </CardTitle>
+        <CardDescription className="font-sans text-sm text-[#2C3E50]/80 leading-relaxed">
+          {buildPlanDescription(plan)}
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent className="flex-1 flex flex-col space-y-6">
+        {/* Pricing */}
+        <div className="text-center py-4 bg-[#F5E6C3]/40 rounded-lg">
+          <div className="font-serif text-5xl font-bold text-[#1A1A1A] mb-1">
+            ₹{plan.price.amount.toLocaleString('en-IN')}
+          </div>
+          {plan.pricing?.gatewayCharges > 0 && (
+            <p className="font-sans text-xs text-[#2C3E50]/70">
+              + {formatRupees(plan.pricing.gatewayCharges)} payment gateway charges (incl. GST) ·{' '}
+              <span className="font-semibold text-[#1A1A1A]">You pay {formatRupees(plan.pricing.totalAmount)}</span>
+            </p>
+          )}
+          <p className="font-sans text-sm text-[#2C3E50]/70">
+            {plan.credits} Credits
+          </p>
+          <p className="font-sans text-xs text-[#2C3E50]/50 mt-1">
+            {plan.validityDays === null || plan.validityDays === undefined
+              ? 'Unlimited validity'
+              : `Valid for ${plan.validityDays} days`}
+            {' · '}
+            {`₹${(plan.price.amount / plan.credits).toFixed(2)}/credit`}
+          </p>
+        </div>
+
+        {/* Key Features */}
+        <div className="space-y-2">
+          {buildFeatureBullets(plan).map((bullet) => (
+            <div key={bullet} className="flex items-center gap-2 font-sans text-sm text-[#1A1A1A]">
+              <CheckCircle2 className="w-4 h-4 text-[#2E7D32] shrink-0" />
+              <span>{bullet}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Purchase Button */}
+        <Button
+          onClick={() => handlePurchase(plan)}
+          disabled={processingPlanId !== null || awaitingApproval}
+          className={`w-full h-12 font-sans font-semibold transition-all mt-auto ${
+            plan.isDefault
+              ? 'bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] shadow-lg'
+              : 'bg-[#2C3E50] hover:bg-[#1A1A1A] text-white'
+          }`}
+        >
+          {processingPlanId === plan._id ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <Lock className="mr-2 h-4 w-4" />
+              {awaitingApproval
+                ? 'Available after approval'
+                : renew
+                  ? `Renew ${plan.name}`
+                  : 'Buy Now'}
+            </>
+          )}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <>
       {/* Fixed Header */}
@@ -195,7 +303,7 @@ export default function PurchaseMembershipPage() {
       <div className="min-h-screen bg-[#FDF8F0] pt-24 py-12 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8 pt-4">
-            <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-[#1A1A1A]">Choose Your Membership</h1>
+            <h1 className="font-serif text-3xl sm:text-4xl font-semibold text-[#1A1A1A]">{renewPlan ? 'Renew Your Membership' : 'Choose Your Membership'}</h1>
             <div className="w-16 h-[3px] bg-[#D4A843] mx-auto mt-4" />
           </div>
 
@@ -221,12 +329,19 @@ export default function PurchaseMembershipPage() {
                 )}
               </div>
             </div>
-          ) : membership?.isActive && membership?.isExpired ? (
+          ) : lapsed ? (
+            // Lapsed: either not yet reset (isActive + past expiry) or already
+            // reset by the expiry job (isActive false, planId kept).
             <div className="max-w-xl mx-auto mb-8">
               <div className="flex items-center justify-center gap-2 p-3 bg-[#C75B39]/10 border border-[#C75B39]/30 rounded-lg">
                 <Lock className="w-5 h-5 text-[#C75B39] shrink-0" />
                 <p className="font-sans text-sm text-[#2C3E50]">
-                  Your <span className="font-semibold">{membership.planId?.name || 'membership'}</span> has expired — renew below to keep browsing without limits.
+                  Your <span className="font-semibold">{membership.planId?.name || 'membership'}</span> plan has expired, so its leftover credits have lapsed and your unlocked profiles are locked for now.{' '}
+                  {planLoading
+                    ? ''
+                    : renewPlan
+                      ? 'Renew it below — or choose another plan — and every profile you unlocked opens again at no extra cost.'
+                      : 'That plan is no longer offered — choose one of the plans below and every profile you unlocked opens again at no extra cost.'}
                 </p>
               </div>
             </div>
@@ -240,11 +355,24 @@ export default function PurchaseMembershipPage() {
             </div>
           )}
 
+          {awaitingApproval && (
+            <div className="max-w-xl mx-auto mb-8" role="status">
+              <div className="flex items-start gap-2 p-4 bg-[#2C3E50]/5 border border-[#2C3E50]/20 rounded-lg">
+                <Lock className="w-5 h-5 text-[#2C3E50] shrink-0 mt-0.5" />
+                <p className="font-sans text-sm text-[#2C3E50]">
+                  {user.approvalStatus === 'rejected'
+                    ? 'Your profile needs changes before it can be approved. Please update it from My Profile — plans can be bought once it is approved.'
+                    : 'Your profile is being reviewed by our team. You can buy a plan as soon as it is approved, so none of your plan days are used up while you wait.'}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Simple Value Proposition */}
           <div className="text-center mb-12">
             <p className="font-sans text-[#2C3E50]/70">
               Credits are spent on viewing a profile, unlocking phone &amp; chat, or downloading a profile —
-              each plan below sets its own cost per activity. Re-opening anything you&apos;ve already unlocked is free while your membership stays active; if it lapses, unlocks reset on renewal.
+              each plan below sets its own cost per activity. Anything you unlock stays yours: re-opening it is always free while you have an active plan — including after you renew.
             </p>
           </div>
 
@@ -268,100 +396,31 @@ export default function PurchaseMembershipPage() {
             </div>
           ) : plans.length > 0 ? (
             <div className="max-w-6xl mx-auto mb-16">
+              {renewPlan && (
+                <section aria-labelledby="renew-heading" className="mb-10">
+                  <h2 id="renew-heading" className="font-serif text-3xl font-semibold text-center text-[#1A1A1A] mb-6">
+                    Renew your plan
+                  </h2>
+                  <div className="max-w-sm mx-auto">{renderPlanCard(renewPlan, true)}</div>
+                </section>
+              )}
+              {renewPlan && gridPlans.length > 0 && (
+                <div className="flex items-center gap-4 max-w-3xl mx-auto mb-8">
+                  <div className="h-px flex-1 bg-[#D4A843]/30" />
+                  <h2 className="font-serif text-xl font-semibold text-[#1A1A1A]">Or check other plans</h2>
+                  <div className="h-px flex-1 bg-[#D4A843]/30" />
+                </div>
+              )}
               {/* Column count follows the number of plans so 1–2 plans sit centred
                   instead of leaving empty columns on the right. */}
               <div className={`grid grid-cols-1 gap-6 mx-auto ${
-                plans.length === 1
+                gridPlans.length === 1
                   ? 'max-w-sm'
-                  : plans.length === 2
+                  : gridPlans.length === 2
                     ? 'md:grid-cols-2 max-w-3xl'
                     : 'md:grid-cols-2 lg:grid-cols-3'
               }`}>
-                {plans.map((plan) => (
-                  <Card
-                    key={plan._id}
-                    className={`h-full flex flex-col border-2 transition-all hover:shadow-xl ${
-                      plan.isDefault
-                        ? 'border-[#D4A843] shadow-2xl relative'
-                        : 'border-[#D4A843]/15 hover:border-[#D4A843]/50'
-                    }`}
-                  >
-                    {plan.isDefault && (
-                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                        <Badge className="bg-[#D4A843] text-[#1A1A1A] font-sans font-semibold px-3 py-1">
-                          Most Popular
-                        </Badge>
-                      </div>
-                    )}
-
-                    <CardHeader className="text-center pb-4">
-                      <CardTitle className="font-serif text-2xl font-bold text-[#1A1A1A] mb-2">
-                        {plan.name}
-                      </CardTitle>
-                      <CardDescription className="font-sans text-sm text-[#2C3E50]/80 leading-relaxed">
-                        {buildPlanDescription(plan)}
-                      </CardDescription>
-                    </CardHeader>
-
-                    <CardContent className="flex-1 flex flex-col space-y-6">
-                      {/* Pricing */}
-                      <div className="text-center py-4 bg-[#F5E6C3]/40 rounded-lg">
-                        <div className="font-serif text-5xl font-bold text-[#1A1A1A] mb-1">
-                          ₹{plan.price.amount.toLocaleString('en-IN')}
-                        </div>
-                        {plan.pricing?.gatewayCharges > 0 && (
-                          <p className="font-sans text-xs text-[#2C3E50]/70">
-                            + {formatRupees(plan.pricing.gatewayCharges)} payment gateway charges (incl. GST) ·{' '}
-                            <span className="font-semibold text-[#1A1A1A]">You pay {formatRupees(plan.pricing.totalAmount)}</span>
-                          </p>
-                        )}
-                        <p className="font-sans text-sm text-[#2C3E50]/70">
-                          {plan.credits} Credits
-                        </p>
-                        <p className="font-sans text-xs text-[#2C3E50]/50 mt-1">
-                          {plan.validityDays === null || plan.validityDays === undefined
-                            ? 'Unlimited validity'
-                            : `Valid for ${plan.validityDays} days`}
-                          {' · '}
-                          {`₹${(plan.price.amount / plan.credits).toFixed(2)}/credit`}
-                        </p>
-                      </div>
-
-                      {/* Key Features */}
-                      <div className="space-y-2">
-                        {buildFeatureBullets(plan).map((bullet) => (
-                          <div key={bullet} className="flex items-center gap-2 font-sans text-sm text-[#1A1A1A]">
-                            <CheckCircle2 className="w-4 h-4 text-[#2E7D32] shrink-0" />
-                            <span>{bullet}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Purchase Button */}
-                      <Button
-                        onClick={() => handlePurchase(plan)}
-                        disabled={processingPlanId !== null}
-                        className={`w-full h-12 font-sans font-semibold transition-all mt-auto ${
-                          plan.isDefault
-                            ? 'bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] shadow-lg'
-                            : 'bg-[#2C3E50] hover:bg-[#1A1A1A] text-white'
-                        }`}
-                      >
-                        {processingPlanId === plan._id ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <Lock className="mr-2 h-4 w-4" />
-                            Buy Now
-                          </>
-                        )}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                {gridPlans.map((plan) => renderPlanCard(plan))}
               </div>
 
               {/* Security Badge */}

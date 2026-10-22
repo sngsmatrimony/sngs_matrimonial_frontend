@@ -107,7 +107,7 @@ export default function MembershipSection() {
 
             <p className="font-sans text-sm text-[#2C3E50]/80 leading-relaxed">
               {membership?.expiryDate
-                ? `Running low? Buy more credits any time before ${new Date(membership.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} — they're added to this plan and expire with it. When the plan ends, unused credits and unlocked profiles reset.`
+                ? `Running low? Buy more credits any time before ${new Date(membership.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} — they're added to this plan and expire with it. When the plan ends, unused credits lapse; profiles you unlocked stay yours and open again when you renew.`
                 : 'Running low? Buy more credits any time — they are added to this plan.'}
             </p>
 
@@ -137,7 +137,7 @@ export default function MembershipSection() {
             </h3>
             <p className="font-sans text-[#2C3E50]/70 mb-4">
               {membership?.isExpired
-                ? 'Your plan has ended, so its credits and unlocked profiles have reset. Choose a plan to continue viewing full profiles.'
+                ? 'Your plan has ended, so its leftover credits have lapsed and your unlocked profiles are locked for now. Renew and they open again at no extra cost.'
                 : 'Searching is free. Choose a plan to view full profiles, contact matches and chat.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">

@@ -125,7 +125,7 @@ export default function ProfileViewPage() {
             >
               <Link href={error === 'insufficient-credits' ? '/membership/purchase#credits' : '/membership/purchase'}>
                 <Sparkles className="w-4 h-4 mr-2" />
-                {error === 'insufficient-credits' ? 'Buy More Credits' : 'View Membership Plans'}
+                {error === 'insufficient-credits' ? 'Buy More Credits' : isExpiredPlan ? 'Renew Plan' : 'View Membership Plans'}
               </Link>
             </Button>
             <Button

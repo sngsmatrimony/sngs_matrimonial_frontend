@@ -78,6 +78,33 @@ export default function BuyCreditsCard({ id = 'credits' }) {
     );
   }
 
+  // Packs switched off by the admin: say so, rather than leaving a member who
+  // has run out of credits with no explanation and no next step.
+  if (info && info.hasActivePlan && (!info.enabled || !info.packs?.length)) {
+    return (
+      <Card id={id} className="border-2 border-[#D4A843]/30 scroll-mt-28" role="status">
+        <CardHeader>
+          <CardTitle className="font-serif text-2xl text-[#1A1A1A] flex items-center gap-2">
+            <Coins className="w-6 h-6 text-[#D4A843]" />
+            Buy More Credits
+          </CardTitle>
+          <CardDescription className="font-sans text-[15px] text-[#2C3E50]/80 leading-relaxed">
+            Credit top-ups are not available right now. Please check back later, or contact us if you need more credits before your plan ends.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            onClick={() => router.push('/contact')}
+            className="w-full h-12 font-sans font-semibold border-2 border-[#D4A843] text-[#1A1A1A] hover:bg-[#F5E6C3]/40"
+          >
+            Contact Us
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!info?.enabled || !info?.packs?.length) return null;
 
   return (

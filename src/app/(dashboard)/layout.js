@@ -13,6 +13,8 @@ import HelpButton from '@/components/layout/HelpButton';
 import ApprovalStatusBanner from '@/components/layout/ApprovalStatusBanner';
 import ApprovalGuard from '@/components/guards/ApprovalGuard';
 import { SocketProvider } from '@/contexts/SocketContext';
+import RenewPlanDialog from '@/components/membership/RenewPlanDialog';
+import { isPlanLapsed } from '@/lib/membershipStatus';
 
 export default function UserLayout({ children }) {
   const { user, logout, initializeAuth, token, membership, canAccessFullApp } = useAuthStore();
@@ -88,6 +90,8 @@ export default function UserLayout({ children }) {
   const hasActiveMembership = membership?.isActive && !membership?.isExpired;
   const showCredits = enforcementActive && hasActiveMembership && !pathname.includes('/settings') && !isActive('/membership');
   const showMembershipCta = enforcementActive && !pathname.includes('/settings') && !isActive('/membership');
+  const ctaLabel = hasActiveMembership ? 'Buy Credits' : isPlanLapsed(membership) ? 'Renew Plan' : 'Get Membership';
+  const ctaHref = hasActiveMembership ? '/membership/purchase#credits' : '/membership/purchase';
 
   // Show loader while initializing (unless timeout reached)
   if ((!isInitialized && !initTimeout) || !token) {
@@ -135,10 +139,10 @@ export default function UserLayout({ children }) {
             )}
             {showMembershipCta && (
               <Link
-                href={hasActiveMembership ? '/membership/purchase#credits' : '/membership/purchase'}
+                href={ctaHref}
                 className="bg-[#D4A843] hover:bg-[#B8860B] px-4 py-1.5 rounded-full font-sans text-sm font-semibold text-[#1A1A1A] shadow-sm hover:shadow transition-all"
               >
-                {hasActiveMembership ? 'Buy Credits' : 'Get Membership'}
+                {ctaLabel}
               </Link>
             )}
           </div>
@@ -150,10 +154,10 @@ export default function UserLayout({ children }) {
           )}
           {showMembershipCta && (
             <Link
-              href="/membership/purchase"
+              href={ctaHref}
               className="flex md:hidden bg-[#D4A843] hover:bg-[#B8860B] px-3 py-1 rounded-full font-sans text-xs font-semibold text-[#1A1A1A] shadow-sm transition-all mr-2"
             >
-              {hasActiveMembership ? 'Upgrade' : 'Get Membership'}
+              {ctaLabel}
             </Link>
           )}
 
@@ -259,6 +263,7 @@ export default function UserLayout({ children }) {
       {/* Tab Content */}
       <div className="bg-white pt-[65px] md:pt-[121px]">
         <ApprovalStatusBanner hideRejectionDetail={pathname === '/profile'} />
+        <RenewPlanDialog />
         <SocketProvider>
           <ApprovalGuard>
             {children}

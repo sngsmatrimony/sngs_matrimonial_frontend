@@ -10,6 +10,7 @@ import { client } from '@/lib/api/client';
 import { toastError, toastInfo } from '@/lib/toast';
 import { formatRupees } from '@/lib/money';
 import PaymentTermsDialog from '@/components/payment/PaymentTermsDialog';
+import { useAuthStore } from '@/store/authStore';
 
 const ALLIANCE_MEET_TERMS = [
   'A one-time registration for the upcoming SNGS Alliance Meet. Our team will share the event details with you.',
@@ -26,6 +27,10 @@ export default function AllianceMeetSection() {
   const router = useRouter();
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  // Registration is paid, so it opens once the profile is approved (the
+  // backend refuses the order before that too).
+  const user = useAuthStore((s) => s.user);
+  const awaitingApproval = !!user && user.approvalStatus !== 'approved';
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['allianceMeetPublicSettings'],
@@ -87,7 +92,12 @@ export default function AllianceMeetSection() {
               {pricing.gatewayCharges > 0 && ` · + ${formatRupees(pricing.gatewayCharges)} payment gateway charges (incl. GST)`}
             </p>
           </div>
-          {myRegistration?.registered ? (
+          {awaitingApproval && !myRegistration?.registered ? (
+            <Button disabled className="font-sans font-semibold" title="Available once your profile is approved">
+              <CalendarHeart className="mr-2 h-4 w-4" />
+              Available after approval
+            </Button>
+          ) : myRegistration?.registered ? (
             <div className="flex items-center gap-2 px-4 h-11 rounded-lg bg-green-50 border border-green-200 text-[#2E7D32] font-sans font-semibold text-sm">
               <CheckCircle2 className="h-4 w-4" />
               You&apos;re registered

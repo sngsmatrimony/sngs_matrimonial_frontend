@@ -949,6 +949,7 @@ export default function AdminSettingsPage() {
                 type="button"
                 role="switch"
                 aria-checked={enforcementEnabled}
+                aria-label="Membership restrictions enforced"
                 onClick={handleEnforcementToggle}
                 disabled={updateEnforcementMutation.isPending}
                 className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
@@ -1014,6 +1015,7 @@ export default function AdminSettingsPage() {
                     type="button"
                     role="switch"
                     aria-checked={allianceMeetEnabled}
+                    aria-label="Alliance Meet registration open"
                     onClick={handleAllianceMeetToggle}
                     disabled={updateAllianceMeetMutation.isPending}
                     className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
@@ -1029,9 +1031,10 @@ export default function AdminSettingsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="font-sans text-sm">Ticket Price (₹)</Label>
+                  <Label htmlFor="alliance-meet-price" className="font-sans text-sm">Ticket Price (₹)</Label>
                   <div className="flex gap-2">
                     <Input
+                      id="alliance-meet-price"
                       type="number"
                       min="0"
                       value={allianceMeetPrice}
@@ -1081,6 +1084,7 @@ export default function AdminSettingsPage() {
                 type="button"
                 role="switch"
                 aria-checked={idProofRequiredEnabled}
+                aria-label="ID proof required"
                 onClick={handleIdProofToggle}
                 disabled={updateIdProofMutation.isPending}
                 className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
@@ -1125,6 +1129,7 @@ export default function AdminSettingsPage() {
                 type="button"
                 role="switch"
                 aria-checked={inactivityEmailsEnabled}
+                aria-label="Automated inactivity emails"
                 onClick={handleInactivityEmailsToggle}
                 disabled={updateInactivityEmailsMutation.isPending || isLoadingInactivityEmails}
                 className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${

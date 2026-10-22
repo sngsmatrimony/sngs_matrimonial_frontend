@@ -7,7 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { useAdminAuthStore } from "@/store/adminAuthStore";
-import { BarChart3, Users, Settings, Shield, LogOut, CreditCard, ScrollText, Phone, Receipt, UserPlus } from "lucide-react";
+import { BarChart3, Users, Settings, Shield, LogOut, CreditCard, ScrollText, Phone, Receipt, UserPlus, CalendarCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import HelpButton from "@/components/layout/HelpButton";
 import { adminApi } from "@/lib/api/admin";
@@ -120,7 +120,7 @@ export default function AdminLayout({ children }) {
                 {/* Navigation Tabs */}
                 <div className="bg-black border-b border-gray-900">
                     <div className="px-4 sm:px-6 lg:px-8">
-                        <div className="flex items-center gap-5 sm:gap-8 overflow-x-auto text-sm sm:text-base">
+                        <div className="flex items-center gap-5 sm:gap-6 2xl:gap-8 overflow-x-auto text-sm 2xl:text-base">
                             <Link
                                 href="/admin"
                                 className={`py-4 font-sans font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
@@ -206,6 +206,17 @@ export default function AdminLayout({ children }) {
                             >
                                 <UserPlus size={20} />
                                 <span>Started Filling</span>
+                            </Link>
+                            <Link
+                                href="/admin/alliance-registrations"
+                                className={`py-4 font-sans font-semibold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap ${
+                                    pathname.startsWith("/admin/alliance-registrations")
+                                        ? "border-primary text-primary"
+                                        : "border-transparent text-white hover:text-gray-300"
+                                }`}
+                            >
+                                <CalendarCheck size={20} />
+                                <span>Alliance Meet</span>
                             </Link>
                             <Link
                                 href="/admin/admins"

@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { DOSHAM_TYPES, LANGUAGES_OPTIONS } from '@/lib/constants/formData';
+import { downloadProfilePptx } from '@/lib/adminProfilePptx';
 
 const FIELD_PATH_LABELS = {
   'annualIncome.min': 'Annual Income',
@@ -245,18 +246,7 @@ export default function AdminUserDetailPage() {
   const handleExportPptx = async () => {
     setIsExportingPptx(true);
     try {
-      const response = await adminApi.exportUserProfilePptx(userId);
-      const blobUrl = window.URL.createObjectURL(new Blob([response.data], {
-        type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      }));
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      const safeName = (user?.fullName || 'profile').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-      link.download = `${safeName}_profile.pptx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
+      await downloadProfilePptx(userId, user?.fullName);
       toastSuccess('Profile exported as PPTX.');
     } catch (error) {
       toastError('Failed to export profile as PPTX');
@@ -836,7 +826,8 @@ export default function AdminUserDetailPage() {
                 const m = user.membership;
                 const isCurrentlyValid = m?.isActive && (!m?.expiryDate || new Date(m.expiryDate) > new Date());
                 if (!isCurrentlyValid) {
-                  return <Badge variant="secondary">{m?.isActive ? 'Expired' : 'No Plan'}</Badge>;
+                  // A lapsed plan is reset to isActive:false but keeps its planId.
+                  return <Badge variant="secondary">{m?.planId ? 'Expired' : 'No Plan'}</Badge>;
                 }
                 return <Badge className="bg-green-100 text-green-800 border-green-300">Active</Badge>;
               })()}

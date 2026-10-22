@@ -45,7 +45,7 @@ export default function TermsAndConditionsPage() {
           Creating a profile and browsing matches is free. Some actions use <strong>credits</strong>: opening a member&apos;s full profile,
           unlocking their phone number and chat, and downloading their profile or horoscope. The number of credits each action uses depends
           on your plan (some plans include an action at no credit cost) and is always shown before credits are used. Once you have unlocked a
-          profile, opening it again during the same plan is free.
+          profile, opening it again is free whenever you have an active plan, including after you renew.
         </P>
         <Sub>Plans</Sub>
         <List items={[
@@ -60,7 +60,7 @@ export default function TermsAndConditionsPage() {
         <Sub>When a plan ends</Sub>
         <List items={[
           'Any credits left at the end of your plan expire and cannot be carried forward or refunded.',
-          'Profiles, contact details and downloads you unlocked under that plan lock again. Buying a new plan later does not restore them.',
+          'Profiles, contact details and downloads you unlocked stay linked to your account but are locked while you have no active plan. When you buy a new plan, they open again at no extra cost.',
         ]} />
         <Sub>Prices and payment</Sub>
         <List items={[

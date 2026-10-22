@@ -21,4 +21,4 @@ export const OFFICE_MAPS_URL = `https://www.google.com/maps/search/?api=1&query=
 export const JURISDICTION = 'Pune, Maharashtra';
 
 // Date the current Terms, Privacy, Refund and Delivery policies took effect.
-export const POLICIES_EFFECTIVE_DATE = '15 October 2026';
+export const POLICIES_EFFECTIVE_DATE = '22 October 2026';
