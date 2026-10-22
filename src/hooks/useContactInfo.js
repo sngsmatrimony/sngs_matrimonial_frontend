@@ -15,7 +15,7 @@ export function useContactInfo() {
     retry: 2,
     // Defaults if fetch fails
     placeholderData: {
-      contactEmail: 'info@sngsmatrimonial.com',
+      contactEmail: 'contact@sngsmatrimonial.com',
       contactMobile: '9876543210',
     },
   });

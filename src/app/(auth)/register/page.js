@@ -501,6 +501,19 @@ export default function RegisterPage() {
 
   const prevStepRef = useRef(currentStep);
 
+  // Every step change (Next, Back, resuming a saved draft, going back to
+  // re-verify the phone) starts the new step at the top of the page instead
+  // of wherever the member had scrolled to on the previous one, and moves
+  // keyboard / screen-reader focus to the new step's heading.
+  const stepHeadingRef = useRef(null);
+  const scrolledStepRef = useRef(currentStep);
+  useEffect(() => {
+    if (scrolledStepRef.current === currentStep) return; // not on first load
+    scrolledStepRef.current = currentStep;
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    stepHeadingRef.current?.focus({ preventScroll: true });
+  }, [currentStep]);
+
   useEffect(() => {
     if (prevStepRef.current !== currentStep) {
       form.reset(formData);
@@ -1034,7 +1047,7 @@ export default function RegisterPage() {
                   <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#F5E6C3] to-[#EAD5A0] text-[#2C3E50] ring-2 ring-[#D4A843]/40 ring-offset-2 ring-offset-[#2C3E50] shadow-lg shrink-0">
                     <UserPlus className="w-5 h-5" strokeWidth={1.75} />
                   </span>
-                  <div>
+                  <div ref={currentStep === 1 ? stepHeadingRef : undefined} tabIndex={-1} className="outline-none">
                     <p className="font-sans text-[11px] tracking-[0.18em] uppercase text-[#D4A843] font-semibold mb-0.5">
                       Step 1 of 7
                     </p>
@@ -1491,7 +1504,7 @@ export default function RegisterPage() {
                   <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#F5E6C3] to-[#EAD5A0] text-[#2C3E50] ring-2 ring-[#D4A843]/40 ring-offset-2 ring-offset-[#2C3E50] shadow-lg shrink-0">
                     <CurrentStepIcon className="w-5 h-5" strokeWidth={1.75} />
                   </span>
-                  <div>
+                  <div ref={currentStep === 1 ? undefined : stepHeadingRef} tabIndex={-1} className="outline-none">
                     <p className="font-sans text-[11px] tracking-[0.18em] uppercase text-[#D4A843] font-semibold mb-0.5">
                       Step {currentStep} of 7
                     </p>
