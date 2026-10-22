@@ -28,6 +28,7 @@ import {
 import Image from 'next/image';
 import { DOSHAM_TYPES, LANGUAGES_OPTIONS } from '@/lib/constants/formData';
 import { downloadProfilePptx } from '@/lib/adminProfilePptx';
+import { formatIncome } from '@/lib/formatIncome';
 
 const FIELD_PATH_LABELS = {
   'annualIncome.min': 'Annual Income',
@@ -2031,10 +2032,7 @@ export default function AdminUserDetailPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Annual Income</label>
                     <p className="text-gray-900">
-                      {user.annualIncome?.displayText
-                        || (user.annualIncome?.min != null
-                          ? `${user.annualIncome.currency || 'INR'} ${user.annualIncome.min.toLocaleString('en-IN')} - ${(user.annualIncome.max ?? user.annualIncome.min).toLocaleString('en-IN')}`
-                          : '-')}
+                      {formatIncome(user.annualIncome)}
                     </p>
                   </div>
                   {/* Removed root Country/State/City display */}

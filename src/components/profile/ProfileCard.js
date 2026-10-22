@@ -17,8 +17,18 @@ import SpendCreditsDialog from '@/components/shared/SpendCreditsDialog';
 
 function formatLocation(profile) {
   const addr = profile?.presentResidentialAddress;
-  const parts = [addr?.city, addr?.state || addr?.country].filter(Boolean);
-  return parts.join(', ');
+  // Locked cards come without the city (state and country only).
+  const parts = addr?.city ? [addr.city, addr.state || addr.country] : [addr?.state, addr?.country];
+  return parts.filter(Boolean).join(', ');
+}
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+// Locked cards get a blurred preview served by the API (a relative path).
+function photoSrc(profile) {
+  const url = profile?.profilePicture?.url;
+  if (!url) return null;
+  return profile.profilePicture.preview ? `${API_BASE_URL}${url}` : url;
 }
 
 function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
@@ -104,25 +114,27 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
     return null;
   }
 
-  const profileImageUrl = profile?.profilePicture?.url;
+  const profileImageUrl = photoSrc(profile);
+  const isPhotoPreview = !!profile?.profilePicture?.preview;
   const location = formatLocation(profile);
   const verification = getVerificationState(profile);
   const activityLabel = formatRelativeActivity(profile?.lastActiveAt);
 
   return (
+    <>
     <Link
       href={`/profiles/${profile._id}`}
       onClick={handleCardClick}
       className="block bg-white rounded-xl border border-[#D4A843]/15 shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden cursor-pointer"
     >
       {/* Photo */}
-      <div className="relative aspect-[4/5] bg-[#F5E6C3]/40">
+      <div className="relative aspect-[4/5] bg-[#F5E6C3]/40 overflow-hidden">
         {profileImageUrl && !imageFailed ? (
           <Image
             src={profileImageUrl}
-            alt={profile?.fullName || 'Profile photo'}
+            alt={isPhotoPreview ? 'Blurred photo — unlock the profile to see it' : profile?.fullName || 'Profile photo'}
             fill
-            className="object-cover select-none"
+            className={`object-cover select-none ${isPhotoPreview ? 'scale-110 blur-[2px]' : ''}`}
             sizes="(max-width: 768px) 50vw, 280px"
             unoptimized
             draggable={false}
@@ -186,10 +198,15 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
               {profile.education}
             </p>
           )}
-          {profile?.occupation && (
+          {profile?.occupation ? (
             <p className="flex items-center gap-1.5 font-sans text-xs text-[#2C3E50]/80 truncate">
               <Briefcase size={13} className="text-[#D4A843] shrink-0" />
               {profile.occupation}
+            </p>
+          ) : profile?.nameMasked && (
+            <p className="flex items-center gap-1.5 font-sans text-xs text-[#2C3E50]/55 truncate">
+              <Lock size={12} className="text-[#D4A843]/70 shrink-0" />
+              Job details after unlock
             </p>
           )}
           {location && (
@@ -243,16 +260,21 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
           </button>
         </div>
       </div>
-      {needsSpendConfirm && (
-        <SpendCreditsDialog
-          open={showSpendDialog}
-          cost={profileViewCost.cost}
-          activityLabel="Viewing this profile"
-          onConfirm={handleConfirmSpend}
-          onCancel={() => setShowSpendDialog(false)}
-        />
-      )}
     </Link>
+    {/* Outside the card's link on purpose: clicks inside the dialog (even
+        though it renders in a portal) bubble through React to its parent,
+        so inside the link "Cancel" re-triggered the card click and reopened
+        the dialog, and "Continue" ran the card click a second time. */}
+    {needsSpendConfirm && (
+      <SpendCreditsDialog
+        open={showSpendDialog}
+        cost={profileViewCost.cost}
+        activityLabel="Viewing this profile"
+        onConfirm={handleConfirmSpend}
+        onCancel={() => setShowSpendDialog(false)}
+      />
+    )}
+    </>
   );
 }
 

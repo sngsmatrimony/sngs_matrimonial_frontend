@@ -508,7 +508,7 @@ export default function BrowseProfiles() {
               onChange={(e) => setSearchInput(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
-              placeholder="Search by name, occupation, or city..."
+              placeholder="Search by name, education, city or state..."
               className="w-full h-12 pl-10 pr-10 rounded-xl border border-[#D4A843]/25 bg-white font-sans text-[15px] text-[#1A1A1A] placeholder:text-[#2C3E50]/40 focus:outline-none focus:ring-2 focus:ring-[#D4A843]/40 focus:border-[#D4A843]/50"
             />
             {searchInput && (
@@ -539,7 +539,14 @@ export default function BrowseProfiles() {
                   >
                     {p.profilePicture?.url ? (
                       <span className="relative w-9 h-9 rounded-full overflow-hidden shrink-0">
-                        <Image src={p.profilePicture.url} alt="" fill sizes="36px" unoptimized className="object-cover" />
+                        <Image
+                          src={p.profilePicture.preview ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}${p.profilePicture.url}` : p.profilePicture.url}
+                          alt=""
+                          fill
+                          sizes="36px"
+                          unoptimized
+                          className={`object-cover ${p.profilePicture.preview ? 'scale-110 blur-[1px]' : ''}`}
+                        />
                       </span>
                     ) : (
                       <span className="w-9 h-9 rounded-full bg-[#F5E6C3] flex items-center justify-center shrink-0">
@@ -549,7 +556,7 @@ export default function BrowseProfiles() {
                     <span className="min-w-0">
                       <span className="block font-sans text-sm font-medium text-[#1A1A1A] truncate">{p.fullName}</span>
                       <span className="block font-sans text-xs text-[#2C3E50]/60 truncate">
-                        {[p.occupation, p.presentResidentialAddress?.city].filter(Boolean).join(' · ')}
+                        {[p.occupation || p.education, p.presentResidentialAddress?.city || p.presentResidentialAddress?.state].filter(Boolean).join(' · ')}
                       </span>
                     </span>
                   </button>

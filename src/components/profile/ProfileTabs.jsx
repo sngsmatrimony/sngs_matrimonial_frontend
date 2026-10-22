@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Children, useState } from 'react';
 import Image from 'next/image';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { FileText, Download, Lock, Phone } from 'lucide-react';
@@ -10,6 +10,7 @@ import SpendCreditsDialog from '@/components/shared/SpendCreditsDialog';
 import { useAuthStore } from '@/store/authStore';
 import { client } from '@/lib/api/client';
 import { toastSuccess, toastError } from '@/lib/toast';
+import { formatIncome } from '@/lib/formatIncome';
 
 const TABS = [
   { value: 'about', label: 'About' },
@@ -30,10 +31,18 @@ const Field = ({ label, value }) => {
   );
 };
 
+const isEmptyValue = (v) => v === undefined || v === null || v === '';
+// True when every child is an empty Field (nothing would render inside).
+const hasNoContent = (children) => Children.toArray(children).every((c) => c?.type === Field && isEmptyValue(c.props?.value));
+
 const Section = ({ title, children }) => (
   <div className="mb-6 last:mb-0">
     {title && <h3 className="font-serif text-base font-semibold text-[#1A1A1A] mb-2">{title}</h3>}
-    <div className="bg-white border border-[#D4A843]/15 rounded-xl p-5">{children}</div>
+    <div className="bg-white border border-[#D4A843]/15 rounded-xl p-5">
+      {hasNoContent(children)
+        ? <p className="font-sans text-sm text-[#2C3E50]/60">Not provided by this member.</p>
+        : children}
+    </div>
   </div>
 );
 
@@ -73,6 +82,8 @@ function UnlockContactPanel({ profileId, onUnlocked }) {
     setIsUnlocking(true);
     try {
       await client.post(`/api/profiles/${profileId}/unlock-contact`);
+      // Header credit count updates straight away, not on the next refresh.
+      useAuthStore.getState().refreshMembership();
       toastSuccess('Contact & chat unlocked for this profile.');
       setShowDialog(false);
       onUnlocked?.();
@@ -229,12 +240,7 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
           <Field label="Occupation" value={profile?.occupation} />
           <Field
             label="Annual Income"
-            value={
-              profile?.annualIncome?.displayText ||
-              (profile?.annualIncome
-                ? `${profile.annualIncome.currency} ${profile.annualIncome.min?.toLocaleString()}-${profile.annualIncome.max?.toLocaleString()}`
-                : null)
-            }
+            value={formatIncome(profile?.annualIncome)}
           />
           {profile?.professionalAdditionalInfo && (
             <div className="pt-3 mt-1 border-t border-[#D4A843]/10">

@@ -10,11 +10,14 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Lock, Sparkles } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import ProfileDetailView from '@/components/profile/ProfileDetailView';
+import { useQueryClient } from '@tanstack/react-query';
+import { markProfileUnlocked } from '@/lib/unlockedProfileCache';
 
 export default function ProfileViewPage() {
   const router = useRouter();
   const params = useParams();
   const { membership, refreshMembership } = useAuthStore();
+  const queryClient = useQueryClient();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [creditsDeducted, setCreditsDeducted] = useState(false);
@@ -48,6 +51,8 @@ export default function ProfileViewPage() {
       const response = await client.get(`/api/profiles/${params.id}`);
       setProfile(response.data.data);
       setCreditsDeducted(response.data.data.creditsDeducted || false);
+      // Search / Liked / Shortlist cards for this profile are unlocked now.
+      markProfileUnlocked(queryClient, response.data.data);
 
       if (response.data.data.creditsDeducted) {
         await refreshMembership();

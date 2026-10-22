@@ -101,6 +101,7 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
     setIsUnlockingDownload(true);
     try {
       const res = await client.post(`/api/profiles/${profileId}/unlock-download`);
+      useAuthStore.getState().refreshMembership(); // header credit count, straight away
       const horoscope = res.data?.horoscopeDocument || horoscopeDocument;
       if (res.data?.horoscopeDocument) setUnlockedHoroscope(res.data.horoscopeDocument);
       setDownloadUnlocked(true);

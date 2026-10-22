@@ -1,6 +1,7 @@
 'use client';
 
-import { forwardRef } from 'react';
+import { Children, forwardRef } from 'react';
+import { formatIncome } from '@/lib/formatIncome';
 
 // Color constants for inline styles (html2canvas doesn't support oklab colors from Tailwind v4)
 const COLORS = {
@@ -17,7 +18,11 @@ const COLORS = {
  * Reusable InfoCard component for print view
  * data-section attribute helps the PDF generator identify sections for page breaks
  */
-const InfoCard = ({ title, children }) => (
+// A card whose fields are all empty is left out of the PDF instead of
+// printing a heading over an empty box.
+const hasContent = (children) => Children.toArray(children).some((c) => c?.type !== InfoField || !!c.props?.value);
+
+const InfoCard = ({ title, children }) => (!hasContent(children) ? null : (
   <div
     data-section="true"
     style={{
@@ -42,7 +47,7 @@ const InfoCard = ({ title, children }) => (
     </h3>
     {children}
   </div>
-);
+));
 
 /**
  * Reusable InfoField component for print view
@@ -217,7 +222,10 @@ const ProfilePrintView = forwardRef(({ profile }, ref) => {
                   marginTop: '4px',
                 }}
               >
-                Seeking: {profile?.seekingGender} | Age: {profile?.ageFrom}-{profile?.ageTo}
+                {[
+                  profile?.seekingGender && `Seeking: ${profile.seekingGender[0].toUpperCase()}${profile.seekingGender.slice(1)}`,
+                  profile?.ageFrom && profile?.ageTo && `Age: ${profile.ageFrom}-${profile.ageTo}`,
+                ].filter(Boolean).join(" | ")}
               </p>
             )}
           </div>
@@ -361,12 +369,7 @@ const ProfilePrintView = forwardRef(({ profile }, ref) => {
             <InfoField label="Occupation" value={profile?.occupation} />
             <InfoField
               label="Annual Income"
-              value={
-                profile?.annualIncome?.displayText ||
-                (profile?.annualIncome
-                  ? `${profile.annualIncome.currency} ${profile.annualIncome.min?.toLocaleString()}-${profile.annualIncome.max?.toLocaleString()}`
-                  : null)
-              }
+              value={formatIncome(profile?.annualIncome)}
             />
             {profile?.professionalAdditionalInfo && (
               <div style={{ padding: '6px 0' }}>

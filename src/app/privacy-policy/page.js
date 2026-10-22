@@ -79,7 +79,8 @@ export default function PrivacyPolicyPage() {
           While paid features are switched on, what a member sees depends on what they have unlocked with credits:
         </P>
         <List items={[
-          'In search results: your profile photo, first name and the initial of your last name, age, city, state or country, education, occupation and a match percentage. Your full name is shown once a member has unlocked your profile.',
+          'In search results, before a member unlocks your profile: a heavily blurred preview of your photo, the first letter of each part of your name (for example "A***** N***"), your age, state and country, education and a match percentage. Your photo, full name, city and occupation are shown once a member has unlocked your profile.',
+          'Emails telling you that someone is interested in you, matched with you or messaged you show their name in the same masked form.',
           'On your full profile: the details you entered — including your photos, family details, horoscope details and your present and native addresses as you wrote them.',
           'Your phone number: only to members who have unlocked your contact details.',
           'Your horoscope document: only to members who have unlocked downloads for your profile.',
