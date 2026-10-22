@@ -7,6 +7,7 @@ import { FileText, Download, Lock, Phone } from 'lucide-react';
 import ImageLightbox from '@/components/ui/image-lightbox';
 import { Button } from '@/components/ui/button';
 import SpendCreditsDialog from '@/components/shared/SpendCreditsDialog';
+import FreeText from '@/components/shared/FreeText';
 import { useAuthStore } from '@/store/authStore';
 import { client } from '@/lib/api/client';
 import { toastSuccess, toastError } from '@/lib/toast';
@@ -166,12 +167,14 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
       <TabsContent value="about" className="pt-5">
         {profile?.profileAbout?.trim() ? (
           <Section title="About Me">
-            <p className="font-sans text-[15px] text-[#1A1A1A] leading-relaxed whitespace-pre-line">{profile.profileAbout}</p>
+            <FreeText text={profile.profileAbout} className="font-sans text-[15px] text-[#1A1A1A] leading-relaxed" />
           </Section>
-        ) : mode === 'self' && (
+        ) : (
           <Section title="About Me">
             <p className="font-sans text-[15px] text-[#2C3E50]/70 leading-relaxed">
-              You haven&apos;t written about yourself yet. Add a few lines from Edit Profile — members read this first.
+              {mode === 'self'
+                ? <>You haven&apos;t written about yourself yet. Add a few lines from Edit Profile — members read this first.</>
+                : <>This member hasn&apos;t written about themselves yet.</>}
             </p>
           </Section>
         )}
@@ -245,7 +248,7 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
           {profile?.professionalAdditionalInfo && (
             <div className="pt-3 mt-1 border-t border-[#D4A843]/10">
               <span className="font-sans text-[#2C3E50]/70 text-sm block mb-1">Additional Information</span>
-              <p className="font-sans text-[#1A1A1A] text-sm whitespace-pre-line">{profile.professionalAdditionalInfo}</p>
+              <FreeText text={profile.professionalAdditionalInfo} className="font-sans text-[#1A1A1A] text-sm" />
             </div>
           )}
         </Section>
@@ -339,12 +342,12 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
       {/* PARTNER PREFERENCES */}
       <TabsContent value="preferences" className="pt-5">
         <Section title="Looking For">
-          <Field label="Seeking" value={profile?.seekingGender} />
+          <Field label="Seeking" value={profile?.seekingGender ? profile.seekingGender[0].toUpperCase() + profile.seekingGender.slice(1) : null} />
           <Field label="Age Range" value={profile?.ageFrom && profile?.ageTo ? `${profile.ageFrom} - ${profile.ageTo} years` : null} />
           {profile?.partnerPreferenceDescription && (
             <div className="pt-3 mt-1 border-t border-[#D4A843]/10">
               <span className="font-sans text-[#2C3E50]/70 text-sm block mb-1">Partner Preference</span>
-              <p className="font-sans text-[#1A1A1A] text-sm whitespace-pre-line">{profile.partnerPreferenceDescription}</p>
+              <FreeText text={profile.partnerPreferenceDescription} className="font-sans text-[#1A1A1A] text-sm" />
             </div>
           )}
         </Section>

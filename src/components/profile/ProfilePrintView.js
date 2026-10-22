@@ -2,6 +2,12 @@
 
 import { Children, forwardRef } from 'react';
 import { formatIncome } from '@/lib/formatIncome';
+import { toParagraphs } from '@/lib/paragraphs';
+
+// Free text as paragraphs inside one <p> (hard line breaks reflowed).
+const paragraphSpans = (text) => toParagraphs(text).map((t, i) => (
+  <span key={i} style={{ display: 'block', marginTop: i ? '8px' : 0 }}>{t}</span>
+));
 
 // Color constants for inline styles (html2canvas doesn't support oklab colors from Tailwind v4)
 const COLORS = {
@@ -260,7 +266,7 @@ const ProfilePrintView = forwardRef(({ profile }, ref) => {
                 margin: 0,
               }}
             >
-              {profile.profileAbout}
+              {paragraphSpans(profile.profileAbout)}
             </p>
           </div>
         )}
@@ -392,7 +398,7 @@ const ProfilePrintView = forwardRef(({ profile }, ref) => {
                     margin: 0,
                   }}
                 >
-                  {profile.professionalAdditionalInfo}
+                  {paragraphSpans(profile.professionalAdditionalInfo)}
                 </p>
               </div>
             )}
