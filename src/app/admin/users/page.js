@@ -82,6 +82,10 @@ export default function AdminUsersPage() {
   const [premiumOnly, setPremiumOnly] = useState(false);
   const [idProofPendingOnly, setIdProofPendingOnly] = useState(searchParams.get('idProofPending') === 'true');
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [pageSize, setPageSize] = useState(20);
+  const [selectingAll, setSelectingAll] = useState(false);
+  // Set when "Select all matching" hit the per-email maximum.
+  const [selectionCapped, setSelectionCapped] = useState(null);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectingUserId, setRejectingUserId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -125,15 +129,17 @@ export default function AdminUsersPage() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // Clear the current selection whenever the underlying result set changes
+  // Clear the selection when the filters change (a different set of users).
+  // Moving between pages keeps it, so ticks on page 1 survive going to page 2.
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [page, approvalFilter, search, missingFilters, premiumOnly, idProofPendingOnly, drillDown]);
+    setSelectionCapped(null);
+  }, [approvalFilter, search, missingFilters, premiumOnly, idProofPendingOnly, drillDown]);
 
   // Build query params
   const queryParams = {
     page,
-    limit: 20,
+    limit: pageSize,
     approvalStatus: approvalFilter === 'all' ? '' : approvalFilter,
     search,
     ...(missingFilters.missingProfilePicture && { missingProfilePicture: 'true' }),
@@ -235,11 +241,32 @@ export default function AdminUsersPage() {
 
   const allOnPageSelected = users.length > 0 && users.every((u) => selectedIds.has(u._id));
 
+  // Header checkbox: tick / untick this page's users, keeping other pages' ticks.
   const toggleSelectAll = () => {
     setSelectedIds((prev) => {
-      if (allOnPageSelected) return new Set();
-      return new Set(users.map((u) => u._id));
+      const next = new Set(prev);
+      users.forEach((u) => (allOnPageSelected ? next.delete(u._id) : next.add(u._id)));
+      return next;
     });
+  };
+
+  const totalMatching = pagination.total || 0;
+  const allMatchingSelected = totalMatching > 0 && selectedIds.size >= Math.min(totalMatching, selectionCapped?.max || Infinity);
+
+  // "Select all N users matching these filters" — every page, not just this one.
+  const selectAllMatching = async () => {
+    setSelectingAll(true);
+    try {
+      const { page: _p, limit: _l, ...filters } = queryParams;
+      const res = await adminApi.getMatchingUserIds(filters);
+      const { ids = [], capped, max, total } = res.data.data || {};
+      setSelectedIds(new Set(ids));
+      setSelectionCapped(capped ? { max, total } : null);
+    } catch (error) {
+      toastError(error.response?.data?.message || 'Could not select all matching users');
+    } finally {
+      setSelectingAll(false);
+    }
   };
 
   const toggleSelectRow = (userId) => {
@@ -277,9 +304,10 @@ export default function AdminUsersPage() {
         bulkEmailSubject.trim(),
         bulkEmailMessage.trim()
       );
-      toastSuccess(response.data.message || 'Emails sent');
+      toastSuccess(response.data.message || 'Sending emails…');
       setShowBulkEmailDialog(false);
       setSelectedIds(new Set());
+      setSelectionCapped(null);
     } catch (error) {
       toastError(error.response?.data?.message || 'Failed to send emails');
     } finally {
@@ -471,11 +499,30 @@ export default function AdminUsersPage() {
       {/* Bulk actions bar */}
       {selectedIds.size > 0 && (
         <div className="flex items-center justify-between gap-4 p-3 rounded-lg border border-[#D4A843]/30 bg-gradient-to-r from-[#F5E6C3]/40 to-[#FDF8F0]">
-          <p className="font-sans text-sm text-[#1A1A1A]">
-            {selectedIds.size} user{selectedIds.size === 1 ? '' : 's'} selected
-          </p>
+          <div className="font-sans text-sm text-[#1A1A1A]">
+            <p>
+              <span className="font-semibold">{selectedIds.size}</span> user{selectedIds.size === 1 ? '' : 's'} selected
+              {totalMatching > users.length && !allMatchingSelected && ' (across pages)'}
+              {allMatchingSelected && totalMatching > users.length && ' — all users matching these filters'}
+            </p>
+            {selectionCapped && (
+              <p className="text-xs text-[#C75B39] mt-0.5">
+                The first {selectionCapped.max} of {selectionCapped.total} are selected — one email can go to at most {selectionCapped.max} people. Send, then narrow the filters for the rest.
+              </p>
+            )}
+            {allOnPageSelected && totalMatching > users.length && !allMatchingSelected && (
+              <button
+                type="button"
+                onClick={selectAllMatching}
+                disabled={selectingAll}
+                className="mt-0.5 text-sm font-semibold text-[#B8860B] underline underline-offset-2 hover:text-[#1A1A1A] disabled:opacity-60"
+              >
+                {selectingAll ? 'Selecting…' : `Select all ${totalMatching} users matching these filters`}
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set())}>
+            <Button size="sm" variant="outline" onClick={() => { setSelectedIds(new Set()); setSelectionCapped(null); }}>
               Clear
             </Button>
             <Button size="sm" onClick={openBulkEmailDialog} className="bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] gap-1.5">
@@ -647,8 +694,18 @@ export default function AdminUsersPage() {
           {/* Pagination */}
           {users.length > 0 && (
             <div className="flex items-center justify-between mt-6 pt-4 border-t border-[#D4A843]/15">
-              <div className="text-sm font-sans text-[#2C3E50]/70">
-                Showing page {pagination.page} of {pagination.pages} ({pagination.total} total)
+              <div className="flex flex-wrap items-center gap-3 text-sm font-sans text-[#2C3E50]/70">
+                <span>Showing page {pagination.page} of {pagination.pages} ({pagination.total} total)</span>
+                <label className="flex items-center gap-2">
+                  Rows per page
+                  <select
+                    value={pageSize}
+                    onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+                    className="h-8 rounded-md border border-[#D4A843]/30 bg-white px-2 text-[#1A1A1A]"
+                  >
+                    {[20, 50, 100].map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </label>
               </div>
               <div className="flex gap-2">
                 <Button

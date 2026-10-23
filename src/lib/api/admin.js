@@ -63,6 +63,8 @@ export const adminApi = {
    */
   bulkEmailUsers: (userIds, subject, message) =>
     adminClient.post('/api/admin/users/bulk-email', { userIds, subject, message }),
+  /** IDs of every user matching the Users-list filters ("Select all N matching"). */
+  getMatchingUserIds: (params) => adminClient.get('/api/admin/users/ids', { params }),
 
   /**
    * Preview how many users a re-engagement blast would reach
