@@ -26,7 +26,7 @@ import { getFriendlyErrorMessage } from '@/lib/errorMessages';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
@@ -1105,9 +1105,9 @@ export default function RegisterPage() {
                     <p className="font-sans text-[11px] tracking-[0.18em] uppercase text-[#D4A843] font-semibold mb-0.5">
                       Step 1 of 7
                     </p>
-                    <CardTitle className="font-serif text-2xl text-white font-bold leading-tight tracking-tight">
+                    <h1 className="font-serif text-2xl text-white font-bold leading-tight tracking-tight">
                       {stepTitles[0].label}
-                    </CardTitle>
+                    </h1>
                   </div>
                 </div>
                 <div className="hidden sm:flex items-center gap-1.5 font-sans text-xs text-white/75 font-medium whitespace-nowrap">
@@ -1562,9 +1562,9 @@ export default function RegisterPage() {
                     <p className="font-sans text-[11px] tracking-[0.18em] uppercase text-[#D4A843] font-semibold mb-0.5">
                       Step {currentStep} of 7
                     </p>
-                    <CardTitle className="font-serif text-2xl text-white font-bold leading-tight tracking-tight">
+                    <h1 className="font-serif text-2xl text-white font-bold leading-tight tracking-tight">
                       {stepTitles[currentStep - 1].label}
-                    </CardTitle>
+                    </h1>
                   </div>
                 </div>
               </div>

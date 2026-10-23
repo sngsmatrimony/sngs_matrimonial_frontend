@@ -2,7 +2,8 @@ import LegalPage, { ContactBlock, List, Note, P, Section, Sub } from '@/componen
 import { SITE_NAME } from '@/lib/siteInfo';
 
 export const metadata = {
-  title: 'Shipping & Delivery Policy | SNGS Matrimony',
+  title: 'Shipping & Delivery Policy',
+  alternates: { canonical: '/shipping-and-delivery' },
   description: 'SNGS Matrimony is a digital service: how plans, credits, downloads and Alliance Meet registrations are delivered.',
 };
 

@@ -74,9 +74,9 @@ export default function Preloader() {
 
         {/* Wordmark */}
         <div className="text-center">
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1A1A1A] tracking-tight">
+          <p className="font-serif text-2xl sm:text-3xl font-bold text-[#1A1A1A] tracking-tight">
             SNGS Matrimonial
-          </h1>
+          </p>
           <p className="mt-1.5 font-sans text-[11px] sm:text-xs tracking-[0.2em] uppercase text-[#D4A843] font-semibold">
             Finding Your Perfect Match
           </p>

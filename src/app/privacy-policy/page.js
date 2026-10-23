@@ -2,7 +2,8 @@ import LegalPage, { ContactBlock, List, P, Section, Sub } from '@/components/leg
 import { OPERATOR, SITE_NAME, SITE_URL } from '@/lib/siteInfo';
 
 export const metadata = {
-  title: 'Privacy Policy | SNGS Matrimony',
+  title: 'Privacy Policy',
+  alternates: { canonical: '/privacy-policy' },
   description: 'What personal information SNGS Matrimony collects, who can see it, which service providers process it, how long it is kept and your rights.',
 };
 

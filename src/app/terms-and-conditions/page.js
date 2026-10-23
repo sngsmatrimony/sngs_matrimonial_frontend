@@ -3,7 +3,8 @@ import LegalPage, { ContactBlock, List, Note, P, Section, Sub } from '@/componen
 import { JURISDICTION, OPERATOR, SITE_NAME, SITE_URL } from '@/lib/siteInfo';
 
 export const metadata = {
-  title: 'Terms & Conditions | SNGS Matrimony',
+  title: 'Terms & Conditions',
+  alternates: { canonical: '/terms-and-conditions' },
   description: 'The terms for using SNGS Matrimony: eligibility, profile approval, credits and payments, member conduct and account deletion.',
 };
 

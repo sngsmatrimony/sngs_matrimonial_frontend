@@ -8,6 +8,8 @@ import MobileBottomNav, { BottomNavSpacer } from '@/components/layout/MobileBott
 import Preloader from '@/components/layout/Preloader';
 import ScrollManager from '@/components/layout/ScrollManager';
 import { Analytics } from "@vercel/analytics/next";
+import JsonLd from "@/components/seo/JsonLd";
+import { DEFAULT_DESCRIPTION, DEFAULT_TITLE, KEYWORDS, SITE_ORIGIN, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 
 
 // Configure Inter for all standard UI and body text (sans-serif)
@@ -25,12 +27,48 @@ const playfair = Playfair_Display({
 });
 
 export const metadata = {
-  title: "SNGS Matrimonial",
-  description: "Find your perfect match within the Malayalee Community.",
+  metadataBase: new URL(SITE_ORIGIN),
+  title: {
+    default: DEFAULT_TITLE,
+    template: '%s | SNGS Matrimony',
+  },
+  description: DEFAULT_DESCRIPTION,
+  applicationName: 'SNGS Matrimony',
+  keywords: KEYWORDS,
+  category: 'Matrimony',
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    siteName: 'SNGS Matrimony',
+    locale: 'en_IN',
+    url: '/',
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
+  },
+  // Search Console / Bing Webmaster ownership codes, set in Vercel env vars.
+  verification: {
+    ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION && { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }),
+    ...(process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION && { other: { 'msvalidate.01': process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION } }),
+  },
+  formatDetection: { telephone: false },
   icons: {
     icon: '/icon.png',
     apple: '/apple-icon.png',
   },
+};
+
+export const viewport = {
+  themeColor: '#2C3E50',
 };
 
 export default function RootLayout({ children }) {
@@ -38,6 +76,8 @@ export default function RootLayout({ children }) {
     /* Injecting the new Sacred Modernity font variables globally */
     <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
       <body className="font-sans antialiased bg-[#FDF8F0] text-[#1A1A1A] flex flex-col min-h-screen">
+        {/* Who we are, for search engines and AI assistants (every page). */}
+        <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
         <Preloader />
         <Providers>
           

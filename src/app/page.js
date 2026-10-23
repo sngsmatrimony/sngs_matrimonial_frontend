@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
 import { ShieldCheck, Users, Search, MessageCircle, Star, Heart, Award, CheckCircle2 } from 'lucide-react';
@@ -35,11 +35,14 @@ const DEFAULT_HOW_IT_WORKS = {
   ],
 };
 
+const subscribeNoop = () => () => {};
+
 export default function Home() {
   const { token, user, initializeAuth } = useAuthStore();
   const router = useRouter();
+  // false on the server and during hydration, true in the browser after.
+  const hasMounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [initTimeout, setInitTimeout] = useState(false);
   const heroContent = DEFAULT_HERO_CONTENT;
   const howItWorksContent = DEFAULT_HOW_IT_WORKS;
 
@@ -52,17 +55,6 @@ export default function Home() {
     init();
   }, [initializeAuth]);
 
-  // Timeout safety net
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (!isInitialized) {
-        setInitTimeout(true);
-      }
-    }, 10000);
-    return () => clearTimeout(timeout);
-  }, [isInitialized]);
-
-
   // Redirect authenticated users
   useEffect(() => {
     if (isInitialized && token && user) {
@@ -70,8 +62,10 @@ export default function Home() {
     }
   }, [isInitialized, token, user, router]);
 
-  // Loading state
-  if ((!isInitialized && !initTimeout) || (token && user)) {
+  // The full page is server-rendered so search engines and AI crawlers read
+  // it; signed-in members only see a spinner while they're sent to /browse.
+  // (Checked after mount: the saved session only exists in the browser.)
+  if (hasMounted && token && user) {
     return (
       <div className="min-h-screen bg-[#FDF8F0] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -101,12 +95,13 @@ export default function Home() {
             <p className="font-sans text-[#D4A843] font-semibold text-sm uppercase tracking-[0.2em] mb-4">
               {heroContent.badge}
             </p>
-            <h2 className="font-serif text-4xl md:text-5xl lg:text-[56px] text-white font-bold leading-tight mb-6">
+            {/* The page's main heading (one <h1> per page, for search engines). */}
+            <h1 className="font-serif text-4xl md:text-5xl lg:text-[56px] text-white font-bold leading-tight mb-6">
               {heroContent.title} <br />
               <span className="text-[#F5E6C3] text-3xl md:text-4xl lg:text-[42px] font-medium block mt-2">
                 {heroContent.subtitle}
               </span>
-            </h2>
+            </h1>
             <p className="text-lg text-white/80 mb-10 max-w-2xl mx-auto font-light">
               Join thousands of verified families on a platform built on deep community roots, trust, and shared values.
             </p>

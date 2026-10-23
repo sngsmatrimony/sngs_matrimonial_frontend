@@ -93,12 +93,12 @@ export default function Header({ showLogout = false, isFixed = false }) {
               Full name from sm: up; a short mobile label keeps the header from
               reading as blank branding on narrow screens where the full name
               and a menu button together wouldn't fit comfortably. */}
-          <h1 className="font-serif text-2xl font-bold text-[#2C3E50] hidden sm:block tracking-wide">
+          <p className="font-serif text-2xl font-bold text-[#2C3E50] hidden sm:block tracking-wide">
             SNGS Matrimonial
-          </h1>
-          <h1 className="font-serif text-xl font-bold text-[#2C3E50] sm:hidden tracking-wide">
+          </p>
+          <p className="font-serif text-xl font-bold text-[#2C3E50] sm:hidden tracking-wide">
             SNGS
-          </h1>
+          </p>
         </Link>
 
         {/* Desktop Navigation Links - Centered with animated Gold underlines */}

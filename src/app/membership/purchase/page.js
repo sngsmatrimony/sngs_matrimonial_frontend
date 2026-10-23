@@ -268,9 +268,9 @@ export default function PurchaseMembershipPage() {
               className="h-12 w-auto rounded shadow-sm"
               style={{ width: 'auto', height: 'auto' }}
             />
-            <h1 className="font-serif text-2xl font-bold text-[#1A1A1A] hidden sm:block">
+            <p className="font-serif text-2xl font-bold text-[#1A1A1A] hidden sm:block">
               SNGS Matrimonial
-            </h1>
+            </p>
           </Link>
 
           {/* Welcome Message - Center */}

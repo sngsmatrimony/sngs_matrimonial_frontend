@@ -18,6 +18,8 @@ const LINK_COLUMNS = [
       { label: 'Home', href: '/' },
       { label: 'Search Matches', href: '/browse' },
       { label: 'Membership Plans', href: '/membership/purchase' },
+      { label: 'NRI Matrimony', href: '/nri-matrimony' },
+      { label: 'FAQ', href: '/faq' },
       { label: 'About Us', href: '/about-us' },
       { label: 'Contact', href: '/contact' },
     ],

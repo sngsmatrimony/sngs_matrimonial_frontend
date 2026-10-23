@@ -3,7 +3,8 @@ import LegalPage, { ContactBlock, List, Note, P, Section, Sub } from '@/componen
 import { CONTACT_EMAIL, SITE_NAME } from '@/lib/siteInfo';
 
 export const metadata = {
-  title: 'Cancellation & Refund Policy | SNGS Matrimony',
+  title: 'Cancellation & Refund Policy',
+  alternates: { canonical: '/cancellation-and-refund' },
   description: 'Refund rules for SNGS Matrimony plans, credit packs and Alliance Meet registrations, and how to request a refund.',
 };
 
