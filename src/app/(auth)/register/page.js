@@ -319,10 +319,6 @@ export default function RegisterPage() {
     }
   };
 
-  const verifyMobileAndLoadDraft = async () => {
-    const idToken = await verifyMobileOTP();
-    if (idToken) await loadDraft(form.getValues('mobileNumber') || formData.mobileNumber, idToken);
-  };
 
   // The step form also holds (stale, empty) copies of the file fields, so
   // merging its values must never overwrite the files actually chosen.
@@ -513,6 +509,59 @@ export default function RegisterPage() {
     window.scrollTo({ top: 0, behavior: 'auto' });
     stepHeadingRef.current?.focus({ preventScroll: true });
   }, [currentStep]);
+
+  // Step-1 details are kept from the moment the phone is OTP-verified —
+  // before Next — so someone who verifies and then leaves is still on the
+  // admin's list. Saved to registration_leads and phone_verified_leads; the
+  // latter is cleared by the server once they press Next. Plain fetch with
+  // keepalive (survives closing the tab), and errors are ignored: this never
+  // interrupts registration.
+  const leadCaptureStoppedRef = useRef(false);
+  const captureVerifiedLead = useCallback((idToken) => {
+    if (leadCaptureStoppedRef.current) return;
+    const v = form.getValues();
+    const token = idToken || mobileIdToken;
+    const mobile = v.mobileNumber || formData.mobileNumber;
+    if (!token || !mobile) return;
+    const dob = v.dateOfBirth instanceof Date && !Number.isNaN(v.dateOfBirth.getTime()) ? format(v.dateOfBirth, 'yyyy-MM-dd') : undefined;
+    fetch(`${client.defaults.baseURL}/api/auth/register/verified`, {
+      method: 'POST',
+      keepalive: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mobileNumber: mobile,
+        mobileIdToken: token,
+        fullName: v.fullName,
+        dateOfBirth: dob,
+        gender: v.gender,
+        seekingGender: v.seekingGender,
+        placeCountry: v.placeCountry,
+        placeCity: v.placeCity,
+        ageFrom: v.ageFrom,
+        ageTo: v.ageTo,
+      }),
+    }).catch(() => {});
+  }, [form, formData.mobileNumber, mobileIdToken]);
+
+  // Keep it up to date while they finish step 1 (2s after they stop typing).
+  useEffect(() => {
+    if (currentStep !== 1 || !mobileVerified || !mobileIdToken) return undefined;
+    let timer;
+    const subscription = form.watch(() => {
+      clearTimeout(timer);
+      timer = setTimeout(() => captureVerifiedLead(), 2000);
+    });
+    return () => { clearTimeout(timer); subscription.unsubscribe(); };
+  }, [currentStep, mobileVerified, mobileIdToken, form, captureVerifiedLead]);
+
+  const verifyMobileAndLoadDraft = async () => {
+    const idToken = await verifyMobileOTP();
+    if (idToken) {
+      leadCaptureStoppedRef.current = false;
+      captureVerifiedLead(idToken);
+      await loadDraft(form.getValues('mobileNumber') || formData.mobileNumber, idToken);
+    }
+  };
 
   useEffect(() => {
     if (prevStepRef.current !== currentStep) {
@@ -715,10 +764,15 @@ export default function RegisterPage() {
       }
 
       const values = form.getValues();
+      // No more "verified, still on step 1" saves once Next is pressed.
+      leadCaptureStoppedRef.current = true;
       setIsLoading(true);
       const saved = await startRegistrationLead(values);
       setIsLoading(false);
-      if (!saved) return;
+      if (!saved) {
+        leadCaptureStoppedRef.current = false;
+        return;
+      }
 
       const next = {
         ...formData,

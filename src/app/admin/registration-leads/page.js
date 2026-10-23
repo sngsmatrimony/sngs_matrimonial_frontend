@@ -107,7 +107,9 @@ export default function AdminRegistrationLeadsPage() {
                           : '—'}
                       </TableCell>
                       <TableCell className="text-sm font-sans text-[#2C3E50] whitespace-nowrap">
-                        {lead.steps_completed
+                        {lead.verified_only && !lead.steps_completed
+                          ? <span className="font-semibold text-[#C75B39]">Phone verified — stopped before step 2</span>
+                          : lead.steps_completed
                           ? <>
                               <span className="font-semibold text-[#1A1A1A]">{lead.steps_completed} of 7 steps</span>
                               {lead.last_saved_at && (
