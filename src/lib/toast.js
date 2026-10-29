@@ -33,6 +33,9 @@ export const toastWarning = (message, options = {}) => {
   });
 };
 
+/** Close every pop-up on screen (e.g. before a full-page message). */
+export const dismissToasts = () => toast.dismiss();
+
 /**
  * Generic toast function with all options
  */

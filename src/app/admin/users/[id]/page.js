@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api/admin';
+import { missingPhotoParts } from '@/lib/profilePhotos';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -710,6 +711,22 @@ export default function AdminUserDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Approval needs a profile photo and at least one gallery photo
+                (enforced by the server too) — say so before anyone clicks. */}
+            {user.approvalStatus !== 'approved' && missingPhotoParts(user).length > 0 && (
+              <div role="status" className="mb-4 flex items-start gap-3 rounded-xl border border-[#C75B39]/35 bg-[#C75B39]/5 p-4">
+                <ImageIcon size={20} className="mt-0.5 shrink-0 text-[#C75B39]" />
+                <div className="font-sans text-sm text-[#2C3E50]">
+                  <p className="font-semibold text-[#1A1A1A]">Can&apos;t approve yet: photos missing</p>
+                  <p className="mt-0.5">
+                    This member hasn&apos;t uploaded {missingPhotoParts(user).join(' and ')}. Both a profile photo and at
+                    least one gallery photo are required before approval. Ask the member to add them (they see an
+                    &ldquo;Add your photos&rdquo; prompt when they sign in), or upload them below on their behalf.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* A rejected member can still be approved (e.g. after a phone call
                 sorts out the issue) without waiting for them to resubmit. */}
             {user.approvalStatus === 'rejected' && (
@@ -717,7 +734,7 @@ export default function AdminUserDetailPage() {
                 <Button
                   className="bg-green-600 text-white hover:bg-green-700"
                   onClick={handleApproveUser}
-                  disabled={approveMutation.isPending}
+                  disabled={approveMutation.isPending || missingPhotoParts(user).length > 0}
                 >
                   <CheckCircle size={16} className="mr-2" />
                   {approveMutation.isPending ? 'Approving...' : 'Approve User'}
@@ -731,7 +748,7 @@ export default function AdminUserDetailPage() {
                 <Button
                   className="bg-green-600 text-white hover:bg-green-700"
                   onClick={handleApproveUser}
-                  disabled={approveMutation.isPending}
+                  disabled={approveMutation.isPending || missingPhotoParts(user).length > 0}
                 >
                   <CheckCircle size={16} className="mr-2" />
                   {approveMutation.isPending ? 'Approving...' : 'Approve User'}

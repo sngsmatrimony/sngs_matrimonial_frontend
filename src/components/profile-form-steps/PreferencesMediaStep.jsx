@@ -10,6 +10,9 @@ import { X, Image as ImageIcon, FileText } from 'lucide-react';
 import Image from 'next/image';
 import { useAuthStore } from '@/store/authStore';
 import { toastSuccess, toastError, toastWarning } from '@/lib/toast';
+import {
+  keepFileInMemory, preparePhoto, PhotoError, PHOTO_ACCEPT, PHOTO_FORMATS_HINT, UNREADABLE_FILE_MESSAGE,
+} from '@/lib/pickedFiles';
 
 const INTERESTS = [
   'Painting', 'Coding', 'Poetry', 'Reading', 'Writing', 'Photography',
@@ -30,20 +33,6 @@ const PROFILE_BANNER_COLORS = [
   { value: '#FFEAA7', label: 'Pastel Butter', name: 'butter' },
 ];
 
-// Same rules the server enforces (s3.service.js photoUpload) — caught here,
-// while the member can still pick another file, instead of after the account
-// is created when the upload would fail.
-const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
-function photoProblem(file) {
-  if (!['image/jpeg', 'image/png'].includes(file.type)) {
-    return `"${file.name}" isn't a JPEG or PNG photo. Please choose a JPEG or PNG image.`;
-  }
-  if (file.size > MAX_PHOTO_BYTES) {
-    return `"${file.name}" is larger than 10 MB. Please choose a smaller photo.`;
-  }
-  return null;
-}
-
 export function PreferencesMediaStep({
   form,
   userProfile = null,
@@ -60,6 +49,9 @@ export function PreferencesMediaStep({
   // saved photo, and a photo waiting for "Save" doesn't count yet).
   uploadGalleryImmediately = false,
   onGalleryUploadingChange = null,
+  // Told while picked photos are being prepared, so the form's Next/Save can
+  // wait — a photo still being prepared isn't in the form yet.
+  onPreparingChange = null,
 }) {
   const { user: authUser } = useAuthStore();
   const hasInitialized = useRef(false);
@@ -74,12 +66,21 @@ export function PreferencesMediaStep({
       ? userProfile.idProof
       : null;
 
-  const handleIdProofUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleIdProofUpload = async (e) => {
+    const picked = e.target.files?.[0];
+    if (!picked) return;
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (picked.size > 5 * 1024 * 1024) {
       toastError('ID proof file must be under 5 MB');
+      return;
+    }
+
+    let file;
+    try {
+      file = await keepFileInMemory(picked);
+    } catch {
+      toastError(UNREADABLE_FILE_MESSAGE);
+      e.target.value = '';
       return;
     }
 
@@ -110,6 +111,33 @@ export function PreferencesMediaStep({
   const [localGalleryPhotos, setLocalGalleryPhotos] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  // Which photo section is busy preparing picked photos: 'profile' | 'gallery' | null.
+  const [preparingPhotos, setPreparingPhotos] = useState(null);
+
+  // Copy picked photos into memory (resized) right away — see lib/pickedFiles.
+  // One at a time, so a phone isn't decoding ten camera photos at once.
+  const preparePicked = async (files, section) => {
+    setPreparingPhotos(section);
+    onPreparingChange?.(true);
+    try {
+      const ready = [];
+      for (const file of files) {
+        try {
+          const photo = await preparePhoto(file);
+          if (photo.small) {
+            toastWarning(`"${file.name}" is quite small (${photo.width}×${photo.height}), so it may look blurry. A larger, clearer photo helps your profile get approved.`);
+          }
+          ready.push(photo.file);
+        } catch (error) {
+          toastError(error instanceof PhotoError ? error.message : UNREADABLE_FILE_MESSAGE);
+        }
+      }
+      return ready;
+    } finally {
+      setPreparingPhotos(null);
+      onPreparingChange?.(false);
+    }
+  };
 
   // Saved photos (server order, so their index matches DELETE /photo/:index)
   // followed by any still waiting to be uploaded.
@@ -150,12 +178,8 @@ export function PreferencesMediaStep({
   }, [onFileUpdate, userProfile, authUser]);
 
   const handlePhotoUpload = async (e) => {
-    const files = Array.from(e.target.files || []).filter((file) => {
-      const problem = photoProblem(file);
-      if (problem) toastError(problem);
-      return !problem;
-    });
-    if (files.length === 0) {
+    const picked = Array.from(e.target.files || []);
+    if (picked.length === 0) {
       if (e.target) e.target.value = '';
       return;
     }
@@ -165,8 +189,14 @@ export function PreferencesMediaStep({
       ? (galleryPhotos || []).length
       : localGalleryPhotos.length;
 
-    if (currentPhotos + files.length > 10) {
+    if (currentPhotos + picked.length > 10) {
       toastWarning('Maximum 10 photos allowed');
+      return;
+    }
+
+    const files = await preparePicked(picked, 'gallery');
+    if (files.length === 0) {
+      if (e.target) e.target.value = '';
       return;
     }
 
@@ -211,12 +241,12 @@ export function PreferencesMediaStep({
     }
   };
 
-  const handleProfilePictureUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const problem = photoProblem(file);
-    if (problem) {
-      toastError(problem);
+  const handleProfilePictureUpload = async (e) => {
+    const picked = e.target.files?.[0];
+    if (!picked) return;
+
+    const [file] = await preparePicked([picked], 'profile');
+    if (!file) {
       e.target.value = '';
       return;
     }
@@ -456,13 +486,17 @@ export function PreferencesMediaStep({
             <Input
               ref={profilePictureInputRef}
               type="file"
-              accept="image/jpeg,image/png"
+              accept={PHOTO_ACCEPT}
               onChange={handleProfilePictureUpload}
+              disabled={!!preparingPhotos}
               className="font-sans"
             />
+            {preparingPhotos === 'profile' && (
+              <p className="text-sm font-sans text-[#2C3E50]" role="status">Preparing photo...</p>
+            )}
             <p className="flex items-start gap-1.5 text-xs text-gray-500 font-sans">
               <ImageIcon className="w-3.5 h-3.5 mt-0.5 shrink-0 text-gray-400" strokeWidth={1.75} />
-              JPEG or PNG, up to 10 MB. Use a clear, recent, well-lit photo of your face — low-quality or blurry photos may not be approved by our admin team.
+              {PHOTO_FORMATS_HINT} Use a clear, recent, well-lit photo of your face — low-quality or blurry photos may not be approved by our admin team.
             </p>
           </div>
         </div>
@@ -513,17 +547,19 @@ export function PreferencesMediaStep({
           ref={galleryPhotosInputRef}
           type="file"
           multiple
-          accept="image/jpeg,image/png"
+          accept={PHOTO_ACCEPT}
           onChange={handlePhotoUpload}
-          disabled={isUploadingGallery || isDeleting}
+          disabled={isUploadingGallery || isDeleting || !!preparingPhotos}
           className="font-sans"
         />
-        {isUploadingGallery && (
-          <p className="text-sm font-sans text-[#2C3E50]" role="status">Uploading photo...</p>
+        {(isUploadingGallery || preparingPhotos === 'gallery') && (
+          <p className="text-sm font-sans text-[#2C3E50]" role="status">
+            {isUploadingGallery ? 'Uploading photo...' : 'Preparing photo...'}
+          </p>
         )}
         <p className="flex items-start gap-1.5 text-xs text-gray-500 font-sans">
           <ImageIcon className="w-3.5 h-3.5 mt-0.5 shrink-0 text-gray-400" strokeWidth={1.75} />
-          JPEG or PNG, up to 10 MB each. Add at least one clear, good-quality photo — blurry, dark, or heavily filtered photos may delay admin approval.
+          {PHOTO_FORMATS_HINT} Add at least one clear, good-quality photo — blurry, dark, or heavily filtered photos may delay admin approval.
         </p>
         {((onFileUpdate ? galleryPhotos : localGalleryPhotos) || []).length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { toastWarning } from '@/lib/toast';
+import { missingPhotoParts, ADD_PHOTOS_HREF } from '@/lib/profilePhotos';
 
 // Routes that stay accessible regardless of approval status. Everything else
 // under the guarded layout is blocked by default until approved.
@@ -89,6 +91,27 @@ export default function ApprovalGuard({ children }) {
   // A loaded, pending-approval user hitting a guarded route — shown in place
   // instead of redirecting away, so the status is explained rather than
   // leaving a generic "Verifying access..." spinner that reads as stuck.
+  if (user && !hasAccess && isPending() && missingPhotoParts(user).length > 0) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center px-4">
+        <div className="flex flex-col items-center gap-3 text-center max-w-sm">
+          <p className="font-serif text-lg text-[#1A1A1A] font-semibold">
+            Your Photos Are Missing
+          </p>
+          <p className="font-sans text-[#2C3E50] text-sm leading-relaxed">
+            Your profile is missing {missingPhotoParts(user).join(' and ')}. Our team can only review and approve your profile once your photos are added.
+          </p>
+          <Link
+            href={ADD_PHOTOS_HREF}
+            className="mt-1 font-sans text-sm font-semibold text-[#1A1A1A] bg-[#D4A843] hover:bg-[#B8860B] px-5 py-2.5 rounded-lg transition-colors"
+          >
+            Add Photos
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (user && !hasAccess && isPending()) {
     return (
       <div className="min-h-[50vh] flex items-center justify-center px-4">

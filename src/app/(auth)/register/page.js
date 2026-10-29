@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthBackground from '@/components/auth/AuthBackground';
+import RegistrationUploadIssue from '@/components/auth/RegistrationUploadIssue';
+import { ADD_PHOTOS_HREF } from '@/lib/profilePhotos';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -41,7 +43,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAuthStore } from '@/store/authStore';
 import { useIdProofRequired } from '@/hooks/useIdProofRequired';
-import { toastSuccess, toastError } from '@/lib/toast';
+import { toastSuccess, toastError, dismissToasts } from '@/lib/toast';
 import { convertTo24Hour, buildTimeFromDropdowns } from '@/lib/time';
 import { noPasteHandlers } from '@/lib/noPasteHandlers';
 import { MONTHS, COUNTRIES } from '@/lib/constants/formData';
@@ -296,6 +298,10 @@ export default function RegisterPage() {
   // (e.g. the OTP expired near the end) must not offer to "continue".
   const sessionStepsRef = useRef(0);
   const [resumeOffer, setResumeOffer] = useState(null);
+  // Set when the account was created but some files didn't upload: { left, retrying }.
+  const [uploadIssue, setUploadIssue] = useState(null);
+  // Photos picked at step 6 are still being prepared (not in formData yet).
+  const [photosPreparing, setPhotosPreparing] = useState(false);
   const [resumeBusy, setResumeBusy] = useState(false);
 
   // Draft calls use fetch rather than the shared client: its 401 handler
@@ -874,6 +880,44 @@ export default function RegisterPage() {
     setCurrentStep(currentStep + 1);
   };
 
+  // Uploads the files chosen during registration (the account must exist).
+  // Returns the ones that didn't make it so they can be retried as they are —
+  // they're kept in memory (lib/pickedFiles), not read from the device again.
+  // The store's upload actions return { success: false } rather than throwing.
+  const uploadRegistrationFiles = async ({ profilePicture, galleryPhotos = [], horoscope, idProof }) => {
+    const store = useAuthStore.getState();
+    const uploaded = async (upload) => {
+      try {
+        return (await upload())?.success === true;
+      } catch {
+        return false;
+      }
+    };
+    const left = { profilePicture: null, galleryPhotos: [], horoscope: null, idProof: null };
+    if (profilePicture?.file && !(await uploaded(() => store.uploadProfilePicture(profilePicture.file)))) {
+      left.profilePicture = profilePicture;
+    }
+    for (const photo of galleryPhotos.filter((p) => p.file && !p.existing)) {
+      if (!(await uploaded(() => store.uploadPhoto(photo.file)))) left.galleryPhotos.push(photo);
+    }
+    if (horoscope?.file && !(await uploaded(() => store.uploadHoroscopeDocument(horoscope.file)))) left.horoscope = horoscope;
+    if (idProof?.file && !(await uploaded(() => store.uploadIdProof(idProof.file)))) left.idProof = idProof;
+    return left;
+  };
+  const hasFilesLeft = (left) => !!(left.profilePicture || left.galleryPhotos.length || left.horoscope || left.idProof);
+
+  const retryUploads = async () => {
+    setUploadIssue((issue) => ({ ...issue, retrying: true }));
+    const left = await uploadRegistrationFiles(uploadIssue.left);
+    if (hasFilesLeft(left)) {
+      setUploadIssue({ left, retrying: false });
+      toastError('Some files still didn’t upload. Please check your internet connection and try again.');
+    } else {
+      toastSuccess('All uploaded — your profile is now with our team for review.');
+      router.push('/');
+    }
+  };
+
   const submitRegistration = async (dataToSubmit = null) => {
     const submissionData = dataToSubmit || formData;
     setIsLoading(true);
@@ -974,49 +1018,14 @@ export default function RegisterPage() {
       const result = await register(registrationData);
 
       if (result.success) {
-        // The account exists from here on; photos/documents upload as separate
-        // calls. The store's upload actions return { success: false } rather
-        // than throwing, so every result must be checked — otherwise a failed
-        // photo upload silently leaves a photo-less profile in the approval queue.
-        const store = useAuthStore.getState();
-        const failed = [];
-        const safely = async (fn) => {
-          try {
-            return await fn();
-          } catch (error) {
-            return { success: false, error: error.message };
-          }
-        };
-
-        if (submissionData.profilePicture?.file) {
-          const res = await safely(() => store.uploadProfilePicture(submissionData.profilePicture.file));
-          if (!res?.success) failed.push('profile photo');
-        }
-        const newGallery = (submissionData.galleryPhotos || []).filter((photo) => photo.file && !photo.existing);
-        let galleryUploaded = 0;
-        for (const photo of newGallery) {
-          const res = await safely(() => store.uploadPhoto(photo.file));
-          if (res?.success) galleryUploaded++;
-        }
-        if (newGallery.length > 0 && galleryUploaded < newGallery.length) {
-          failed.push(galleryUploaded === 0 ? 'gallery photos' : `${newGallery.length - galleryUploaded} gallery photo(s)`);
-        }
-        if (submissionData.horoscope?.file) {
-          const res = await safely(() => store.uploadHoroscopeDocument(submissionData.horoscope.file));
-          if (!res?.success) failed.push('horoscope document');
-        }
-        if (submissionData.idProof?.file) {
-          const res = await safely(() => store.uploadIdProof(submissionData.idProof.file));
-          if (!res?.success) failed.push('ID proof');
-        }
-
-        if (failed.length > 0) {
-          // Profile page lets a pending member add the missing files (Edit Profile).
-          toastError(
-            `Your account was created, but your ${failed.join(', ')} didn't upload. Please add them on your profile page — your profile can't be approved without your photos.`,
-            { duration: 12000 }
-          );
-          router.push('/profile');
+        // The account exists from here on; files upload as separate calls.
+        const left = await uploadRegistrationFiles(submissionData);
+        if (hasFilesLeft(left)) {
+          // A full page, not a pop-up: a pop-up here was easy to miss on a
+          // phone, leaving members waiting on an approval that can't happen.
+          dismissToasts();
+          setUploadIssue({ left, retrying: false });
+          window.scrollTo({ top: 0 });
         } else {
           toastSuccess('Registration successful. Logging you in...');
           router.push('/');
@@ -1064,14 +1073,16 @@ export default function RegisterPage() {
   const progressValue = (currentStep / 7) * 100;
   const CurrentStepIcon = stepTitles[currentStep - 1].icon;
   const isFinalStep = currentStep === 7;
-  const submitDisabled = isLoading || (isFinalStep && !emailVerified);
+  const submitDisabled = isLoading || photosPreparing || (isFinalStep && !emailVerified);
   const submitLabel = isLoading
     ? 'Processing...'
-    : isFinalStep && !emailVerified
-      ? 'Verify Email to Continue'
-      : isFinalStep
-        ? 'Complete Registration'
-        : 'Next';
+    : photosPreparing
+      ? 'Preparing photo...'
+      : isFinalStep && !emailVerified
+        ? 'Verify Email to Continue'
+        : isFinalStep
+          ? 'Complete Registration'
+          : 'Next';
   // For the quick-start Date of Birth picker — same pattern PersonalDetailsStep
   // uses for the same field in later editing contexts.
   const displayDate = form.watch('dateOfBirth');
@@ -1084,7 +1095,22 @@ export default function RegisterPage() {
       {/* 2. CONTENT WRAPPER (z-10) */}
       <div className="relative z-10 flex items-center justify-center min-h-screen w-full p-4 py-24">
         
-        {currentStep === 1 ? (
+        {uploadIssue ? (
+          <RegistrationUploadIssue
+            missing={[
+              uploadIssue.left.profilePicture && 'your profile photo',
+              uploadIssue.left.galleryPhotos.length === 1 && '1 gallery photo',
+              uploadIssue.left.galleryPhotos.length > 1 && `${uploadIssue.left.galleryPhotos.length} gallery photos`,
+              uploadIssue.left.horoscope && 'your horoscope document',
+              uploadIssue.left.idProof && 'your ID proof',
+            ].filter(Boolean)}
+            photosMissing={!!(uploadIssue.left.profilePicture || uploadIssue.left.galleryPhotos.length)}
+            retrying={uploadIssue.retrying}
+            onRetry={retryUploads}
+            onChooseOther={() => router.push(ADD_PHOTOS_HREF)}
+            onLater={() => router.push('/profile')}
+          />
+        ) : currentStep === 1 ? (
           /* STEP 1: QUICK START CARD — the minimal commitment before deciding
              to finish the rest of the form. Name, age, place, a verified
              mobile number, and a quick preferred-partner age range; nothing
@@ -1590,6 +1616,7 @@ export default function RegisterPage() {
                       idProof={formData.idProof}
                       idProofRequired={idProofRequired}
                       hidePreferredAgeRange
+                      onPreparingChange={setPhotosPreparing}
                     />
                   )}
                   {currentStep === 7 && (

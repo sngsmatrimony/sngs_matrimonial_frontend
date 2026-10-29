@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, XCircle, RefreshCw, AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
+import { Clock, XCircle, RefreshCw, AlertTriangle, ImageOff } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/button';
+import { missingPhotoParts, ADD_PHOTOS_HREF } from '@/lib/profilePhotos';
 import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
 
 // The My Profile page (UserProfileView's RejectionActionCard) already shows
@@ -12,8 +14,8 @@ import { toastSuccess, toastError, toastInfo } from '@/lib/toast';
 // two near-identical red boxes on top of each other. hideRejectionDetail
 // keeps this banner as a slim status strip with the Recheck button there,
 // and lets the in-page card be the one place the actual feedback text lives.
-export default function ApprovalStatusBanner({ hideRejectionDetail = false }) {
-  const { isPending, isRejected, getLatestRejectionReason, refreshUser } = useAuthStore();
+export default function ApprovalStatusBanner({ hideRejectionDetail = false, onProfilePage = false }) {
+  const { user, isPending, isRejected, getLatestRejectionReason, refreshUser } = useAuthStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = async () => {
@@ -41,6 +43,39 @@ export default function ApprovalStatusBanner({ hideRejectionDetail = false }) {
   }
 
   const rejectionReason = getLatestRejectionReason();
+
+  // Pending without photos: nothing is being reviewed yet — "Under Review"
+  // would tell them all is well. (On My Profile the page's own "Add your
+  // photos" card says this, with the button, so the banner steps aside.)
+  const photosMissing = missingPhotoParts(user);
+  if (isPending() && photosMissing.length > 0) {
+    if (onProfilePage) return null;
+    return (
+      <div className="bg-[#C75B39]/5 border-b border-[#C75B39]/25">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <ImageOff className="w-5 h-5 text-[#C75B39] mt-0.5 flex-shrink-0" strokeWidth={1.75} />
+              <div>
+                <p className="font-serif font-semibold text-[#1A1A1A] text-sm sm:text-base">
+                  Add your photos to get your profile reviewed
+                </p>
+                <p className="font-sans text-[#2C3E50] text-xs sm:text-sm mt-1">
+                  Your profile is missing {photosMissing.join(' and ')}. Our team can only review and approve your profile once your photos are added.
+                </p>
+              </div>
+            </div>
+            <Button asChild size="sm" className="bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold whitespace-nowrap">
+              <Link href={ADD_PHOTOS_HREF}>
+                <ImageOff className="w-4 h-4" strokeWidth={1.75} />
+                Add Photos
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Pending status banner
   if (isPending()) {

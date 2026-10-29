@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Check, FileText, X } from 'lucide-react';
 import Image from 'next/image';
 import { toastError } from '@/lib/toast';
+import { keepFileInMemory, UNREADABLE_FILE_MESSAGE } from '@/lib/pickedFiles';
 import {
   MOTHER_TONGUES,
   HEIGHTS,
@@ -42,13 +43,23 @@ export function PersonalDetailsStep({ form, user, userProfile, horoscope, onFile
       ? userProfile.horoscopeDocument
       : null;
 
-  const handleHoroscopeUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleHoroscopeUpload = async (e) => {
+    const picked = e.target.files?.[0];
+    if (!picked) return;
 
     // Validate file size
-    if (file.size > 5 * 1024 * 1024) {
+    if (picked.size > 5 * 1024 * 1024) {
       toastError('Horoscope file must be under 5 MB');
+      return;
+    }
+
+    // Registration uploads this at the very end — keep our own copy now.
+    let file;
+    try {
+      file = await keepFileInMemory(picked);
+    } catch {
+      toastError(UNREADABLE_FILE_MESSAGE);
+      e.target.value = '';
       return;
     }
 

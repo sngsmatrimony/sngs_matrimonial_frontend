@@ -4,6 +4,12 @@ import client from '@/lib/api/client';
 import useChatStore from './chatStore';
 import { useLandingStore } from './landingStore';
 
+// Uploads get longer than the client's default 15s: a photo or PDF on slow
+// mobile data can legitimately take that long.
+const UPLOAD_TIMEOUT_MS = 120000;
+const uploadError = (error) => error.response?.data?.message
+  || (error.response ? 'Upload failed' : 'Upload failed. Please check your internet connection and try again.');
+
 export const useAuthStore = create(
   persist(
     (set, get) => ({
@@ -256,11 +262,11 @@ export const useAuthStore = create(
         formData.append('photo', file);
 
         try {
-          const response = await client.post('/api/auth/upload-profile-picture', formData);
+          const response = await client.post('/api/auth/upload-profile-picture', formData, { timeout: UPLOAD_TIMEOUT_MS });
           set({ user: response.data.user });
           return { success: true, profilePictureUrl: response.data.profilePictureUrl };
         } catch (error) {
-          return { success: false, error: error.response?.data?.message || 'Upload failed' };
+          return { success: false, error: uploadError(error) };
         }
       },
 
@@ -281,11 +287,11 @@ export const useAuthStore = create(
         formData.append('photo', file);
 
         try {
-          const response = await client.post('/api/auth/upload-photo', formData);
+          const response = await client.post('/api/auth/upload-photo', formData, { timeout: UPLOAD_TIMEOUT_MS });
           set({ user: response.data.user });
           return { success: true, photoUrl: response.data.photoUrl };
         } catch (error) {
-          return { success: false, error: error.response?.data?.message || 'Upload failed' };
+          return { success: false, error: uploadError(error) };
         }
       },
 
@@ -306,7 +312,7 @@ export const useAuthStore = create(
         formData.append('document', file);
 
         try {
-          const response = await client.post('/api/auth/upload-horoscope-document', formData);
+          const response = await client.post('/api/auth/upload-horoscope-document', formData, { timeout: UPLOAD_TIMEOUT_MS });
           set((state) => ({
             user: {
               ...state.user,
@@ -315,7 +321,7 @@ export const useAuthStore = create(
           }));
           return { success: true, horoscopeDocument: response.data.horoscopeDocument };
         } catch (error) {
-          return { success: false, error: error.response?.data?.message || 'Upload failed' };
+          return { success: false, error: uploadError(error) };
         }
       },
 
@@ -341,7 +347,7 @@ export const useAuthStore = create(
         formData.append('document', file);
 
         try {
-          const response = await client.post('/api/auth/upload-id-proof', formData);
+          const response = await client.post('/api/auth/upload-id-proof', formData, { timeout: UPLOAD_TIMEOUT_MS });
           set((state) => ({
             user: {
               ...state.user,
@@ -350,7 +356,7 @@ export const useAuthStore = create(
           }));
           return { success: true, idProof: response.data.idProof };
         } catch (error) {
-          return { success: false, error: error.response?.data?.message || 'Upload failed' };
+          return { success: false, error: uploadError(error) };
         }
       },
 

@@ -170,6 +170,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
   const [removedDocs, setRemovedDocs] = useState({});
   // A gallery photo uploads as soon as it's picked; hold Save until it lands.
   const [galleryUploading, setGalleryUploading] = useState(false);
+  const [photosPreparing, setPhotosPreparing] = useState(false);
   const withoutRemoved = (profile) => {
     if (!profile) return profile;
     const next = { ...profile };
@@ -885,6 +886,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
                 onDeleteIdProof={handleDeleteIdProof}
                 uploadGalleryImmediately
                 onGalleryUploadingChange={setGalleryUploading}
+                onPreparingChange={setPhotosPreparing}
               />
             )}
           </div>
@@ -909,10 +911,10 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
 
         <Button
           type="submit"
-          disabled={isLoading || galleryUploading}
+          disabled={isLoading || galleryUploading || photosPreparing}
           className="flex-1 bg-primary text-primary-foreground font-sans font-semibold"
         >
-          {isLoading ? 'Saving...' : galleryUploading ? 'Uploading photo...' : currentStep === 5 ? 'Save Profile' : 'Next'}
+          {isLoading ? 'Saving...' : galleryUploading ? 'Uploading photo...' : photosPreparing ? 'Preparing photo...' : currentStep === 5 ? 'Save Profile' : 'Next'}
           {!isLoading && currentStep < 5 && <ChevronRight className="ml-2 w-4 h-4" />}
         </Button>
       </div>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api/admin';
+import { missingPhotoParts } from '@/lib/profilePhotos';
 import { formatDateDDMMYYYY } from '@/lib/time';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -634,15 +635,28 @@ export default function AdminUsersPage() {
                         <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                           {user.approvalStatus === 'pending' && (
                             <>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-[#2E7D32] hover:text-white hover:bg-[#2E7D32] border-[#2E7D32]/30"
-                                onClick={() => handleApproveUser(user._id)}
-                              >
-                                <CheckCircle size={14} className="mr-1" />
-                                Approve
-                              </Button>
+                              {missingPhotoParts(user).length > 0 ? (
+                                // The server refuses approval without both photos; say so up front.
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled
+                                  title={`Can't approve yet: missing ${missingPhotoParts(user).join(' and ')}`}
+                                  className="text-[#C75B39] border-[#C75B39]/30 disabled:opacity-100"
+                                >
+                                  Needs Photos
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-[#2E7D32] hover:text-white hover:bg-[#2E7D32] border-[#2E7D32]/30"
+                                  onClick={() => handleApproveUser(user._id)}
+                                >
+                                  <CheckCircle size={14} className="mr-1" />
+                                  Approve
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="outline"

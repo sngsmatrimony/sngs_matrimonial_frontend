@@ -262,7 +262,7 @@ export default function UserLayout({ children }) {
 
       {/* Tab Content */}
       <div className="bg-white pt-[65px] md:pt-[121px]">
-        <ApprovalStatusBanner hideRejectionDetail={pathname === '/profile'} />
+        <ApprovalStatusBanner hideRejectionDetail={pathname === '/profile'} onProfilePage={pathname === '/profile'} />
         <RenewPlanDialog />
         <SocketProvider>
           <ApprovalGuard>
