@@ -2,7 +2,8 @@
 
 import { Children, useState } from 'react';
 import Image from 'next/image';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import ScrollableTabsList from '@/components/shared/ScrollableTabsList';
 import { FileText, Download, Lock, Phone } from 'lucide-react';
 import ImageLightbox from '@/components/ui/image-lightbox';
 import { Button } from '@/components/ui/button';
@@ -150,8 +151,9 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      {/* One scrollable row on phones instead of tabs wrapping into ragged rows. */}
-      <TabsList className="w-full flex flex-nowrap md:flex-wrap justify-start md:justify-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden h-auto bg-[#F5E6C3]/40 p-1 rounded-xl gap-1">
+      {/* One scrollable row on phones instead of tabs wrapping into ragged rows,
+          with a fade + "More" button showing there are more tabs to the side. */}
+      <ScrollableTabsList className="w-full flex flex-nowrap md:flex-wrap justify-start md:justify-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden h-auto bg-[#F5E6C3]/40 p-1 rounded-xl gap-1">
         {TABS.map((tab) => (
           <TabsTrigger
             key={tab.value}
@@ -161,7 +163,7 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
             {tab.label}
           </TabsTrigger>
         ))}
-      </TabsList>
+      </ScrollableTabsList>
 
       {/* ABOUT */}
       <TabsContent value="about" className="pt-5">
