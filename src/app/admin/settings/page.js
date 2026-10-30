@@ -13,6 +13,7 @@ import { toastSuccess, toastError } from '@/lib/toast';
 import adminClient from '@/lib/api/adminClient';
 import { noPasteHandlers } from '@/lib/noPasteHandlers';
 import PaymentSettingsSection from '@/components/admin/PaymentSettingsSection';
+import HoroscopeSettingsSection from '@/components/admin/HoroscopeSettingsSection';
 
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
@@ -983,6 +984,9 @@ export default function AdminSettingsPage() {
 
         {/* Credit packs + gateway charges */}
         <PaymentSettingsSection />
+
+        {/* Horoscope documents — visibility to members + one-time fee */}
+        <HoroscopeSettingsSection />
 
         {/* Alliance Meet — price + open/closed toggle */}
         <AccordionItem value="allianceMeet" className="border rounded-lg bg-white shadow-sm">

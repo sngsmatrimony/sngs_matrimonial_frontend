@@ -28,6 +28,12 @@ export default function ScrollableTabsList({ className, children, ...props }) {
       const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
       setEdges((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
     };
+    // A tab chosen on arrival (e.g. ?tab=horoscope) may sit off-screen:
+    // start with it centred in view, without animation.
+    const active = el.querySelector('[role="tab"][data-state="active"]');
+    if (active && active.offsetLeft + active.offsetWidth > el.clientWidth) {
+      el.scrollLeft = Math.max(0, active.offsetLeft - (el.clientWidth - active.offsetWidth) / 2);
+    }
     // Reports once straight away (sets the first state), then on any size
     // change of the bar or its tabs (rotation, fonts loading).
     const observer = new ResizeObserver(update);

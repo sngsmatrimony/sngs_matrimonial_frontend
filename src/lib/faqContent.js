@@ -36,6 +36,10 @@ export const FAQ_GROUPS = [
         a: 'A few minutes. Registration has seven short steps — starting with your name, age, place, partner age range and mobile number — and your answers are saved after each step for 30 days, so you can stop and continue later.',
       },
       {
+        q: 'Who can see my horoscope document?',
+        a: 'Your horoscope document is never shown openly. Our admin team can see it, and you always see your own. Other members can see it only when SNGS has horoscope sharing switched on, and then only after paying a one-time fee for your horoscope. Your Nakshatra, Raasi and birth details are shown on your profile as usual.',
+      },
+      {
         q: 'Can I include horoscope details?',
         a: 'Yes. Members can add their Nakshatra, Raasi, horoscope details and a horoscope document. Nakshatra and Raasi are required for Hindu members and optional for everyone else, and Hindu members see a basic Raasi compatibility check on profiles.',
       },

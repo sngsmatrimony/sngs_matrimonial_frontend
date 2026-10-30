@@ -49,7 +49,7 @@ const COST_ACTIVITIES = [
   {
     key: 'profileDownload',
     label: 'Profile Download',
-    description: 'Credits spent to download a profile as PDF/PPTX or download their horoscope document — one combined unlock covers both.',
+    description: 'Credits spent to download a profile as PDF/PPTX. (Horoscope documents are separate: a one-time fee set in Settings → Horoscope Documents.)',
   },
 ];
 

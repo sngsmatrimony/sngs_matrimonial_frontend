@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store/authStore';
 import { client } from '@/lib/api/client';
 import { toastSuccess, toastError } from '@/lib/toast';
 import { formatIncome } from '@/lib/formatIncome';
+import { formatRupees } from '@/lib/money';
 
 const TABS = [
   { value: 'about', label: 'About' },
@@ -145,8 +146,12 @@ function UnlockContactPanel({ profileId, onUnlocked }) {
  * free. `onContactUnlocked` lets the parent re-fetch the profile after a
  * successful unlock, so the real number replaces the masked prompt.
  */
-export default function ProfileTabs({ profile, mode = 'self', contactMasked = false, onDownloadHoroscope, onContactUnlocked }) {
-  const [activeTab, setActiveTab] = useState('about');
+export default function ProfileTabs({ profile, mode = 'self', contactMasked = false, onDownloadHoroscope, onUnlockHoroscope, onContactUnlocked, initialTab = 'about' }) {
+  const [activeTab, setActiveTab] = useState(TABS.some((t) => t.value === initialTab) ? initialTab : 'about');
+  // Another member's horoscope document: only once bought (or while it can
+  // be bought, a locked card with the price). The server leaves the link out
+  // otherwise — see getProfile's horoscopeAccess.
+  const horoscopePurchasable = mode === 'other' && !profile?.horoscopeDocument?.url && !!profile?.horoscopeAccess?.purchasable;
   const [lightboxIndex, setLightboxIndex] = useState(null);
 
   return (
@@ -306,26 +311,21 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
               </div>
             </div>
           )}
-          {(profile?.horoscopeDocument?.url || profile?.horoscopeDocument?.locked) && (
+          {profile?.horoscopeDocument?.url && (
             <div className="flex items-center justify-between py-2.5 border-t border-[#D4A843]/10 mt-1">
               <span className="font-sans text-[#2C3E50]/70 text-sm flex items-center gap-2">
                 <FileText size={15} className="text-[#D4A843]" />
                 Horoscope Document
               </span>
               <div className="flex items-center gap-4">
-                {/* Viewing comes with the (paid) download unlock. */}
-                {profile.horoscopeDocument.url ? (
-                  <a
-                    href={profile.horoscopeDocument.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#D4A843] hover:text-[#B8860B] font-sans font-medium text-sm underline"
-                  >
-                    View
-                  </a>
-                ) : (
-                  <span className="font-sans text-xs text-[#2C3E50]/60">Available after download</span>
-                )}
+                <a
+                  href={profile.horoscopeDocument.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#D4A843] hover:text-[#B8860B] font-sans font-medium text-sm underline"
+                >
+                  View
+                </a>
                 {onDownloadHoroscope && (
                   <button
                     onClick={onDownloadHoroscope}
@@ -336,6 +336,32 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
                   </button>
                 )}
               </div>
+            </div>
+          )}
+          {horoscopePurchasable && (
+            <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-[#D4A843]/30 bg-[#FDF8F0]">
+              <div className="flex items-start gap-3 flex-1">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5E6C3]">
+                  <Lock size={16} className="text-[#B8860B]" />
+                </span>
+                <div>
+                  <p className="font-sans text-sm font-semibold text-[#1A1A1A]">Horoscope document available</p>
+                  <p className="font-sans text-xs text-[#2C3E50]/75 mt-0.5 leading-relaxed">
+                    View and download it any time after a one-time payment of{' '}
+                    <span className="font-semibold text-[#1A1A1A]">{formatRupees(profile.horoscopeAccess.pricing?.totalAmount)}</span>
+                    {' '}(incl. payment charges).
+                  </p>
+                </div>
+              </div>
+              {onUnlockHoroscope && (
+                <Button
+                  type="button"
+                  onClick={onUnlockHoroscope}
+                  className="h-11 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold shrink-0"
+                >
+                  Unlock Horoscope
+                </Button>
+              )}
             </div>
           )}
         </Section>

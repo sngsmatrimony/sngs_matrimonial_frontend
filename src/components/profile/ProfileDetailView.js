@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Heart, MessageCircle, Download, Loader2, Bookmark, Sparkles } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useLandingStore } from '@/store/landingStore';
 import { useAuthStore } from '@/store/authStore';
 import { useLikeMutation } from '@/hooks/useLikeMutation';
@@ -15,6 +15,12 @@ import ProfilePrintView from '@/components/profile/ProfilePrintView';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import ProfileTabs from '@/components/profile/ProfileTabs';
 import SpendCreditsDialog from '@/components/shared/SpendCreditsDialog';
+import PaymentTermsDialog from '@/components/payment/PaymentTermsDialog';
+
+const HOROSCOPE_TERMS = [
+  'A one-time payment for this member’s horoscope document only. After paying you can view and download it any time.',
+  'The fee is not refundable once the horoscope has been unlocked.',
+];
 
 // Download handler for horoscope with authentication
 const handleDownloadHoroscope = async (userId) => {
@@ -72,6 +78,10 @@ const handleDownloadHoroscope = async (userId) => {
 // successful contact unlock, so the real phone number replaces the mask.
 export default function ProfileDetailView({ profileId, profile, onProfileRefresh }) {
   const router = useRouter();
+  // ?tab=horoscope (e.g. back from the horoscope payment) opens that tab.
+  const initialTab = useSearchParams().get('tab') || 'about';
+  const [showHoroscopeTerms, setShowHoroscopeTerms] = useState(false);
+  const [isStartingHoroscopePayment, setIsStartingHoroscopePayment] = useState(false);
   const { membership } = useAuthStore();
   const { setSelectedChatUserId } = useLandingStore();
   const { toggleLike, isLoading: isLikeLoading } = useLikeMutation();
@@ -79,7 +89,7 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
   const { printRef, isGenerating, downloadPDF } = useProfilePdf();
   const [liked, setLiked] = useState(profile?.isLiked || false);
   const [shortlisted, setShortlisted] = useState(profile?.isShortlisted || false);
-  const [pendingDownload, setPendingDownload] = useState(null); // null | 'pdf' | 'horoscope'
+  const [pendingDownload, setPendingDownload] = useState(null); // null | 'pdf'
   const [isUnlockingDownload, setIsUnlockingDownload] = useState(false);
   const [downloadUnlocked, setDownloadUnlocked] = useState(!!profile?.downloadUnlocked);
   // The server holds back the horoscope link until the download is unlocked;
@@ -93,8 +103,24 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
   const downloadCreditCost = downloadCost?.cost ?? 0;
 
   const runDownload = (action, horoscope = horoscopeDocument) => {
+    // The PDF includes the horoscope only when this member has bought it
+    // (the server sends its link only then).
     if (action === 'pdf') downloadPDF(profile?.fullName, horoscope?.url ? horoscope : null, profileId);
-    else handleDownloadHoroscope(profileId);
+  };
+
+  // One-time horoscope payment: terms first, then the Razorpay payment page.
+  const startHoroscopePayment = async () => {
+    setIsStartingHoroscopePayment(true);
+    try {
+      const res = await client.post(`/api/profiles/${profileId}/horoscope/order`, { acceptTerms: true });
+      router.push(`/payment/${res.data.data.orderId}`);
+    } catch (error) {
+      const data = error.response?.data;
+      setShowHoroscopeTerms(false);
+      toastError(data?.message || 'Could not start the payment. Please try again.');
+      if (data?.alreadyUnlocked || data?.horoscopesUnavailable) onProfileRefresh?.();
+      setIsStartingHoroscopePayment(false);
+    }
   };
 
   const unlockAndDownload = async (action) => {
@@ -176,8 +202,10 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
               profile={unlockedHoroscope ? { ...profile, horoscopeDocument: unlockedHoroscope } : profile}
               mode="other"
               contactMasked={!!profile.contactMasked}
-              onDownloadHoroscope={() => requestDownload('horoscope')}
+              onDownloadHoroscope={() => handleDownloadHoroscope(profileId)}
+              onUnlockHoroscope={() => setShowHoroscopeTerms(true)}
               onContactUnlocked={onProfileRefresh}
+              initialTab={initialTab}
             />
           </div>
         </div>
@@ -246,6 +274,18 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
         onConfirm={() => unlockAndDownload(pendingDownload)}
         onCancel={() => setPendingDownload(null)}
       />
+
+      {profile?.horoscopeAccess?.purchasable && (
+        <PaymentTermsDialog
+          open={showHoroscopeTerms}
+          onOpenChange={setShowHoroscopeTerms}
+          itemName="Horoscope access — this member’s horoscope document"
+          pricing={profile.horoscopeAccess.pricing}
+          terms={HOROSCOPE_TERMS}
+          busy={isStartingHoroscopePayment}
+          onAgree={startHoroscopePayment}
+        />
+      )}
     </div>
   );
 }

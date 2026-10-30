@@ -134,7 +134,7 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
             src={profileImageUrl}
             alt={isPhotoPreview ? 'Blurred photo — unlock the profile to see it' : profile?.fullName || 'Profile photo'}
             fill
-            className={`object-cover select-none ${isPhotoPreview ? 'scale-110 blur-[2px]' : ''}`}
+            className="object-cover select-none"
             sizes="(max-width: 768px) 50vw, 280px"
             unoptimized
             draggable={false}
@@ -168,8 +168,10 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
           </span>
         )}
 
+        {/* Light tint only: the photo underneath is already a soft preview,
+            and members should still see roughly who's there. */}
         {hasNoMembership && (
-          <div className="absolute inset-0 bg-[#1A1A1A]/40 backdrop-blur-[2px] flex flex-col items-center justify-center gap-1.5">
+          <div className="absolute inset-0 bg-[#1A1A1A]/15 flex flex-col items-center justify-center gap-1.5">
             <div className="bg-white/95 rounded-full p-3 shadow-lg">
               <Lock className="w-5 h-5 text-[#D4A843]" />
             </div>

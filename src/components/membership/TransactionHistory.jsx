@@ -106,7 +106,9 @@ export default function TransactionHistory() {
                       <h3 className="font-serif text-lg font-semibold text-[#1A1A1A]">
                         {txn.kind === 'alliance'
                           ? 'SNGS Alliance Meet registration'
-                          : txn.type === 'credits' ? `${txn.creditsGranted} Credits` : `${txn.planId?.name || 'Membership'} plan`}
+                          : txn.type === 'horoscope'
+                            ? 'Horoscope access'
+                            : txn.type === 'credits' ? `${txn.creditsGranted} Credits` : `${txn.planId?.name || 'Membership'} plan`}
                       </h3>
                       <Badge className={`font-sans text-xs capitalize ${STATUS_STYLES[displayTransactionStatus(txn)] || 'bg-gray-400 text-white'}`}>
                         {displayTransactionStatus(txn)}
@@ -130,7 +132,9 @@ export default function TransactionHistory() {
                     )}
                     {txn.status === 'success' && !txn.autoRefunded && txn.kind !== 'alliance' && (
                       <p className="font-sans text-xs text-[#2C3E50]/60">
-                        {txn.type === 'credits'
+                        {txn.type === 'horoscope'
+                          ? 'One member’s horoscope · view & download any time'
+                          : txn.type === 'credits'
                           ? `${txn.creditsGranted} credits added to your plan`
                           : `${txn.creditsGranted} credits · ${txn.validityDays === null ? 'no expiry' : `${txn.validityDays}-day validity`}`}
                       </p>

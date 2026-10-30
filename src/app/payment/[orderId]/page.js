@@ -20,6 +20,10 @@ export default function PaymentPage() {
   const [paymentStatus, setPaymentStatus] = useState('loading'); // loading, processing, verifying, success, refunded, unconfirmed
   const [transactionData, setTransactionData] = useState(null);
   const checkoutOpenedRef = useRef(false);
+  // Horoscope fee: everything returns to that member's profile, not plans.
+  const isHoroscope = orderData?.type === 'horoscope';
+  const horoscopeProfileHref = orderData?.horoscopeProfileId ? `/profiles/${orderData.horoscopeProfileId}?tab=horoscope` : '/browse';
+  const backHref = isHoroscope ? horoscopeProfileHref : '/membership/purchase';
 
   // Fetch order details on mount
   useEffect(() => {
@@ -116,6 +120,12 @@ export default function PaymentPage() {
       setPaymentStatus('refunded');
       return;
     }
+    if (result.ok && result.data?.type === 'horoscope') {
+      toastSuccess('Payment successful — horoscope unlocked.');
+      setTransactionData((prev) => ({ ...prev, type: 'horoscope' }));
+      setPaymentStatus('success');
+      return;
+    }
     if (result.ok) {
       const isPack = result.data?.type === 'credits';
       toastSuccess(isPack ? 'Payment successful — credits added.' : 'Payment successful — membership activated.');
@@ -143,11 +153,11 @@ export default function PaymentPage() {
   // Handler: Payment Dismissed
   const handlePaymentDismiss = useCallback(() => {
     toastError('Payment cancelled');
-    // Redirect back to purchase page
+    // Back to where the purchase started (plans page, or the horoscope's profile).
     setTimeout(() => {
-      router.push('/membership/purchase');
+      router.push(backHref);
     }, 1500);
-  }, [router]);
+  }, [router, backHref]);
 
   // Handler: Open Razorpay Checkout
   const openRazorpayCheckout = useCallback(() => {
@@ -279,10 +289,10 @@ export default function PaymentPage() {
                 )}
               </p>
               <Button
-                onClick={() => router.push('/membership/purchase')}
+                onClick={() => router.push(backHref)}
                 className="w-full h-12 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold"
               >
-                Go to My Membership
+                {isHoroscope ? 'Back to Profile' : 'Go to My Membership'}
               </Button>
             </CardContent>
           </Card>
@@ -295,8 +305,8 @@ export default function PaymentPage() {
                 We&apos;re confirming your payment
               </h1>
               <p className="font-sans text-[#2C3E50]/80 mb-5 leading-relaxed">
-                Your payment went through, but we couldn&apos;t confirm it just now. Your credits are
-                added automatically within a few minutes — please don&apos;t pay again.
+                Your payment went through, but we couldn&apos;t confirm it just now.{' '}
+                {isHoroscope ? 'The horoscope is unlocked' : 'Your credits are added'} automatically within a few minutes — please don&apos;t pay again.
               </p>
               {transactionData?.paymentId && (
                 <p className="font-sans text-sm text-[#2C3E50]/70 mb-6">
@@ -312,10 +322,10 @@ export default function PaymentPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => router.push('/settings')}
+                  onClick={() => router.push(isHoroscope ? horoscopeProfileHref : '/settings')}
                   className="w-full h-12 font-sans"
                 >
-                  Go to My Membership
+                  {isHoroscope ? 'Back to Profile' : 'Go to My Membership'}
                 </Button>
               </div>
               <p className="font-sans text-xs text-[#2C3E50]/60 mt-4">
@@ -336,13 +346,15 @@ export default function PaymentPage() {
 
               {/* Success Message */}
               <h1 className="font-serif text-3xl font-bold text-[#1A1A1A] mb-3">
-                {transactionData?.type === 'credits' ? 'Credits Added' : 'Payment Successful'}
+                {transactionData?.type === 'horoscope' ? 'Horoscope Unlocked' : transactionData?.type === 'credits' ? 'Credits Added' : 'Payment Successful'}
               </h1>
 
               <p className="font-sans text-[#2C3E50]/70 mb-6">
-                {transactionData?.type === 'credits'
-                  ? `${transactionData.creditsAdded} credits have been added to your current plan.`
-                  : 'Your membership has been activated.'}
+                {transactionData?.type === 'horoscope'
+                  ? 'You can now view and download this horoscope any time from the member’s profile.'
+                  : transactionData?.type === 'credits'
+                    ? `${transactionData.creditsAdded} credits have been added to your current plan.`
+                    : 'Your membership has been activated.'}
                 {' '}A receipt has been sent to your email.
               </p>
               <ReceiptDownloadButton orderId={params.orderId} className="w-full mb-6" />
@@ -382,12 +394,12 @@ export default function PaymentPage() {
                 </div>
               )}
 
-              {/* Go to Dashboard Button */}
+              {/* Next step: the horoscope itself, or back to searching */}
               <Button
-                onClick={handleGoHome}
+                onClick={transactionData?.type === 'horoscope' ? () => router.push(horoscopeProfileHref) : handleGoHome}
                 className="w-full h-12 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold text-lg"
               >
-                Start Searching Matches
+                {transactionData?.type === 'horoscope' ? 'View Horoscope' : 'Start Searching Matches'}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </CardContent>

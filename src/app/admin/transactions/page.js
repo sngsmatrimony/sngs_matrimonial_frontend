@@ -125,9 +125,11 @@ export default function AdminTransactionsPage() {
                           <div className="text-xs text-[#2C3E50]/60">{txn.userId?.email}</div>
                         </TableCell>
                         <TableCell className="text-sm font-sans text-[#2C3E50]">
-                          {txn.type === 'credits'
-                            ? <Badge variant="outline" className="font-sans text-xs">Credit pack</Badge>
-                            : txn.planId?.name || '—'}
+                          {txn.type === 'horoscope'
+                            ? <Badge variant="outline" className="font-sans text-xs">Horoscope access</Badge>
+                            : txn.type === 'credits'
+                              ? <Badge variant="outline" className="font-sans text-xs">Credit pack</Badge>
+                              : txn.planId?.name || '—'}
                           {txn.receiptNumber && <div className="text-[11px] text-[#2C3E50]/50 mt-0.5">{txn.receiptNumber}</div>}
                         </TableCell>
                         <TableCell className="text-sm font-sans text-[#1A1A1A]">

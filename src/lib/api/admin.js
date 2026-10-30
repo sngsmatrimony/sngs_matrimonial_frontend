@@ -173,6 +173,10 @@ export const adminApi = {
    */
   updateAllianceMeetSettings: (data) => adminClient.put('/api/admin/settings/alliance-meet', data),
 
+  // Horoscope documents: visibility to members + one-time fee per horoscope
+  getHoroscopeSettings: () => adminClient.get('/api/admin/settings/horoscope'),
+  updateHoroscopeSettings: (data) => adminClient.put('/api/admin/settings/horoscope', data),
+
   /**
    * Get "ID proof required" toggle state
    */
