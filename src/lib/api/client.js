@@ -33,10 +33,17 @@ client.interceptors.response.use(
     const isLoginRequest = error.config?.url?.includes('/api/auth/login');
 
     if (error.response?.status === 401 && !isLoginRequest) {
-      // Token expired or invalid - clear auth
+      // Token expired or invalid - clear auth, including the saved session
+      // (authStore's persisted copy). Leaving that behind kept the app
+      // "signed in" after the reload: the navbar showed member links, the
+      // homepage sent the visitor to /browse, the next call failed again and
+      // they were bounced back to /login — never seeing the homepage.
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      localStorage.removeItem('auth-store');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

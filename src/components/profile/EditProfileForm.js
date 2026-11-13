@@ -21,6 +21,7 @@ import {
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import { toastSuccess, toastError } from '@/lib/toast';
+import { scrollToFirstError } from '@/lib/scrollToFirstError';
 import { convertTo24Hour, buildTimeFromDropdowns, parseTimeToDropdowns } from '@/lib/time';
 import { client } from '@/lib/api/client';
 import { useAuthStore } from '@/store/authStore';
@@ -122,8 +123,8 @@ const step2Schema = z.object({
 // Step 3: Professional Details
 const step3Schema = z.object({
   education: z.string().min(1, 'Please select your education'),
-  employmentType: z.string().optional(),
-  occupation: z.string().optional(),
+  employmentType: z.string().min(1, 'Please select your employment type'),
+  occupation: z.string().min(1, 'Please select your occupation'),
   annualIncomeCurrency: z.string().optional(),
   annualIncomeAmount: z.string().optional(),
   professionalAdditionalInfo: z.string().max(500, 'Maximum 500 characters').optional(),
@@ -446,6 +447,7 @@ export default function EditProfileForm({ userProfile, user, onCancel, onSuccess
 
     if (!isValid) {
       toastError('Some fields are not filled in correctly. Please check and try again.');
+      scrollToFirstError();
       return;
     }
 

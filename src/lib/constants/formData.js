@@ -478,6 +478,10 @@ export const OCCUPATIONS = {
     'Engineer - Electrical',
     'Pilot',
     'Air Hostess',
+    // Occupation is required — a choice for members without a job title.
+    'Homemaker',
+    'Not Working',
+    'Other',
   ],
 };
 

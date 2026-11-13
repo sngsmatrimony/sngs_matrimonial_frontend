@@ -44,6 +44,7 @@ import {
 import { useAuthStore } from '@/store/authStore';
 import { useIdProofRequired } from '@/hooks/useIdProofRequired';
 import { toastSuccess, toastError, dismissToasts } from '@/lib/toast';
+import { scrollToFirstError } from '@/lib/scrollToFirstError';
 import { convertTo24Hour, buildTimeFromDropdowns } from '@/lib/time';
 import { noPasteHandlers } from '@/lib/noPasteHandlers';
 import { MONTHS, COUNTRIES } from '@/lib/constants/formData';
@@ -194,8 +195,8 @@ const step3Schema = z.object({
 
 const step4Schema = z.object({
   education: z.string().min(1, 'Please select your education'),
-  employmentType: z.string().optional(),
-  occupation: z.string().optional(),
+  employmentType: z.string().min(1, 'Please select your employment type'),
+  occupation: z.string().min(1, 'Please select your occupation'),
   annualIncomeCurrency: z.string().optional(),
   annualIncomeAmount: z.string().optional(),
   professionalAdditionalInfo: z.string().max(500, 'Maximum 500 characters').optional(),
@@ -370,10 +371,18 @@ export default function RegisterPage() {
     restored.galleryPhotos = formData.galleryPhotos;
     restored.horoscope = formData.horoscope;
     restored.idProof = formData.idProof;
+    // Put the saved answers into the form now, before the step changes, so the
+    // resumed step's dropdowns mount already filled. Filled in after mounting
+    // (the step-change reset), the dropdowns would show — and then clear — an
+    // empty value, losing e.g. Education when resuming straight into step 4.
+    form.reset(restored);
     setFormData(restored);
     sessionStepsRef.current = Math.max(sessionStepsRef.current, completedSteps);
-    // Photos aren't kept in a draft, so a finished step 6 resumes there.
-    setCurrentStep(Math.min(completedSteps + 1, 6));
+    // Photos aren't kept in a draft, so a finished step 6 resumes there. A
+    // finished step that's now missing something (a newly required field)
+    // resumes at that step instead.
+    const incomplete = firstIncompleteStep(restored, completedSteps);
+    setCurrentStep(incomplete || Math.min(completedSteps + 1, 6));
     setResumeOffer(null);
     toastSuccess(completedSteps >= 6
       ? 'Welcome back! Please add your photos again to finish.'
@@ -492,6 +501,15 @@ export default function RegisterPage() {
       case 7: return step7Schema;
       default: return step1Schema;
     }
+  };
+
+  // First of steps 2–5 whose saved answers don't pass that step's checks —
+  // e.g. a draft saved before a field there became required. null = all fine.
+  const firstIncompleteStep = (data, upTo = 5) => {
+    for (let step = 2; step <= Math.min(upTo, 5); step++) {
+      if (!getSchemaForStep(step).safeParse(data).success) return step;
+    }
+    return null;
   };
 
   const form = useForm({
@@ -766,6 +784,7 @@ export default function RegisterPage() {
       const isValid = await form.trigger();
       if (!isValid) {
         toastError('Some fields are not filled in correctly. Please check and try again.');
+        scrollToFirstError();
         return;
       }
 
@@ -805,6 +824,7 @@ export default function RegisterPage() {
       const isValid = await form.trigger();
       if (!isValid) {
         toastError('Some fields are not filled in correctly. Please check and try again.');
+        scrollToFirstError();
         return;
       }
 
@@ -840,6 +860,7 @@ export default function RegisterPage() {
       const isValid = await form.trigger();
       if (!isValid) {
         toastError('Some fields are not filled in correctly. Please check and try again.');
+        scrollToFirstError();
         setIsLoading(false);
         return;
       }
@@ -853,6 +874,16 @@ export default function RegisterPage() {
         horoscope: formData.horoscope,
         idProof: formData.idProof,
       };
+      // Safety net: never create an account with an earlier step incomplete
+      // (e.g. resumed from an old draft) — go back to it.
+      const incompleteStep = firstIncompleteStep(updatedFormData);
+      if (incompleteStep) {
+        toastError('Some details in an earlier step are missing. Please complete them to continue.');
+        setFormData(updatedFormData);
+        setCurrentStep(incompleteStep);
+        setIsLoading(false);
+        return;
+      }
       // Safety net: never create an account without the required photos.
       if (!updatedFormData.profilePicture || !(updatedFormData.galleryPhotos || []).length) {
         toastError('Please add your profile photo and at least one gallery photo.');
@@ -870,6 +901,7 @@ export default function RegisterPage() {
 
     if (!isValid) {
       toastError('Some fields are not filled in correctly. Please check and try again.');
+      scrollToFirstError();
       return;
     }
 

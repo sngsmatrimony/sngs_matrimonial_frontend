@@ -399,7 +399,14 @@ export const useAuthStore = create(
         getItem: (name) => {
           if (typeof window === 'undefined') return null;
           const item = localStorage.getItem(name);
-          return item ? JSON.parse(item) : null;
+          if (!item) return null;
+          const saved = JSON.parse(item);
+          // Every sign-in saves authToken too, and requests use it. A saved
+          // session without it is stale (cleared after an expired-session
+          // 401) — start signed out instead of looping between /browse and
+          // /login with member links in the navbar.
+          if (saved?.state?.token && !localStorage.getItem('authToken')) return null;
+          return saved;
         },
         setItem: (name, value) => {
           if (typeof window !== 'undefined') {
