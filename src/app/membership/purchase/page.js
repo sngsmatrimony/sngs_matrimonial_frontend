@@ -15,7 +15,8 @@ import { buildPlanDescription } from '@/lib/planDescription';
 import BuyCreditsCard from '@/components/membership/BuyCreditsCard';
 import PaymentTermsDialog from '@/components/payment/PaymentTermsDialog';
 import { formatDate, formatRupees } from '@/lib/money';
-import { isPlanLapsed, planIdOf } from '@/lib/membershipStatus';
+import { isPlanLapsed, planIdOf, isOnFreeCredits, freeCreditsUsedUp } from '@/lib/membershipStatus';
+import { useProfileDownloadsEnabled } from '@/hooks/useProfileDownloadsEnabled';
 
 // Real, plan-specific cost bullets — describes exactly what each of the 3
 // metered activities (profileView, phoneAndChat, profileDownload) costs on
@@ -27,13 +28,15 @@ function costLine(label, entry) {
   return `${label}: ${entry.cost} credit${entry.cost === 1 ? '' : 's'} per use`;
 }
 
-function buildFeatureBullets(plan) {
+// `downloads`: whether profile downloading is switched on (admin) — when
+// it's off the download line isn't shown.
+function buildFeatureBullets(plan, downloads = true) {
   const costs = plan.costs || {};
   const bullets = [
     `${plan.credits} credits included`,
     costLine('Viewing a profile', costs.profileView),
     costLine('Phone number & chat', costs.phoneAndChat),
-    costLine('Downloading a profile', costs.profileDownload),
+    ...(downloads ? [costLine('Downloading a profile', costs.profileDownload)] : []),
   ];
   return bullets;
 }
@@ -41,12 +44,12 @@ function buildFeatureBullets(plan) {
 // What a plan the member already owns actually costs — same semantics as
 // buildFeatureBullets above, phrased for an existing plan rather than one
 // being considered for purchase.
-function buildCurrentPlanPerks(plan) {
+function buildCurrentPlanPerks(plan, downloads = true) {
   const costs = plan?.costs || {};
   const perks = [
     costLine('Viewing a profile', costs.profileView),
     costLine('Phone number & chat', costs.phoneAndChat),
-    costLine('Downloading a profile', costs.profileDownload),
+    ...(downloads ? [costLine('Downloading a profile', costs.profileDownload)] : []),
   ];
   return perks;
 }
@@ -54,6 +57,7 @@ function buildCurrentPlanPerks(plan) {
 export default function PurchaseMembershipPage() {
   const router = useRouter();
   const { user, membership, refreshMembership, logout } = useAuthStore();
+  const downloadsEnabled = useProfileDownloadsEnabled();
   const [plans, setPlans] = useState([]);
   const [planLoading, setPlanLoading] = useState(true);
   const [processingPlanId, setProcessingPlanId] = useState(null);
@@ -157,6 +161,12 @@ export default function PurchaseMembershipPage() {
     }
   };
 
+  // Alliance Meet free credits aren't a plan: plans can be bought any time
+  // (leftover free credits are added), credit packs can't.
+  const onFreeCredits = isOnFreeCredits(membership);
+  const hasPlan = !!(membership?.isActive && !membership?.isExpired) && !onFreeCredits;
+  const leftoverFreeCredits = onFreeCredits && membership?.isActive ? Number(membership.credits) || 0 : 0;
+
   // Renew mode: a member whose plan ended sees that plan first (if it is
   // still offered), with every other plan below it.
   const lapsed = isPlanLapsed(membership);
@@ -185,7 +195,7 @@ export default function PurchaseMembershipPage() {
           {plan.name}
         </CardTitle>
         <CardDescription className="font-sans text-sm text-[#2C3E50]/80 leading-relaxed">
-          {buildPlanDescription(plan)}
+          {buildPlanDescription(plan, { downloads: downloadsEnabled })}
         </CardDescription>
       </CardHeader>
 
@@ -215,7 +225,7 @@ export default function PurchaseMembershipPage() {
 
         {/* Key Features */}
         <div className="space-y-2">
-          {buildFeatureBullets(plan).map((bullet) => (
+          {buildFeatureBullets(plan, downloadsEnabled).map((bullet) => (
             <div key={bullet} className="flex items-center gap-2 font-sans text-sm text-[#1A1A1A]">
               <CheckCircle2 className="w-4 h-4 text-[#2E7D32] shrink-0" />
               <span>{bullet}</span>
@@ -316,17 +326,31 @@ export default function PurchaseMembershipPage() {
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle2 className="w-5 h-5 text-[#2E7D32] shrink-0" />
                   <p className="font-sans text-sm text-[#2C3E50]">
-                    <span className="font-semibold">{membership.planId?.name || 'Your plan'}</span> — {membership.credits} credits remaining
-                    {membership.expiryDate ? ` (expires ${new Date(membership.expiryDate).toLocaleDateString()})` : ' (never expires)'}
+                    <span className="font-semibold">{onFreeCredits ? 'Alliance Meet free credits' : membership.planId?.name || 'Your plan'}</span> — {membership.credits} credits remaining
+                    {membership.expiryDate ? ` (expires ${new Date(membership.expiryDate).toLocaleDateString()})` : onFreeCredits ? ' (no expiry — until used)' : ' (never expires)'}
                   </p>
                 </div>
+                {onFreeCredits && (
+                  <p className="pl-7 mb-1 font-sans text-xs text-[#2C3E50]/80">
+                    You can buy a plan any time — your {membership.credits} leftover free credits are added to it.
+                  </p>
+                )}
                 {membership.planId?.costs && (
                   <ul className="pl-7 space-y-1">
-                    {buildCurrentPlanPerks(membership.planId).map((perk) => (
+                    {buildCurrentPlanPerks(membership.planId, downloadsEnabled).map((perk) => (
                       <li key={perk} className="font-sans text-xs text-[#2C3E50]/70">{perk}</li>
                     ))}
                   </ul>
                 )}
+              </div>
+            </div>
+          ) : freeCreditsUsedUp(membership) ? (
+            <div className="max-w-xl mx-auto mb-8">
+              <div className="flex items-center justify-center gap-2 p-3 bg-[#C75B39]/10 border border-[#C75B39]/30 rounded-lg">
+                <Lock className="w-5 h-5 text-[#C75B39] shrink-0" />
+                <p className="font-sans text-sm text-[#2C3E50]">
+                  You&apos;ve used all the free credits from your Alliance Meet registration. Choose a plan below to keep going — every profile you unlocked opens again at no extra cost.
+                </p>
               </div>
             </div>
           ) : lapsed ? (
@@ -371,14 +395,15 @@ export default function PurchaseMembershipPage() {
           {/* Simple Value Proposition */}
           <div className="text-center mb-12">
             <p className="font-sans text-[#2C3E50]/70">
-              Credits are spent on viewing a profile, unlocking phone &amp; chat, or downloading a profile —
+              Credits are spent on viewing a profile{downloadsEnabled ? ', unlocking phone & chat, or downloading a profile' : ' or unlocking phone & chat'} —
               each plan below sets its own cost per activity. Anything you unlock stays yours: re-opening it is always free while you have an active plan — including after you renew.
             </p>
           </div>
 
           {/* While a plan is active, members top up with credit packs (which
-              expire with the plan); new plans unlock once it ends. */}
-          {membership?.isActive && !membership?.isExpired ? (
+              expire with the plan); new plans unlock once it ends. On free
+              credits, plans are shown instead. */}
+          {hasPlan ? (
             <div className="max-w-xl mx-auto mb-16 space-y-4">
               <BuyCreditsCard />
               <p className="font-sans text-sm text-center text-[#2C3E50]/70">
@@ -470,10 +495,15 @@ export default function PurchaseMembershipPage() {
           itemName={`${termsPlan.name} — ${termsPlan.credits} credits${termsPlan.validityDays ? `, ${termsPlan.validityDays} days` : ''}`}
           pricing={termsPlan.pricing || { baseAmount: termsPlan.price?.amount, gatewayCharges: 0, totalAmount: termsPlan.price?.amount }}
           terms={[
+            ...(leftoverFreeCredits > 0
+              ? [`Your ${leftoverFreeCredits} leftover free credits from the Alliance Meet are added to this plan (${termsPlan.credits + leftoverFreeCredits} credits in total) and follow the plan's costs and validity.`]
+              : []),
             termsPlan.validityDays
               ? `The plan is valid for ${termsPlan.validityDays} days from payment. Credits can be used only while it is active — any left when it ends expire with it.`
               : 'Credits can be used only while the plan is active.',
-            'Profile views, contact unlocks and downloads use credits as shown on each action, and are not refundable once used.',
+            downloadsEnabled
+              ? 'Profile views, contact unlocks and downloads use credits as shown on each action, and are not refundable once used.'
+              : 'Profile views and contact unlocks use credits as shown on each action, and are not refundable once used.',
           ]}
           busy={processingPlanId === termsPlan._id}
           onAgree={() => startPurchase(termsPlan)}

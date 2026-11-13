@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Coins } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { isOnFreeCredits } from '@/lib/membershipStatus';
 
 /**
  * Confirms a credit spend before a metered activity (view a profile, unlock
@@ -32,6 +33,8 @@ export default function SpendCreditsDialog({ open, cost, activityLabel, onConfir
   const router = useRouter();
   const refreshMembership = useAuthStore((state) => state.refreshMembership);
   const [balance, setBalance] = useState(null);
+  // On Alliance Meet free credits: no credit packs — the way on is a plan.
+  const [onFreeCredits, setOnFreeCredits] = useState(false);
 
   // Fresh balance every time the dialog opens — spends elsewhere (another
   // tab, an unlock on this page) would otherwise leave a stale number.
@@ -39,7 +42,11 @@ export default function SpendCreditsDialog({ open, cost, activityLabel, onConfir
     if (!open) return undefined;
     let cancelled = false;
     refreshMembership()
-      .then((m) => { if (!cancelled) setBalance(typeof m?.credits === 'number' ? m.credits : null); })
+      .then((m) => {
+        if (cancelled) return;
+        setBalance(typeof m?.credits === 'number' ? m.credits : null);
+        setOnFreeCredits(isOnFreeCredits(m));
+      })
       .catch(() => {});
     return () => {
       cancelled = true;
@@ -71,7 +78,7 @@ export default function SpendCreditsDialog({ open, cost, activityLabel, onConfir
         {typeof credits === 'number' && (
           <p className="font-sans text-sm text-[#2C3E50]">
             {notEnough
-              ? <>You have <span className="font-semibold">{credits}</span> credit{credits === 1 ? '' : 's'}. Buy more credits to continue.</>
+              ? <>You have <span className="font-semibold">{credits}</span> credit{credits === 1 ? '' : 's'}. {onFreeCredits ? 'Choose a membership plan to continue — your leftover free credits are added to it.' : 'Buy more credits to continue.'}</>
               : <>You have <span className="font-semibold">{credits}</span> credit{credits === 1 ? '' : 's'}; <span className="font-semibold">{credits - cost}</span> will remain.</>}
           </p>
         )}
@@ -84,7 +91,7 @@ export default function SpendCreditsDialog({ open, cost, activityLabel, onConfir
               onClick={() => router.push('/membership/purchase')}
               className="bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans"
             >
-              Buy Credits
+              {onFreeCredits ? 'View Membership Plans' : 'Buy Credits'}
             </AlertDialogAction>
           ) : (
             <AlertDialogAction

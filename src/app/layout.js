@@ -5,6 +5,7 @@ import PromoBanner from '@/components/layout/PromoBanner';
 import Header from '@/components/layout/Header'; // <-- Restored Global Header
 import Footer from '@/components/layout/Footer';
 import MobileBottomNav, { BottomNavSpacer } from '@/components/layout/MobileBottomNav';
+import AllianceMeetAnnouncement from '@/components/alliance-meet/AllianceMeetAnnouncement';
 import Preloader from '@/components/layout/Preloader';
 import ScrollManager from '@/components/layout/ScrollManager';
 import { Analytics } from "@vercel/analytics/next";
@@ -100,6 +101,9 @@ export default function RootLayout({ children }) {
 
           {/* Mobile Bottom Nav (app routes, logged-in users only) */}
           <MobileBottomNav />
+
+          {/* Alliance Meet popup for visitors who aren't signed in (admin switch) */}
+          <AllianceMeetAnnouncement />
 
         </Providers>
 

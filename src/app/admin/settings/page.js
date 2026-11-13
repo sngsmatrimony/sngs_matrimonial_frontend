@@ -1,19 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api/admin';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { formatEventDate, isUpcomingEvent } from '@/lib/allianceEvent';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Mail, Phone, Save, Loader2, Lock, Eye, EyeOff, FileText, UserPlus, Search, MessageCircle, Sparkles, ShieldAlert, IdCard, CalendarHeart } from 'lucide-react';
+import { Mail, Phone, Save, Loader2, Lock, Eye, EyeOff, FileText, UserPlus, Search, MessageCircle, Sparkles, ShieldAlert, IdCard, CalendarHeart, FileDown } from 'lucide-react';
 import { toastSuccess, toastError } from '@/lib/toast';
 import adminClient from '@/lib/api/adminClient';
 import { noPasteHandlers } from '@/lib/noPasteHandlers';
 import PaymentSettingsSection from '@/components/admin/PaymentSettingsSection';
 import HoroscopeSettingsSection from '@/components/admin/HoroscopeSettingsSection';
+import AllianceCreditsHighlight from '@/components/alliance-meet/AllianceCreditsHighlight';
 
 export default function AdminSettingsPage() {
   const queryClient = useQueryClient();
@@ -56,6 +59,13 @@ export default function AdminSettingsPage() {
   // Alliance Meet settings state
   const [allianceMeetEnabled, setAllianceMeetEnabled] = useState(true);
   const [allianceMeetPrice, setAllianceMeetPrice] = useState('1500');
+  // Free credits given with each registration + what each action costs.
+  const [allianceFreeCreditsEnabled, setAllianceFreeCreditsEnabled] = useState(false);
+  const [allianceFreeCredits, setAllianceFreeCredits] = useState('100');
+  // Popup for visitors who aren't signed in + the event day (YYYY-MM-DD).
+  const [allianceAnnouncementEnabled, setAllianceAnnouncementEnabled] = useState(false);
+  const [allianceEventDate, setAllianceEventDate] = useState('');
+  const [allianceCosts, setAllianceCosts] = useState({ profileView: '25', phoneAndChat: '50', profileDownload: '10' });
 
   // ID proof required toggle state
   const [idProofRequiredEnabled, setIdProofRequiredEnabled] = useState(false);
@@ -64,6 +74,7 @@ export default function AdminSettingsPage() {
   // until the fetched setting says otherwise, matching the job's own
   // "no settings doc yet means active" default.
   const [inactivityEmailsEnabled, setInactivityEmailsEnabled] = useState(true);
+  const [profileDownloadsEnabled, setProfileDownloadsEnabled] = useState(true);
 
   // Fetch current settings
   const { data: contactInfo, isLoading } = useQuery({
@@ -175,15 +186,35 @@ export default function AdminSettingsPage() {
     }
   }, [enforcementSettings]);
 
-  // Auto-fill Alliance Meet settings when data is loaded
-  useEffect(() => {
-    if (allianceMeetSettings) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- seeding editable local state from async-loaded server data
-      setAllianceMeetEnabled(!!allianceMeetSettings.isEnabled);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setAllianceMeetPrice(String(allianceMeetSettings.priceAmount ?? 1500));
+  // Copy saved Alliance Meet values into the form — only `fields` (the keys a
+  // save sent) when given, so saving one part of the section (e.g. the
+  // open/closed switch) never wipes unsaved edits in another part.
+  const seedAllianceForm = useCallback((s, fields) => {
+    const has = (key) => !fields || fields.includes(key);
+    if (has('isEnabled')) setAllianceMeetEnabled(!!s.isEnabled);
+    if (has('priceAmount')) setAllianceMeetPrice(String(s.priceAmount ?? 1500));
+    if (has('freeCreditsEnabled')) setAllianceFreeCreditsEnabled(!!s.freeCreditsEnabled);
+    if (has('freeCredits')) setAllianceFreeCredits(String(s.freeCredits ?? 0));
+    if (has('announcementEnabled')) setAllianceAnnouncementEnabled(!!s.announcementEnabled);
+    if (has('eventDate')) setAllianceEventDate(s.eventDate || '');
+    if (has('costs') && s.costs) {
+      setAllianceCosts({
+        profileView: String(s.costs.profileView ?? 0),
+        phoneAndChat: String(s.costs.phoneAndChat ?? 0),
+        profileDownload: String(s.costs.profileDownload ?? 0),
+      });
     }
-  }, [allianceMeetSettings]);
+  }, []);
+
+  // Fill the Alliance Meet form once, when the settings first load.
+  const allianceFormSeeded = useRef(false);
+  useEffect(() => {
+    if (allianceMeetSettings && !allianceFormSeeded.current) {
+      allianceFormSeeded.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- seeding editable local state from async-loaded server data
+      seedAllianceForm(allianceMeetSettings);
+    }
+  }, [allianceMeetSettings, seedAllianceForm]);
 
   // Auto-fill ID proof required toggle when data is loaded
   useEffect(() => {
@@ -192,6 +223,19 @@ export default function AdminSettingsPage() {
       setIdProofRequiredEnabled(!!idProofSettings.isEnabled);
     }
   }, [idProofSettings]);
+
+  // Fetch member profile downloads setting
+  const { data: profileDownloadsSettings, isLoading: isLoadingProfileDownloads } = useQuery({
+    queryKey: ['profileDownloadsSettings'],
+    queryFn: async () => (await adminApi.getProfileDownloadsSettings()).data.data,
+  });
+
+  useEffect(() => {
+    if (profileDownloadsSettings) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- seeding editable local toggle state from async-loaded server data
+      setProfileDownloadsEnabled(!!profileDownloadsSettings.isEnabled);
+    }
+  }, [profileDownloadsSettings]);
 
   // Auto-fill automated inactivity email toggle when data is loaded
   useEffect(() => {
@@ -364,14 +408,28 @@ export default function AdminSettingsPage() {
   // Alliance Meet update mutation
   const updateAllianceMeetMutation = useMutation({
     mutationFn: (data) => adminApi.updateAllianceMeetSettings(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allianceMeetSettings'] });
+    onSuccess: (response, variables) => {
+      const saved = response?.data?.data;
+      if (saved) {
+        queryClient.setQueryData(['allianceMeetSettings'], saved);
+        seedAllianceForm(saved, Object.keys(variables));
+      }
       toastSuccess('Alliance Meet settings updated');
     },
-    onError: (error) => {
+    onError: async (error, variables) => {
       toastError(error.response?.data?.message || 'Failed to update Alliance Meet settings');
-      // Re-seed the switch/price from the server so the UI doesn't show an unsaved state.
-      queryClient.invalidateQueries({ queryKey: ['allianceMeetSettings'] });
+      // Put back what's saved for the fields this save tried to change, so the
+      // UI doesn't show an unsaved state; other unsaved edits stay as they are.
+      try {
+        const fresh = await queryClient.fetchQuery({
+          queryKey: ['allianceMeetSettings'],
+          queryFn: async () => (await adminApi.getAllianceMeetSettings()).data.data,
+          staleTime: 0,
+        });
+        seedAllianceForm(fresh, Object.keys(variables));
+      } catch {
+        // Couldn't reload — the next page load shows what's saved.
+      }
     },
   });
 
@@ -388,6 +446,32 @@ export default function AdminSettingsPage() {
       return;
     }
     updateAllianceMeetMutation.mutate({ priceAmount: price });
+  };
+
+  // Whole numbers (0 or more) only; anything else becomes NaN.
+  const toCreditCount = (v) => (/^\d+$/.test(String(v).trim()) ? Number(v) : NaN);
+  const allianceCreditsDraft = toCreditCount(allianceFreeCredits);
+  const allianceCostsDraft = Object.fromEntries(Object.entries(allianceCosts).map(([k, v]) => [k, toCreditCount(v)]));
+  const allianceCreditsValid = Number.isInteger(allianceCreditsDraft) && Object.values(allianceCostsDraft).every(Number.isInteger);
+
+  const handleAllianceCreditsSave = () => {
+    if (!allianceCreditsValid) {
+      toastError('Free credits and each credit cost must be whole numbers (0 or more).');
+      return;
+    }
+    updateAllianceMeetMutation.mutate({
+      freeCreditsEnabled: allianceFreeCreditsEnabled,
+      freeCredits: allianceCreditsDraft,
+      costs: allianceCostsDraft,
+    });
+  };
+
+  const handleAllianceAnnouncementSave = () => {
+    if (allianceAnnouncementEnabled && !allianceEventDate) {
+      toastError('Set the event date to show the popup.');
+      return;
+    }
+    updateAllianceMeetMutation.mutate({ announcementEnabled: allianceAnnouncementEnabled, eventDate: allianceEventDate || null });
   };
 
   // ID proof required update mutation
@@ -425,6 +509,26 @@ export default function AdminSettingsPage() {
       setInactivityEmailsEnabled((prev) => !prev);
     },
   });
+
+  const updateProfileDownloadsMutation = useMutation({
+    mutationFn: (isEnabled) => adminApi.updateProfileDownloadsSettings({ isEnabled }),
+    onSuccess: (_response, isEnabled) => {
+      queryClient.invalidateQueries({ queryKey: ['profileDownloadsSettings'] });
+      queryClient.invalidateQueries({ queryKey: ['profileDownloadsStatus'] });
+      toastSuccess(`Profile downloads ${isEnabled ? 'switched on' : 'switched off'}`);
+    },
+    onError: (error) => {
+      toastError(error.response?.data?.message || 'Failed to update profile downloads');
+      // Revert the optimistic toggle on failure
+      setProfileDownloadsEnabled((prev) => !prev);
+    },
+  });
+
+  const handleProfileDownloadsToggle = () => {
+    const next = !profileDownloadsEnabled;
+    setProfileDownloadsEnabled(next);
+    updateProfileDownloadsMutation.mutate(next);
+  };
 
   const handleInactivityEmailsToggle = () => {
     const next = !inactivityEmailsEnabled;
@@ -988,6 +1092,52 @@ export default function AdminSettingsPage() {
         {/* Horoscope documents — visibility to members + one-time fee */}
         <HoroscopeSettingsSection />
 
+        {/* Member profile downloads on/off */}
+        <AccordionItem value="profileDownloads" className="border rounded-lg bg-white shadow-sm">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary/10">
+                <FileDown size={20} className="text-primary" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-serif text-lg text-secondary">Profile Downloads</h3>
+                <p className="font-sans text-sm text-gray-500">Allow or stop members downloading other members&apos; profiles</p>
+              </div>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <div className="flex items-start justify-between gap-6 p-4 rounded-lg border border-[#D4A843]/15 bg-gradient-to-br from-[#FDF8F0] to-[#F5E6C3]/30">
+              <div>
+                <Label className="font-sans text-[#1A1A1A]">
+                  {profileDownloadsEnabled ? 'Members can download profiles' : 'Profile downloads switched off'}
+                </Label>
+                <p className="text-xs text-[#2C3E50]/60 font-sans mt-1 max-w-md">
+                  On = the Share Profile (PDF) button shows on profiles, and plans list the download cost.
+                  Off = the button and every &quot;Downloading a profile&quot; line are hidden, and downloads are refused.
+                  Horoscopes (sold separately) and the admin PPTX/PDF exports are not affected.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={profileDownloadsEnabled}
+                aria-label="Member profile downloads"
+                onClick={handleProfileDownloadsToggle}
+                disabled={updateProfileDownloadsMutation.isPending || isLoadingProfileDownloads}
+                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                  profileDownloadsEnabled ? 'bg-[#D4A843]' : 'bg-[#2C3E50]/20'
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                    profileDownloadsEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
         {/* Alliance Meet — price + open/closed toggle */}
         <AccordionItem value="allianceMeet" className="border rounded-lg bg-white shadow-sm">
           <AccordionTrigger className="px-6 py-4 hover:no-underline">
@@ -997,7 +1147,7 @@ export default function AdminSettingsPage() {
               </div>
               <div className="text-left">
                 <h3 className="font-serif text-lg text-secondary">Alliance Meet</h3>
-                <p className="font-sans text-sm text-gray-500">Set the ticket price and open/close member opt-in registration</p>
+                <p className="font-sans text-sm text-gray-500">Ticket price, open/close registration, free credits and the visitor announcement</p>
               </div>
             </div>
           </AccordionTrigger>
@@ -1052,6 +1202,141 @@ export default function AdminSettingsPage() {
                       className="bg-primary hover:bg-primary/90 text-primary-foreground font-sans"
                     >
                       Save Price
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Free credits that come with each registration */}
+                <div className="mt-6 pt-6 border-t border-[#D4A843]/15 space-y-4">
+                  <div>
+                    <h4 className="font-serif text-base font-semibold text-[#1A1A1A]">Free credits with each registration</h4>
+                    <p className="font-sans text-xs text-[#2C3E50]/60 mt-1 max-w-xl leading-relaxed">
+                      Members who register get these credits to spend on profiles — no plan needed, no expiry. When they&apos;re used up the member is asked to choose a plan
+                      (leftover free credits are added to a plan they buy). Members who already have a plan get them added to it, at that plan&apos;s costs.
+                      Members get the credits shown when they started their registration, even if you change this later.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3 rounded-lg border border-[#D4A843]/25 bg-[#FDF8F0] p-3">
+                    <Checkbox
+                      id="alliance-give-credits"
+                      checked={allianceFreeCreditsEnabled}
+                      onCheckedChange={(v) => setAllianceFreeCreditsEnabled(v === true)}
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <Label htmlFor="alliance-give-credits" className="font-sans text-sm font-semibold text-[#1A1A1A] cursor-pointer">
+                        Give free credits with each registration
+                      </Label>
+                      <p className="font-sans text-xs text-[#2C3E50]/60 mt-0.5">
+                        Unticked: registrations come with no credits and members aren&apos;t told about any. Your numbers below are kept.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="alliance-free-credits" className="font-sans text-sm">Free credits</Label>
+                      <Input id="alliance-free-credits" type="number" min="0" step="1" value={allianceFreeCredits} onChange={(e) => setAllianceFreeCredits(e.target.value)} className="font-sans" />
+                    </div>
+                    {[
+                      ['profileView', 'Viewing a profile'],
+                      ['phoneAndChat', 'Phone number & chat'],
+                      ['profileDownload', 'Downloading a profile'],
+                    ].map(([key, label]) => (
+                      <div key={key} className="space-y-1.5">
+                        <Label htmlFor={`alliance-cost-${key}`} className="font-sans text-sm">{label} (credits)</Label>
+                        <Input
+                          id={`alliance-cost-${key}`}
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={allianceCosts[key]}
+                          onChange={(e) => setAllianceCosts((prev) => ({ ...prev, [key]: e.target.value }))}
+                          className="font-sans"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
+                    <div className="flex-1">
+                      <p className="font-sans text-xs font-semibold uppercase tracking-wide text-[#2C3E50]/60 mb-2">Members see</p>
+                      {!allianceCreditsValid ? (
+                        <p className="font-sans text-sm text-[#C75B39]">Enter whole numbers (0 or more) to see what members will see.</p>
+                      ) : !allianceFreeCreditsEnabled ? (
+                        <p className="font-sans text-sm text-[#2C3E50]/60">Free credits are switched off — the registration is the event only.</p>
+                      ) : allianceCreditsDraft > 0 ? (
+                        <AllianceCreditsHighlight freeCredits={allianceCreditsDraft} costs={allianceCostsDraft} />
+                      ) : (
+                        <p className="font-sans text-sm text-[#2C3E50]/60">No free credits — the registration is the event only.</p>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleAllianceCreditsSave}
+                      disabled={updateAllianceMeetMutation.isPending}
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground font-sans lg:mt-6"
+                    >
+                      Save Free Credits
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Popup for visitors who aren't signed in */}
+                <div className="mt-6 pt-6 border-t border-[#D4A843]/15 space-y-4">
+                  <div>
+                    <h4 className="font-serif text-base font-semibold text-[#1A1A1A]">Announcement for visitors</h4>
+                    <p className="font-sans text-xs text-[#2C3E50]/60 mt-1 max-w-xl leading-relaxed">
+                      A popup for people who aren&apos;t logged in, announcing the event and asking them to register an account (or log in) to apply.
+                      Shown once per visit, not on the login, register or payment pages, and no longer after the event date. The date also appears on the
+                      members&apos; Alliance Meet cards.
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-3 rounded-lg border border-[#D4A843]/25 bg-[#FDF8F0] p-3">
+                    <Checkbox
+                      id="alliance-announcement"
+                      checked={allianceAnnouncementEnabled}
+                      onCheckedChange={(v) => setAllianceAnnouncementEnabled(v === true)}
+                      className="mt-0.5"
+                    />
+                    <Label htmlFor="alliance-announcement" className="font-sans text-sm font-semibold text-[#1A1A1A] cursor-pointer">
+                      Show the Alliance Meet popup to visitors who aren&apos;t logged in
+                    </Label>
+                  </div>
+                  <div className="space-y-1.5 max-w-xs">
+                    <Label htmlFor="alliance-event-date" className="font-sans text-sm">Event date</Label>
+                    <Input
+                      id="alliance-event-date"
+                      type="date"
+                      value={allianceEventDate}
+                      onChange={(e) => setAllianceEventDate(e.target.value)}
+                      className="font-sans"
+                    />
+                  </div>
+                  <div className="flex flex-col lg:flex-row gap-4 lg:items-start">
+                    <div className="flex-1 space-y-1">
+                      <p className="font-sans text-xs font-semibold uppercase tracking-wide text-[#2C3E50]/60">Visitors see</p>
+                      {allianceEventDate ? (
+                        <p className="font-sans text-sm text-[#1A1A1A]">
+                          <span className="font-semibold">SNGS Marriage Alliance Meet</span> — scheduled on {formatEventDate(allianceEventDate)}
+                        </p>
+                      ) : (
+                        <p className="font-sans text-sm text-[#2C3E50]/60">Set the event date to show the popup.</p>
+                      )}
+                      {allianceEventDate && !isUpcomingEvent(allianceEventDate) && (
+                        <p className="font-sans text-sm text-[#C75B39]">This date has passed, so the popup isn&apos;t shown.</p>
+                      )}
+                      {allianceAnnouncementEnabled && !allianceMeetEnabled && (
+                        <p className="font-sans text-sm text-[#C75B39]">
+                          Registration is closed — visitors who log in can&apos;t apply until you open it above.
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={handleAllianceAnnouncementSave}
+                      disabled={updateAllianceMeetMutation.isPending}
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground font-sans"
+                    >
+                      Save Announcement
                     </Button>
                   </div>
                 </div>

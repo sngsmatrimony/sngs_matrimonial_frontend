@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import LegalPage, { ContactBlock, List, Note, P, Section, Sub } from '@/components/legal/LegalPage';
-import { JURISDICTION, OPERATOR, SITE_NAME, SITE_URL } from '@/lib/siteInfo';
+import { JURISDICTION, OPERATOR, SITE_NAME, SITE_URL, TERMS_EFFECTIVE_DATE } from '@/lib/siteInfo';
 
 export const metadata = {
   title: 'Terms & Conditions',
@@ -12,7 +12,7 @@ const link = (href, text) => <Link href={href} className="text-[#B8860B] underli
 
 export default function TermsAndConditionsPage() {
   return (
-    <LegalPage title="Terms & Conditions" current="/terms-and-conditions">
+    <LegalPage title="Terms & Conditions" current="/terms-and-conditions" effectiveDate={TERMS_EFFECTIVE_DATE}>
       <Section title="Introduction">
         <P>
           These Terms &amp; Conditions govern your use of {SITE_NAME} ({SITE_URL}), a matrimonial platform operated by {OPERATOR} (&quot;we&quot;, &quot;us&quot;).
@@ -79,6 +79,10 @@ export default function TermsAndConditionsPage() {
           registration fee plus payment gateway charges. Our team shares the event details by email or phone. You must behave respectfully at
           events and follow the organisers&apos; instructions. Refunds for event registrations are covered in our {link('/cancellation-and-refund', 'Cancellation & Refund Policy')}.
         </P>
+        <List items={[
+          'Some event registrations come with free credits. When they do, the number of credits and what each action uses are shown before you pay.',
+          'These free credits do not expire. Once they are used up, choose a membership plan to continue. If you buy a plan while you still have free credits, the credits left are added to it. Credit packs are available only with a plan.',
+        ]} />
       </Section>
 
       <Section title="5. Contact details and members' information">
@@ -132,6 +136,14 @@ export default function TermsAndConditionsPage() {
           {SITE_NAME} is a platform for members and families to find and contact each other. Before taking any decision, please verify
           a member&apos;s details yourself — family, background, horoscope and any other information that matters to you.
         </Note>
+        <Sub>Marital status of members</Sub>
+        <P>
+          We ask every member to declare their marital status honestly, and our team reviews each profile before it is shown. However, we are not
+          able to independently confirm every member&apos;s marital status. We kindly request you to verify this yourself before going ahead with
+          any alliance. If any person you see on {SITE_NAME} is already married, {SITE_NAME} and {OPERATOR} cannot be held responsible for it.
+          If you come across such a profile, please let us know through our {link('/contact', 'Contact page')} so that we can look into it and
+          take action.
+        </P>
         <List items={[
           'We do not guarantee the accuracy of information given by members, or that you will find a match.',
           'We are not responsible for conversations, meetings or dealings between members, on or off the website.',

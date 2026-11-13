@@ -14,7 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
 import { useEnforcementStatus } from '@/hooks/useEnforcementStatus';
-import { isPlanLapsed } from '@/lib/membershipStatus';
+import { isPlanLapsed, freeCreditsUsedUp } from '@/lib/membershipStatus';
 
 /**
  * Shown once per browser session after a member's plan has ended, offering to
@@ -30,9 +30,14 @@ export default function RenewPlanDialog() {
   const [open, setOpen] = useState(false);
 
   const planName = typeof membership?.planId === 'object' ? membership.planId?.name : null;
-  const lapsed = isPlanLapsed(membership);
+  // Alliance Meet free credits all spent: same one-time prompt, but to
+  // choose a plan (there's no plan to renew).
+  const creditsUsedUp = freeCreditsUsedUp(membership);
+  const lapsed = isPlanLapsed(membership) || creditsUsedUp;
   // One prompt per lapse: a later plan that also ends gets its own prompt.
-  const promptKey = `sngs-renew-prompt-${membership?.expiryDate || ''}`;
+  const promptKey = creditsUsedUp
+    ? `sngs-free-credits-used-${membership?.purchasedAt || ''}`
+    : `sngs-renew-prompt-${membership?.expiryDate || ''}`;
 
   useEffect(() => {
     if (!enforcementActive || !lapsed || !planName || user?.approvalStatus !== 'approved') return;
@@ -57,11 +62,12 @@ export default function RenewPlanDialog() {
             <RefreshCw className="w-6 h-6 text-[#B8860B]" strokeWidth={1.75} />
           </div>
           <DialogTitle className="font-serif text-2xl text-center text-[#1A1A1A]">
-            Your {planName} plan has ended
+            {creditsUsedUp ? 'Your free credits are used up' : `Your ${planName} plan has ended`}
           </DialogTitle>
           <DialogDescription className="font-sans text-[15px] text-center text-[#2C3E50]/80 leading-relaxed">
-            Its leftover credits have lapsed and the profiles you unlocked are locked for now.
-            Renew and they all open again at no extra cost, with fresh credits for new matches.
+            {creditsUsedUp
+              ? 'You\'ve used all the free credits from your Alliance Meet registration. Choose a membership plan to keep viewing profiles and connecting — the profiles you unlocked open again at no extra cost.'
+              : 'Its leftover credits have lapsed and the profiles you unlocked are locked for now. Renew and they all open again at no extra cost, with fresh credits for new matches.'}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex-col gap-3 sm:flex-col sm:space-x-0">
@@ -70,7 +76,7 @@ export default function RenewPlanDialog() {
             className="w-full h-12 rounded-lg bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
-            Renew Plan
+            {creditsUsedUp ? 'View Membership Plans' : 'Renew Plan'}
           </Button>
           <Button
             variant="outline"

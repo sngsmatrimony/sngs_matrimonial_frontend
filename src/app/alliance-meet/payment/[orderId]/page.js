@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import ReceiptDownloadButton from '@/components/payment/ReceiptDownloadButton';
 import Script from 'next/script';
-import { CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Loader2, Gift } from 'lucide-react';
 import { client } from '@/lib/api/client';
 import { useAuthStore } from '@/store/authStore';
+import { useProfileDownloadsEnabled } from '@/hooks/useProfileDownloadsEnabled';
 import { toastSuccess, toastError } from '@/lib/toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,7 +24,10 @@ import { Button } from '@/components/ui/button';
 export default function AllianceMeetPaymentPage() {
   const router = useRouter();
   const params = useParams();
-  const { user } = useAuthStore();
+  const { user, refreshMembership } = useAuthStore();
+  const downloadsEnabled = useProfileDownloadsEnabled();
+  // Free credits this registration gave (shown on the success screen).
+  const [freeCredits, setFreeCredits] = useState(0);
   const [orderData, setOrderData] = useState(null);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('loading'); // loading, processing, verifying, success, unconfirmed
@@ -91,8 +95,13 @@ export default function AllianceMeetPaymentPage() {
     };
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        await client.post('/api/alliance-meet/verify-payment', payload);
-        toastSuccess('Payment successful — you are registered for the Alliance Meet.');
+        const res = await client.post('/api/alliance-meet/verify-payment', payload);
+        const credits = Number(res.data?.data?.freeCredits) || 0;
+        setFreeCredits(credits);
+        if (credits > 0) await refreshMembership(); // header credit count, straight away
+        toastSuccess(credits > 0
+          ? `Payment successful — you're registered and ${credits} free credits were added.`
+          : 'Payment successful — you are registered for the Alliance Meet.');
         setPaymentStatus('success');
         return;
       } catch (error) {
@@ -103,7 +112,7 @@ export default function AllianceMeetPaymentPage() {
       }
     }
     setPaymentStatus('unconfirmed');
-  }, []);
+  }, [refreshMembership]);
 
   const handleCheckAgain = useCallback(() => {
     if (transactionData?.razorpayResponse) handlePaymentSuccess(transactionData.razorpayResponse);
@@ -252,6 +261,17 @@ export default function AllianceMeetPaymentPage() {
                 You&apos;re registered for the SNGS Alliance Meet. We&apos;ll be in touch with event details.
                 {' '}A receipt has been sent to your email.
               </p>
+              {freeCredits > 0 && (
+                <div className="flex items-start gap-3 text-left rounded-xl border-2 border-[#D4A843] bg-[#FDF8F0] p-4 mb-6">
+                  <Gift className="w-6 h-6 text-[#B8860B] shrink-0" strokeWidth={2} aria-hidden="true" />
+                  <div>
+                    <p className="font-serif text-lg font-semibold text-[#1A1A1A]">{freeCredits} free credits added</p>
+                    <p className="font-sans text-sm text-[#2C3E50]/80 leading-relaxed">
+                      Use them to view profiles{downloadsEnabled ? ', unlock phone & chat and download profiles' : ' and unlock phone & chat'}. They never expire — when they&apos;re used up, choose a membership plan to continue.
+                    </p>
+                  </div>
+                </div>
+              )}
               <ReceiptDownloadButton orderId={params.orderId} className="w-full mb-6" />
 
               {transactionData && (
@@ -271,12 +291,24 @@ export default function AllianceMeetPaymentPage() {
                 </div>
               )}
 
+              {freeCredits > 0 && (
+                <Button
+                  onClick={() => router.push('/browse')}
+                  className="w-full h-12 mb-3 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold text-lg"
+                >
+                  Start Viewing Profiles
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              )}
               <Button
                 onClick={handleGoToSettings}
-                className="w-full h-12 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold text-lg"
+                variant={freeCredits > 0 ? 'outline' : 'default'}
+                className={freeCredits > 0
+                  ? 'w-full h-12 font-sans font-semibold text-lg border-[#D4A843]/40'
+                  : 'w-full h-12 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold text-lg'}
               >
                 Back to Settings
-                <ArrowRight className="ml-2 h-5 w-5" />
+                {freeCredits > 0 ? null : <ArrowRight className="ml-2 h-5 w-5" />}
               </Button>
             </CardContent>
           </Card>

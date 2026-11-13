@@ -93,7 +93,8 @@ function UnlockContactPanel({ profileId, onUnlocked }) {
     } catch (error) {
       const data = error.response?.data;
       if (data?.requiresCredits) {
-        toastError(`You need ${data.requiredCredits} credits; you have ${data.currentCredits}.`);
+        // Free credits: the server says to choose a plan (packs aren't for them).
+        toastError(data.allianceCredits ? data.message : `You need ${data.requiredCredits} credits; you have ${data.currentCredits}.`);
       } else if (data?.requiresMembership) {
         toastError(data.message || 'An active membership is required.');
       } else {

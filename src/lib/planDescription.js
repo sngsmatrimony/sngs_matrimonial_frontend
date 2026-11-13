@@ -19,19 +19,21 @@ function joinClauses(clauses) {
   return `${clauses.slice(0, -1).join(', ')}, and ${clauses[clauses.length - 1]}`;
 }
 
-export function buildPlanDescription(plan) {
+// `downloads`: false when profile downloading is switched off (admin) —
+// the download clause is left out.
+export function buildPlanDescription(plan, { downloads = true } = {}) {
   const costs = plan?.costs || {};
   const view = costs.profileView;
   const chat = costs.phoneAndChat;
   const download = costs.profileDownload;
   const viewFree = isFree(view);
   const chatFree = isFree(chat);
-  const downloadFree = isFree(download);
+  const downloadFree = !downloads || isFree(download);
 
   const clauses = [
     viewFree ? 'see every profile freely' : `view any profile for just ${credits(view.cost)}`,
     chatFree ? 'chat and call families for free' : `unlock phone and chat for ${credits(chat.cost)}`,
-    downloadFree ? 'download profiles at no extra cost' : `download a profile for ${credits(download.cost)}`,
+    ...(downloads ? [downloadFree ? 'download profiles at no extra cost' : `download a profile for ${credits(download.cost)}`] : []),
   ];
   const sentence = joinClauses(clauses);
 

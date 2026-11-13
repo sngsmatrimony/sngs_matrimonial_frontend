@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { toastError, toastSuccess } from '@/lib/toast';
-import { Eye, Trash2, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, Search, Mail, ImageOff, Crown, ShieldCheck, X } from 'lucide-react';
+import { Eye, Trash2, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, Search, Mail, ImageOff, Crown, ShieldCheck, X, CalendarHeart, Hourglass } from 'lucide-react';
 
 const MISSING_DATA_FILTERS = [
   { key: 'missingProfilePicture', label: 'Missing Profile Picture' },
@@ -82,6 +82,9 @@ export default function AdminUsersPage() {
   });
   const [premiumOnly, setPremiumOnly] = useState(false);
   const [idProofPendingOnly, setIdProofPendingOnly] = useState(searchParams.get('idProofPending') === 'true');
+  // Paid an Alliance Meet registration / not used the account in 6+ months.
+  const [allianceOnly, setAllianceOnly] = useState(false);
+  const [inactiveOnly, setInactiveOnly] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [pageSize, setPageSize] = useState(20);
   const [selectingAll, setSelectingAll] = useState(false);
@@ -135,7 +138,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     setSelectedIds(new Set());
     setSelectionCapped(null);
-  }, [approvalFilter, search, missingFilters, premiumOnly, idProofPendingOnly, drillDown]);
+  }, [approvalFilter, search, missingFilters, premiumOnly, idProofPendingOnly, allianceOnly, inactiveOnly, drillDown]);
 
   // Build query params
   const queryParams = {
@@ -149,6 +152,8 @@ export default function AdminUsersPage() {
     ...(missingFilters.missingIdProof && { missingIdProof: 'true' }),
     ...(premiumOnly && { premium: 'true' }),
     ...(idProofPendingOnly && { idProofPending: 'true' }),
+    ...(allianceOnly && { allianceRegistered: 'true' }),
+    ...(inactiveOnly && { inactiveMonths: '6' }),
     ...(drillDown.gender && { gender: drillDown.gender }),
     ...(drillDown.maritalStatus && { maritalStatus: drillDown.maritalStatus }),
     ...(drillDown.city && { city: drillDown.city }),
@@ -374,8 +379,13 @@ export default function AdminUsersPage() {
 
   if (error) {
     return (
-      <div className="bg-[#FBEAE5] border border-[#E8B4A0] border-l-4 border-l-[#C75B39] rounded-xl p-4">
-        <p className="text-[#8A3B22] font-sans">Error loading users. Please try again.</p>
+      <div className="bg-[#FBEAE5] border border-[#E8B4A0] border-l-4 border-l-[#C75B39] rounded-xl p-4 space-y-3">
+        <p className="text-[#8A3B22] font-sans">{error.response?.data?.message || 'Error loading users. Please try again.'}</p>
+        {allianceOnly && (
+          <Button type="button" variant="outline" onClick={() => { setAllianceOnly(false); setPage(1); }} className="font-sans">
+            Remove the Alliance Meet filter
+          </Button>
+        )}
       </div>
     );
   }
@@ -446,6 +456,34 @@ export default function AdminUsersPage() {
         >
           <ShieldCheck size={13} />
           Awaiting verification{idProofPendingCount > 0 ? ` (${idProofPendingCount})` : ''}
+        </button>
+        <span className="font-sans text-xs text-[#2C3E50]/60 uppercase tracking-wide ml-3 mr-1">Alliance Meet:</span>
+        <button
+          type="button"
+          onClick={() => { setAllianceOnly((prev) => !prev); setPage(1); }}
+          aria-pressed={allianceOnly}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium border transition-colors ${
+            allianceOnly
+              ? 'bg-[#D4A843] border-[#D4A843] text-[#1A1A1A]'
+              : 'bg-white border-[#D4A843]/30 text-[#2C3E50] hover:border-[#D4A843]'
+          }`}
+        >
+          <CalendarHeart size={13} />
+          Applied (paid)
+        </button>
+        <span className="font-sans text-xs text-[#2C3E50]/60 uppercase tracking-wide ml-3 mr-1">Activity:</span>
+        <button
+          type="button"
+          onClick={() => { setInactiveOnly((prev) => !prev); setPage(1); }}
+          aria-pressed={inactiveOnly}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-sans font-medium border transition-colors ${
+            inactiveOnly
+              ? 'bg-[#D4A843] border-[#D4A843] text-[#1A1A1A]'
+              : 'bg-white border-[#D4A843]/30 text-[#2C3E50] hover:border-[#D4A843]'
+          }`}
+        >
+          <Hourglass size={13} />
+          Not used in 6+ months
         </button>
       </div>
 
@@ -570,7 +608,14 @@ export default function AdminUsersPage() {
                           aria-label={`Select ${user.fullName}`}
                         />
                       </TableCell>
-                      <TableCell className="font-medium font-sans text-[#1A1A1A]">{user.fullName}</TableCell>
+                      <TableCell className="font-medium font-sans text-[#1A1A1A]">
+                        {user.fullName}
+                        {inactiveOnly && (
+                          <span className="block text-xs font-normal text-[#2C3E50]/60">
+                            {user.lastActiveAt ? `Last active ${formatDateDDMMYYYY(user.lastActiveAt)}` : 'No activity recorded'}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm font-sans text-[#2C3E50]">{user.email}</TableCell>
                       <TableCell className="text-sm font-sans text-[#2C3E50]">{user.mobileNumber}</TableCell>
                       <TableCell className="font-sans text-[#2C3E50] capitalize">{user.gender || '-'}</TableCell>

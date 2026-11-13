@@ -88,7 +88,7 @@ export default function AdminLayout({ children }) {
                                 className="h-10 sm:h-12 w-auto"
                                 style={{ width: 'auto', height: 'auto' }}
                             />
-                            <h1 className="font-serif text-lg sm:text-2xl text-accent whitespace-nowrap">
+                            <h1 className="font-serif text-base sm:text-2xl text-accent whitespace-nowrap truncate min-w-0">
                                 SNGS Admin
                             </h1>
                         </Link>

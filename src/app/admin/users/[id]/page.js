@@ -110,6 +110,7 @@ export default function AdminUserDetailPage() {
   const [editData, setEditData] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
+  const [deactivateReason, setDeactivateReason] = useState('');
   const [activeTab, setActiveTab] = useState('basic');
   const [showApprovalRejectDialog, setShowApprovalRejectDialog] = useState(false);
   const [approvalRejectionReason, setApprovalRejectionReason] = useState('');
@@ -213,9 +214,10 @@ export default function AdminUserDetailPage() {
   });
 
   const deactivateMutation = useMutation({
-    mutationFn: () => adminApi.deactivateUser(userId),
+    mutationFn: (reason) => adminApi.deactivateUser(userId, reason),
     onSuccess: () => {
-      toastSuccess('User deactivated successfully');
+      toastSuccess('User deactivated — they have been emailed');
+      setDeactivateReason('');
       refreshUser();
     },
     onError: (error) => {
@@ -226,7 +228,7 @@ export default function AdminUserDetailPage() {
   const activateMutation = useMutation({
     mutationFn: () => adminApi.activateUser(userId),
     onSuccess: () => {
-      toastSuccess('User activated successfully');
+      toastSuccess('User activated — they have been emailed');
       refreshUser();
     },
     onError: (error) => {
@@ -492,9 +494,9 @@ export default function AdminUserDetailPage() {
     <div className="flex justify-center">
       <div className="max-w-4xl space-y-6 w-full">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => router.back()}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <Button variant="ghost" onClick={() => router.back()} className="shrink-0 px-2 sm:px-4">
               <ArrowLeft size={20} className="mr-1.5" />
               Back
             </Button>
@@ -509,12 +511,12 @@ export default function AdminUserDetailPage() {
                 <span className="text-gray-400 text-[10px] text-center px-1">No photo</span>
               )}
             </div>
-            <div>
-              <h1 className="text-3xl font-bold font-serif text-secondary">{user.fullName}</h1>
-              <p className="text-gray-600">{user.email}</p>
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold font-serif text-secondary break-words">{user.fullName}</h1>
+              <p className="text-sm sm:text-base text-gray-600 break-all">{user.email}</p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap shrink-0">
             {!isEditMode && (
               <>
                 <Button
@@ -2244,11 +2246,26 @@ export default function AdminUserDetailPage() {
               <AlertDialogTitle>Deactivate User?</AlertDialogTitle>
               <AlertDialogDescription>
                 This user will not be able to log in or appear in profile searches. They can be reactivated later.
+                We&apos;ll email them that their account has been deactivated.
               </AlertDialogDescription>
             </AlertDialogHeader>
+            <div className="space-y-1.5">
+              <label htmlFor="deactivate-reason" className="font-sans text-sm font-medium text-[#1A1A1A]">
+                Reason (optional — included in the email)
+              </label>
+              <Textarea
+                id="deactivate-reason"
+                value={deactivateReason}
+                onChange={(e) => setDeactivateReason(e.target.value)}
+                maxLength={500}
+                rows={3}
+                placeholder="e.g. Several members reported this profile"
+                className="font-sans"
+              />
+            </div>
             <AlertDialogAction
               onClick={() => {
-                deactivateMutation.mutate();
+                deactivateMutation.mutate(deactivateReason.trim());
                 setShowDeactivateDialog(false);
               }}
               className="bg-amber-600 text-white"

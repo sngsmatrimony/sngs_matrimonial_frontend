@@ -8,7 +8,10 @@ import { Button } from '@/components/ui/button';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
 import { formatRupees } from '@/lib/money';
+import { formatEventDate, isUpcomingEvent } from '@/lib/allianceEvent';
+import { useProfileDownloadsEnabled } from '@/hooks/useProfileDownloadsEnabled';
 import PaymentTermsDialog from '@/components/payment/PaymentTermsDialog';
+import AllianceCreditsHighlight, { allianceCreditTerms } from '@/components/alliance-meet/AllianceCreditsHighlight';
 
 const DISMISS_KEY = 'allianceMeetBannerDismissedAt';
 const DISMISS_DAYS = 7;
@@ -33,6 +36,7 @@ export default function AllianceMeetBanner() {
   const [dismissed, setDismissed] = useState(dismissedRecently);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  const downloadsEnabled = useProfileDownloadsEnabled();
 
   // Same query keys as the Settings card, so both share one cache entry.
   const { data: settings } = useQuery({
@@ -87,11 +91,15 @@ export default function AllianceMeetBanner() {
             <h3 className="font-serif text-lg sm:text-xl font-semibold text-[#1A1A1A]">
               Join the SNGS Alliance Meet
             </h3>
+            {isUpcomingEvent(settings.eventDate) && (
+              <p className="font-sans text-sm font-semibold text-[#B8860B]">Scheduled on {formatEventDate(settings.eventDate)}</p>
+            )}
             <p className="font-sans text-[15px] leading-relaxed text-[#2C3E50]/80 mt-0.5">
               Meet families from the community in person. Registration is open —{' '}
               <span className="font-semibold text-[#1A1A1A]">{formatRupees(settings.priceAmount)}</span> per registration
               {pricing.gatewayCharges > 0 && <> (+ {formatRupees(pricing.gatewayCharges)} payment gateway charges)</>}.
             </p>
+            <AllianceCreditsHighlight compact freeCredits={settings.freeCredits} costs={settings.costs} className="mt-1.5" />
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -119,6 +127,7 @@ export default function AllianceMeetBanner() {
         itemName="SNGS Alliance Meet registration"
         pricing={pricing}
         terms={[
+          ...allianceCreditTerms(settings.freeCredits, settings.costs, { downloads: downloadsEnabled }),
           'A one-time registration for the upcoming SNGS Alliance Meet. Our team will share the event details with you.',
           'The registration fee is non-refundable, unless SNGS cancels the event.',
         ]}

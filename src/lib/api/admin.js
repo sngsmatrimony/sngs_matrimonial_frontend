@@ -24,9 +24,9 @@ export const adminApi = {
   exportUserProfilePptx: (id) => adminClient.get(`/api/admin/users/${id}/export-pptx`, { responseType: 'blob' }),
 
   /**
-   * Deactivate user (soft delete)
+   * Deactivate user (soft delete). The member is emailed, with the optional reason.
    */
-  deactivateUser: (id) => adminClient.put(`/api/admin/users/${id}/deactivate`),
+  deactivateUser: (id, reason = '') => adminClient.put(`/api/admin/users/${id}/deactivate`, { reason }),
 
   /**
    * Reactivate user
@@ -197,6 +197,12 @@ export const adminApi = {
    */
   updateAutomatedInactivityEmailSettings: (data) =>
     adminClient.put('/api/admin/settings/automated-inactivity-emails', data),
+
+  /**
+   * Member profile downloads (Share Profile PDF) on/off
+   */
+  getProfileDownloadsSettings: () => adminClient.get('/api/admin/settings/profile-downloads'),
+  updateProfileDownloadsSettings: (data) => adminClient.put('/api/admin/settings/profile-downloads', data),
 
   // ==================== Admin Management ====================
 

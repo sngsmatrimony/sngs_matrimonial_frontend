@@ -9,8 +9,11 @@ import { CalendarHeart, Loader2, CheckCircle2 } from 'lucide-react';
 import { client } from '@/lib/api/client';
 import { toastError, toastInfo } from '@/lib/toast';
 import { formatRupees } from '@/lib/money';
+import { formatEventDate, isUpcomingEvent } from '@/lib/allianceEvent';
 import PaymentTermsDialog from '@/components/payment/PaymentTermsDialog';
 import { useAuthStore } from '@/store/authStore';
+import { useProfileDownloadsEnabled } from '@/hooks/useProfileDownloadsEnabled';
+import AllianceCreditsHighlight, { allianceCreditTerms } from '@/components/alliance-meet/AllianceCreditsHighlight';
 
 const ALLIANCE_MEET_TERMS = [
   'A one-time registration for the upcoming SNGS Alliance Meet. Our team will share the event details with you.',
@@ -31,6 +34,7 @@ export default function AllianceMeetSection() {
   // backend refuses the order before that too).
   const user = useAuthStore((s) => s.user);
   const awaitingApproval = !!user && user.approvalStatus !== 'approved';
+  const downloadsEnabled = useProfileDownloadsEnabled();
 
   const { data: settings, isLoading } = useQuery({
     queryKey: ['allianceMeetPublicSettings'],
@@ -82,8 +86,14 @@ export default function AllianceMeetSection() {
         <CardDescription className="font-sans text-[#2C3E50]/70">
           Opt in for the upcoming SNGS Alliance Meet — a chance to meet the community in person.
         </CardDescription>
+        {isUpcomingEvent(settings.eventDate) && (
+          <p className="font-sans text-sm font-semibold text-[#B8860B]">Scheduled on {formatEventDate(settings.eventDate)}</p>
+        )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        {!myRegistration?.registered && (
+          <AllianceCreditsHighlight freeCredits={settings.freeCredits} costs={settings.costs} />
+        )}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-4 bg-[#FDF8F0] border border-[#D4A843]/20 rounded-lg">
           <div>
             <p className="font-serif text-2xl text-[#1A1A1A]">{formatRupees(settings.priceAmount)}</p>
@@ -119,7 +129,7 @@ export default function AllianceMeetSection() {
         onOpenChange={setShowTerms}
         itemName="SNGS Alliance Meet registration"
         pricing={pricing}
-        terms={ALLIANCE_MEET_TERMS}
+        terms={[...allianceCreditTerms(settings.freeCredits, settings.costs, { downloads: downloadsEnabled }), ...ALLIANCE_MEET_TERMS]}
         busy={isCreatingOrder}
         onAgree={startPayment}
       />

@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { CreditCard, ShoppingBag, CheckCircle2, Receipt } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useEnforcementStatus } from '@/hooks/useEnforcementStatus';
+import { useProfileDownloadsEnabled } from '@/hooks/useProfileDownloadsEnabled';
+import { isOnFreeCredits, freeCreditsUsedUp } from '@/lib/membershipStatus';
 
 // Same semantics as membership/purchase/page.js's buildFeatureBullets, but
 // phrased for a plan the member already has rather than one they're
@@ -18,12 +20,13 @@ function costLine(label, entry) {
   return `${label}: ${entry.cost} credit${entry.cost === 1 ? '' : 's'} per use`;
 }
 
-function buildActivePerks(plan) {
+// `downloads`: whether profile downloading is switched on (admin).
+function buildActivePerks(plan, downloads = true) {
   const costs = plan?.costs || {};
   const perks = [
     costLine('Viewing a profile', costs.profileView),
     costLine('Phone number & chat', costs.phoneAndChat),
-    costLine('Downloading a profile', costs.profileDownload),
+    ...(downloads ? [costLine('Downloading a profile', costs.profileDownload)] : []),
   ];
   return perks;
 }
@@ -32,6 +35,7 @@ export default function MembershipSection() {
   const router = useRouter();
   const { membership, refreshMembership } = useAuthStore();
   const enforcementActive = useEnforcementStatus();
+  const downloadsEnabled = useProfileDownloadsEnabled();
   const isPromotional = !enforcementActive;
   const [loading, setLoading] = useState(true);
 
@@ -43,6 +47,8 @@ export default function MembershipSection() {
   }, [refreshMembership]);
 
   const plan = membership?.planId;
+  // Alliance Meet free credits: not a plan — no packs; a plan any time.
+  const onFreeCredits = isOnFreeCredits(membership);
 
   return (
     <Card>
@@ -67,12 +73,17 @@ export default function MembershipSection() {
             <p className="font-sans text-[#2C3E50]/70">
               Enjoy unlimited access to all profiles during our promotional period.
             </p>
+            {onFreeCredits && membership?.isActive && membership?.credits > 0 && (
+              <p className="font-sans text-sm text-[#1A1A1A] mt-3">
+                Your {membership.credits} free Alliance Meet credits are kept for after the promotional period.
+              </p>
+            )}
           </div>
         ) : membership?.isActive && !membership?.isExpired ? (
           <>
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="font-serif text-lg font-semibold text-[#1A1A1A]">
-                {plan?.name || 'Your Plan'}
+                {onFreeCredits ? 'Alliance Meet free credits' : plan?.name || 'Your Plan'}
               </h3>
               <Badge className="bg-[#2E7D32] text-white font-sans">Active</Badge>
             </div>
@@ -85,7 +96,9 @@ export default function MembershipSection() {
               <div className="p-4 border border-[#D4A843]/20 rounded-lg">
                 <p className="font-sans text-sm text-[#2C3E50]/70 mb-1">Expiry Date</p>
                 <p className="font-sans text-lg text-[#1A1A1A]">
-                  {membership?.expiryDate ? new Date(membership.expiryDate).toLocaleDateString() : 'Never expires'}
+                  {membership?.expiryDate
+                    ? new Date(membership.expiryDate).toLocaleDateString()
+                    : onFreeCredits ? 'No expiry — until used' : 'Never expires'}
                 </p>
               </div>
             </div>
@@ -95,9 +108,9 @@ export default function MembershipSection() {
                 see exactly what they're entitled to, not just a credit count. */}
             <div className="p-4 bg-[#FDF8F0] border border-[#D4A843]/20 rounded-lg space-y-2">
               <p className="font-sans text-xs font-semibold uppercase tracking-wide text-[#2C3E50]/60">
-                What your plan includes
+                {onFreeCredits ? 'Each action uses' : 'What your plan includes'}
               </p>
-              {buildActivePerks(plan).map((perk) => (
+              {buildActivePerks(plan, downloadsEnabled).map((perk) => (
                 <div key={perk} className="flex items-start gap-2 font-sans text-sm text-[#1A1A1A]">
                   <CheckCircle2 className="w-4 h-4 text-[#2E7D32] shrink-0 mt-0.5" />
                   <span>{perk}</span>
@@ -106,18 +119,20 @@ export default function MembershipSection() {
             </div>
 
             <p className="font-sans text-sm text-[#2C3E50]/80 leading-relaxed">
-              {membership?.expiryDate
+              {onFreeCredits
+                ? 'These free credits came with your Alliance Meet registration. When they\'re used up, choose a membership plan to continue — or buy one any time and your leftover free credits are added to it.'
+                : membership?.expiryDate
                 ? `Running low? Buy more credits any time before ${new Date(membership.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} — they're added to this plan and expire with it. When the plan ends, unused credits lapse; profiles you unlocked stay yours and open again when you renew.`
                 : 'Running low? Buy more credits any time — they are added to this plan.'}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
-                onClick={() => router.push('/membership/purchase#credits')}
+                onClick={() => router.push(onFreeCredits ? '/membership/purchase' : '/membership/purchase#credits')}
                 className="w-full sm:w-auto h-12 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold"
               >
                 <ShoppingBag className="mr-2 h-4 w-4" />
-                Buy More Credits
+                {onFreeCredits ? 'View Membership Plans' : 'Buy More Credits'}
               </Button>
               <Button
                 variant="outline"
@@ -133,10 +148,12 @@ export default function MembershipSection() {
           <div className="text-center py-8">
             <CreditCard className="w-16 h-16 text-[#2C3E50]/30 mx-auto mb-4" />
             <h3 className="font-serif text-xl text-[#1A1A1A] mb-2">
-              {membership?.isExpired ? 'Membership Expired' : 'No Active Membership'}
+              {freeCreditsUsedUp(membership) ? 'Free Credits Used Up' : membership?.isExpired ? 'Membership Expired' : 'No Active Membership'}
             </h3>
             <p className="font-sans text-[#2C3E50]/70 mb-4">
-              {membership?.isExpired
+              {freeCreditsUsedUp(membership)
+                ? 'You\'ve used all the free credits from your Alliance Meet registration. Choose a membership plan to keep viewing profiles and connecting — profiles you unlocked open again once you have a plan.'
+                : membership?.isExpired
                 ? 'Your plan has ended, so its leftover credits have lapsed and your unlocked profiles are locked for now. Renew and they open again at no extra cost.'
                 : 'Searching is free. Choose a plan to view full profiles, contact matches and chat.'}
             </p>

@@ -14,7 +14,7 @@ import ApprovalStatusBanner from '@/components/layout/ApprovalStatusBanner';
 import ApprovalGuard from '@/components/guards/ApprovalGuard';
 import { SocketProvider } from '@/contexts/SocketContext';
 import RenewPlanDialog from '@/components/membership/RenewPlanDialog';
-import { isPlanLapsed } from '@/lib/membershipStatus';
+import { isPlanLapsed, isOnFreeCredits } from '@/lib/membershipStatus';
 
 export default function UserLayout({ children }) {
   const { user, logout, initializeAuth, token, membership, canAccessFullApp } = useAuthStore();
@@ -90,8 +90,10 @@ export default function UserLayout({ children }) {
   const hasActiveMembership = membership?.isActive && !membership?.isExpired;
   const showCredits = enforcementActive && hasActiveMembership && !pathname.includes('/settings') && !isActive('/membership');
   const showMembershipCta = enforcementActive && !pathname.includes('/settings') && !isActive('/membership');
-  const ctaLabel = hasActiveMembership ? 'Buy Credits' : isPlanLapsed(membership) ? 'Renew Plan' : 'Get Membership';
-  const ctaHref = hasActiveMembership ? '/membership/purchase#credits' : '/membership/purchase';
+  // On Alliance Meet free credits there are no credit packs — a plan is the next step.
+  const onFreeCredits = isOnFreeCredits(membership);
+  const ctaLabel = onFreeCredits ? 'Get a\u00A0Plan' : hasActiveMembership ? 'Buy Credits' : isPlanLapsed(membership) ? 'Renew Plan' : 'Get Membership';
+  const ctaHref = hasActiveMembership && !onFreeCredits ? '/membership/purchase#credits' : '/membership/purchase';
 
   // Show loader while initializing (unless timeout reached)
   if ((!isInitialized && !initTimeout) || !token) {
@@ -155,7 +157,7 @@ export default function UserLayout({ children }) {
           {showMembershipCta && (
             <Link
               href={ctaHref}
-              className="flex md:hidden bg-[#D4A843] hover:bg-[#B8860B] px-3 py-1 rounded-full font-sans text-xs font-semibold text-[#1A1A1A] shadow-sm transition-all mr-2"
+              className="flex md:hidden text-center leading-tight bg-[#D4A843] hover:bg-[#B8860B] px-3 py-1 rounded-full font-sans text-xs font-semibold text-[#1A1A1A] shadow-sm transition-all mr-2"
             >
               {ctaLabel}
             </Link>

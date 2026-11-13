@@ -18,17 +18,17 @@ const POLICY_LINKS = [
 ];
 
 /** Shared layout for the policy pages (Terms, Privacy, Refund, Delivery). */
-export default function LegalPage({ title, current, children }) {
+export default function LegalPage({ title, current, effectiveDate = POLICIES_EFFECTIVE_DATE, children }) {
   return (
     <div className="min-h-screen bg-[#FDF8F0]">
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-2">{title}</h1>
-        <p className="font-sans text-sm text-[#2C3E50]/60 mb-8">Effective date: {POLICIES_EFFECTIVE_DATE}</p>
+        <p className="font-sans text-sm text-[#2C3E50]/60 mb-8">Effective date: {effectiveDate}</p>
         <div className="space-y-8">{children}</div>
       </main>
       <footer className="border-t border-[#D4A843]/15 py-8 mt-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="font-sans text-sm text-[#2C3E50]/60 text-center">Last updated: {POLICIES_EFFECTIVE_DATE}</p>
+          <p className="font-sans text-sm text-[#2C3E50]/60 text-center">Last updated: {effectiveDate}</p>
           <nav aria-label="Policies" className="flex flex-wrap justify-center gap-x-5 gap-y-2 mt-4">
             {POLICY_LINKS.filter((l) => l.href !== current).map((l) => (
               <Link key={l.href} href={l.href} className="font-sans text-sm text-[#2C3E50] hover:text-[#B8860B] underline-offset-4 hover:underline">

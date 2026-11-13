@@ -24,6 +24,9 @@ export default function ProfileViewPage() {
   const [error, setError] = useState(null);
   const [serverMessage, setServerMessage] = useState('');
   const [isExpiredPlan, setIsExpiredPlan] = useState(false);
+  // On Alliance Meet free credits (not enough left, or all used): they need
+  // a plan — credit packs aren't for free credits.
+  const [onFreeCredits, setOnFreeCredits] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -65,9 +68,12 @@ export default function ProfileViewPage() {
       if (error.response?.data?.requiresCredits) {
         setError('insufficient-credits');
         setServerMessage(error.response.data.message || '');
+        setOnFreeCredits(!!error.response.data.allianceCredits);
       } else if (error.response?.data?.requiresMembership) {
         setError('no-membership');
         setIsExpiredPlan(!!error.response.data.isExpired);
+        setOnFreeCredits(!!error.response.data.allianceCreditsUsed);
+        setServerMessage(error.response.data.message || '');
       } else if (error.response?.status === 404) {
         setError('not-found');
         toastError('Profile not found');
@@ -117,7 +123,9 @@ export default function ProfileViewPage() {
             Unlock This Profile
           </h2>
           <p className="font-sans text-[#2C3E50]/80 mb-6 leading-relaxed">
-            {error === 'insufficient-credits'
+            {onFreeCredits
+              ? serverMessage
+              : error === 'insufficient-credits'
               ? `${serverMessage || "You don't have enough credits."} Buy more credits for your current plan to unlock this profile.`
               : isExpiredPlan
                 ? 'Your plan has ended. Choose a new plan to view full profiles again.'
@@ -128,9 +136,9 @@ export default function ProfileViewPage() {
               asChild
               className="w-full bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold h-12 rounded-xl shadow-sm"
             >
-              <Link href={error === 'insufficient-credits' ? '/membership/purchase#credits' : '/membership/purchase'}>
+              <Link href={error === 'insufficient-credits' && !onFreeCredits ? '/membership/purchase#credits' : '/membership/purchase'}>
                 <Sparkles className="w-4 h-4 mr-2" />
-                {error === 'insufficient-credits' ? 'Buy More Credits' : isExpiredPlan ? 'Renew Plan' : 'View Membership Plans'}
+                {onFreeCredits ? 'View Membership Plans' : error === 'insufficient-credits' ? 'Buy More Credits' : isExpiredPlan ? 'Renew Plan' : 'View Membership Plans'}
               </Link>
             </Button>
             <Button

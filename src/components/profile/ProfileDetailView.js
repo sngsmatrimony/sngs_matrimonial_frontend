@@ -8,6 +8,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useLikeMutation } from '@/hooks/useLikeMutation';
 import { useShortlistMutation } from '@/hooks/useShortlistMutation';
 import { useEnforcementStatus } from '@/hooks/useEnforcementStatus';
+import { useProfileDownloadsEnabled } from '@/hooks/useProfileDownloadsEnabled';
+import { useQueryClient } from '@tanstack/react-query';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
 import { useProfilePdf } from '@/hooks/useProfilePdf';
@@ -97,6 +99,9 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
   const [unlockedHoroscope, setUnlockedHoroscope] = useState(null);
   const horoscopeDocument = unlockedHoroscope || profile?.horoscopeDocument;
   const enforcementActive = useEnforcementStatus();
+  // Admin can switch profile downloads off — then there's no Share button.
+  const downloadsEnabled = useProfileDownloadsEnabled();
+  const queryClient = useQueryClient();
 
   const downloadCost = membership?.planId?.costs?.profileDownload;
   const unlimitedDownload = !!downloadCost?.unlimited;
@@ -135,8 +140,14 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
       runDownload(action, horoscope);
     } catch (error) {
       const data = error.response?.data;
-      if (data?.requiresCredits) {
-        toastError(`You need ${data.requiredCredits} credits; you have ${data.currentCredits}.`);
+      if (data?.downloadsDisabled) {
+        // Switched off since this page loaded: say so and hide the button.
+        setPendingDownload(null);
+        toastError(data.message);
+        queryClient.invalidateQueries({ queryKey: ['profileDownloadsStatus'] });
+      } else if (data?.requiresCredits) {
+        // Free credits: the server says to choose a plan (packs aren't for them).
+        toastError(data.allianceCredits ? data.message : `You need ${data.requiredCredits} credits; you have ${data.currentCredits}.`);
       } else if (data?.requiresMembership) {
         toastError(data.message || 'An active membership is required.');
       } else {
@@ -249,22 +260,26 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
             Chat
           </button>
 
-          <button
-            onClick={() => requestDownload('pdf')}
-            disabled={isGenerating || isUnlockingDownload}
-            className="w-[60px] sm:w-auto sm:flex-1 shrink-0 h-12 inline-flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 font-sans text-[11px] sm:text-sm font-semibold px-1 sm:px-3 rounded-lg bg-white border border-[#D4A843]/40 text-[#1A1A1A] hover:bg-[#F5E6C3]/40 transition-colors disabled:opacity-50"
-          >
-            {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-            <span className="hidden sm:inline">Share Profile</span>
-            <span className="sm:hidden">Share</span>
-          </button>
+          {downloadsEnabled && (
+            <button
+              onClick={() => requestDownload('pdf')}
+              disabled={isGenerating || isUnlockingDownload}
+              className="w-[60px] sm:w-auto sm:flex-1 shrink-0 h-12 inline-flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 font-sans text-[11px] sm:text-sm font-semibold px-1 sm:px-3 rounded-lg bg-white border border-[#D4A843]/40 text-[#1A1A1A] hover:bg-[#F5E6C3]/40 transition-colors disabled:opacity-50"
+            >
+              {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              <span className="hidden sm:inline">Share Profile</span>
+              <span className="sm:hidden">Share</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* Hidden PDF Print Container - positioned off-screen */}
-      <div style={{ position: 'absolute', left: '-9999px', top: 0, width: '794px' }} aria-hidden="true">
-        <ProfilePrintView ref={printRef} profile={profile} />
-      </div>
+      {downloadsEnabled && (
+        <div style={{ position: 'absolute', left: '-9999px', top: 0, width: '794px' }} aria-hidden="true">
+          <ProfilePrintView ref={printRef} profile={profile} />
+        </div>
+      )}
 
       <SpendCreditsDialog
         open={pendingDownload !== null}

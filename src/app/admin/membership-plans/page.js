@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { buildPlanDescription } from '@/lib/planDescription';
+import { useProfileDownloadsEnabled } from '@/hooks/useProfileDownloadsEnabled';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -58,6 +59,8 @@ const DEFAULT_COSTS = Object.fromEntries(
 );
 
 export default function AdminMembershipPlansPage() {
+  // Member profile downloads switched off (Settings): the download cost isn't used then.
+  const downloadsEnabled = useProfileDownloadsEnabled();
   const router = useRouter();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -307,7 +310,7 @@ export default function AdminMembershipPlansPage() {
                       {plan.name}
                     </CardTitle>
                     <CardDescription className="font-sans mt-1">
-                      {buildPlanDescription(plan)}
+                      {buildPlanDescription(plan, { downloads: downloadsEnabled })}
                     </CardDescription>
                   </div>
                   <Badge
@@ -458,7 +461,7 @@ export default function AdminMembershipPlansPage() {
                       { unlimited: entry.unlimited, cost: parseInt(entry.cost, 10) || 0 },
                     ])
                   ),
-                })}
+                }, { downloads: downloadsEnabled })}
               </p>
               <p className="font-sans text-xs text-gray-500 mt-1">
                 Written automatically from the credit costs you set below.
@@ -548,6 +551,11 @@ export default function AdminMembershipPlansPage() {
                   <div key={activity.key} className="space-y-2 p-3 bg-[#FDF8F0] rounded-lg">
                     <Label className="font-sans text-sm font-medium text-[#1A1A1A]">{activity.label}</Label>
                     <p className="font-sans text-xs text-gray-500">{activity.description}</p>
+                    {activity.key === 'profileDownload' && !downloadsEnabled && (
+                      <p className="font-sans text-xs font-medium text-[#C75B39]">
+                        Profile downloads are switched off for members (Settings → Profile Downloads), so this cost isn&apos;t used right now.
+                      </p>
+                    )}
                     <div className="flex items-center gap-3">
                       <Input
                         type="number"
