@@ -45,9 +45,11 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false, badge = 
   // A missing/deleted photo file would otherwise show a broken-image icon + alt text.
   const [imageFailed, setImageFailed] = useState(false);
 
-  // Check if user has no membership or expired/no credits (only matters when enforcement is on)
+  // Paid features on/off. Whether THIS card is locked comes from the server
+  // (`nameMasked`, see lockedHere below) — not from the member's credit
+  // balance: a profile already unlocked on a valid plan stays open at 0
+  // credits, and only never-unlocked ones show "Tap to Unlock".
   const enforcementActive = useEnforcementStatus();
-  const hasNoMembership = enforcementActive && (!membership?.isActive || membership?.isExpired || membership?.credits <= 0);
 
   // Viewing a never-unlocked profile (server already told us via
   // `nameMasked`) spends the plan's profileView cost — confirm before
@@ -152,7 +154,7 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false, badge = 
         ) : (
           // When locked, the lock overlay below takes the centre (and says
           // there's no photo), so the placeholder would only sit behind it.
-          !hasNoMembership && (
+          !lockedHere && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
               <UserIcon className="w-14 h-14 text-[#D4A843]/40" strokeWidth={1.5} />
               <span className="font-sans text-xs text-[#2C3E50]/50">Photo not available</span>
@@ -182,7 +184,7 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false, badge = 
 
         {/* Light tint only: the photo underneath is already a soft preview,
             and members should still see roughly who's there. */}
-        {hasNoMembership && (
+        {lockedHere && (
           <div className="absolute inset-0 bg-[#1A1A1A]/15 flex flex-col items-center justify-center gap-1.5">
             <div className="bg-white/95 rounded-full p-3 shadow-lg">
               <Lock className="w-5 h-5 text-[#D4A843]" />
