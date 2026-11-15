@@ -73,13 +73,13 @@ export default function AdminAllianceRegistrationsPage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="border-[#D4A843]/15">
-          <CardContent className="pt-6">
+          <CardContent>
             <p className="font-sans text-sm text-[#2C3E50]/70">Registered (paid)</p>
             <p className="font-serif text-3xl font-semibold text-[#1A1A1A]">{summary.paidCount ?? 0}</p>
           </CardContent>
         </Card>
         <Card className="border-[#D4A843]/15">
-          <CardContent className="pt-6">
+          <CardContent>
             <p className="font-sans text-sm text-[#2C3E50]/70">Collected (incl. gateway charges)</p>
             <p className="font-serif text-3xl font-semibold text-[#1A1A1A]">{formatRupees(summary.totalCollected ?? 0)}</p>
           </CardContent>

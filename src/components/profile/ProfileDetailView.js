@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Heart, MessageCircle, Download, Loader2, Bookmark, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Heart, MessageCircle, Download, Loader2, Bookmark, Sparkles, Lock } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLandingStore } from '@/store/landingStore';
 import { useAuthStore } from '@/store/authStore';
@@ -13,6 +13,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { client } from '@/lib/api/client';
 import { toastError } from '@/lib/toast';
 import { useProfilePdf } from '@/hooks/useProfilePdf';
+import { isPlanLapsed } from '@/lib/membershipStatus';
+import { Button } from '@/components/ui/button';
 import ProfilePrintView from '@/components/profile/ProfilePrintView';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import ProfileTabs from '@/components/profile/ProfileTabs';
@@ -94,6 +96,14 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
   const [pendingDownload, setPendingDownload] = useState(null); // null | 'pdf'
   const [isUnlockingDownload, setIsUnlockingDownload] = useState(false);
   const [downloadUnlocked, setDownloadUnlocked] = useState(!!profile?.downloadUnlocked);
+  // The fixed action bar sits over the bottom of the screen: while it's
+  // shown, pad the end of the page so the footer can scroll clear of it.
+  const hasProfile = !!profile;
+  useEffect(() => {
+    if (!hasProfile) return undefined;
+    document.body.classList.add('has-profile-action-bar');
+    return () => document.body.classList.remove('has-profile-action-bar');
+  }, [hasProfile]);
   // The server holds back the horoscope link until the download is unlocked;
   // the unlock call returns it.
   const [unlockedHoroscope, setUnlockedHoroscope] = useState(null);
@@ -102,6 +112,26 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
   // Admin can switch profile downloads off — then there's no Share button.
   const downloadsEnabled = useProfileDownloadsEnabled();
   const queryClient = useQueryClient();
+
+  // The free limited view (profile not unlocked yet — see getLimitedProfile).
+  const limited = !!profile?.limited;
+  const [showUnlockDialog, setShowUnlockDialog] = useState(false);
+  const validPlan = !!membership?.isActive && !membership?.isExpired;
+  const viewCost = membership?.planId?.costs?.profileView;
+  const viewCreditCost = viewCost?.unlimited ? 0 : (viewCost?.cost ?? 0);
+  const openFullProfile = () => router.replace(`/profiles/${profileId}`);
+  const unlockLabel = !enforcementActive || (validPlan && viewCreditCost === 0)
+    ? 'View Full Profile'
+    : !validPlan
+      ? (isPlanLapsed(membership) ? 'Renew Plan' : 'Upgrade Plan')
+      : `Unlock Full Profile · ${viewCreditCost} credit${viewCreditCost === 1 ? '' : 's'}`;
+  // Full profile: free while paid features are off or on an unlimited/0-cost
+  // plan; otherwise confirm the credits; without a plan, the plans page.
+  const requestFullProfile = () => {
+    if (!enforcementActive || (validPlan && viewCreditCost === 0)) openFullProfile();
+    else if (!validPlan) router.push('/membership/purchase');
+    else setShowUnlockDialog(true);
+  };
 
   const downloadCost = membership?.planId?.costs?.profileDownload;
   const unlimitedDownload = !!downloadCost?.unlimited;
@@ -197,8 +227,31 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
   }
 
   return (
-    <div className="min-h-screen bg-[#FDF8F0] pb-24">
+    <div className="min-h-screen bg-[#FDF8F0] pb-10">
       <div className="max-w-3xl mx-auto mt-4">
+        {limited && (
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-[#D4A843]/40 bg-[#F5E6C3]/45 p-4">
+            <div className="flex items-start gap-3 flex-1">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#D4A843]">
+                <Lock size={16} className="text-[#1A1A1A]" aria-hidden="true" />
+              </span>
+              <div>
+                <p className="font-sans text-sm font-semibold text-[#1A1A1A]">You&apos;re seeing limited details</p>
+                <p className="font-sans text-sm text-[#2C3E50]/80 leading-relaxed">
+                  Name, photos, family, career, location and contact open when you unlock the full profile.
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              onClick={requestFullProfile}
+              className="h-11 shrink-0 bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold"
+            >
+              <Sparkles className="w-4 h-4 mr-2" aria-hidden="true" />
+              {unlockLabel}
+            </Button>
+          </div>
+        )}
         <div className="relative bg-white rounded-2xl shadow-sm overflow-hidden">
           {typeof profile.matchScore === 'number' && (
             <span className="absolute top-4 right-4 z-10 inline-flex items-center gap-1.5 bg-[#D4A843] text-[#1A1A1A] text-sm font-sans font-semibold px-3 py-1.5 rounded-full shadow-sm">
@@ -217,6 +270,9 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
               onUnlockHoroscope={() => setShowHoroscopeTerms(true)}
               onContactUnlocked={onProfileRefresh}
               initialTab={initialTab}
+              limited={limited}
+              onUnlockFull={requestFullProfile}
+              unlockLabel={unlockLabel}
             />
           </div>
         </div>
@@ -252,6 +308,19 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
             {shortlisted ? 'Saved' : 'Save'}
           </button>
 
+          {limited ? (
+            // Limited view: chat and download come with the full profile.
+            <button
+              onClick={requestFullProfile}
+              className="flex-1 min-w-0 h-12 inline-flex items-center justify-center gap-1.5 font-sans text-sm font-semibold px-2 sm:px-3 rounded-lg border-2 border-[#D4A843] bg-white text-[#1A1A1A] hover:bg-[#F5E6C3]/40 whitespace-nowrap transition-colors"
+            >
+              <Lock size={15} aria-hidden="true" />
+              {/* Phones get the one-word form so it isn't cut off; the
+                  banner above has the full wording. */}
+              <span className="sm:hidden">{validPlan || !enforcementActive ? 'Unlock' : unlockLabel.split(' ')[0]}</span>
+              <span className="hidden sm:inline truncate">{validPlan || !enforcementActive ? 'Unlock Profile' : unlockLabel}</span>
+            </button>
+          ) : (
           <button
             onClick={handleChat}
             className="w-[60px] sm:w-auto sm:flex-1 shrink-0 h-12 inline-flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 font-sans text-[11px] sm:text-sm font-semibold px-1 sm:px-3 rounded-lg bg-white border border-[#D4A843]/40 text-[#1A1A1A] hover:bg-[#F5E6C3]/40 transition-colors"
@@ -259,8 +328,9 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
             <MessageCircle size={16} />
             Chat
           </button>
+          )}
 
-          {downloadsEnabled && (
+          {downloadsEnabled && !limited && (
             <button
               onClick={() => requestDownload('pdf')}
               disabled={isGenerating || isUnlockingDownload}
@@ -275,10 +345,25 @@ export default function ProfileDetailView({ profileId, profile, onProfileRefresh
       </div>
 
       {/* Hidden PDF Print Container - positioned off-screen */}
-      {downloadsEnabled && (
-        <div style={{ position: 'absolute', left: '-9999px', top: 0, width: '794px' }} aria-hidden="true">
-          <ProfilePrintView ref={printRef} profile={profile} />
+      {downloadsEnabled && !limited && (
+        // Zero-size clipping box: the print layout stays rendered (the PDF
+        // generator clones it and places its own copy) without its height
+        // adding a blank stretch below the footer on phones.
+        <div style={{ position: 'absolute', top: 0, left: 0, width: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
+          <div style={{ width: '794px' }}>
+            <ProfilePrintView ref={printRef} profile={profile} />
+          </div>
         </div>
+      )}
+
+      {limited && validPlan && viewCreditCost > 0 && (
+        <SpendCreditsDialog
+          open={showUnlockDialog}
+          cost={viewCreditCost}
+          activityLabel="Viewing this full profile"
+          onConfirm={() => { setShowUnlockDialog(false); openFullProfile(); }}
+          onCancel={() => setShowUnlockDialog(false)}
+        />
       )}
 
       <SpendCreditsDialog

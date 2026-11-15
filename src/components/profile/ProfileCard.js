@@ -11,9 +11,10 @@ import { useAuthStore } from '@/store/authStore';
 import { useLikeMutation } from '@/hooks/useLikeMutation';
 import { useShortlistMutation } from '@/hooks/useShortlistMutation';
 import { useEnforcementStatus } from '@/hooks/useEnforcementStatus';
-import { toastInfo } from '@/lib/toast';
 import { formatRelativeActivity } from '@/lib/time';
+import { isPlanLapsed } from '@/lib/membershipStatus';
 import SpendCreditsDialog from '@/components/shared/SpendCreditsDialog';
+import LimitedViewDialog from '@/components/profile/LimitedViewDialog';
 
 function formatLocation(profile) {
   const addr = profile?.presentResidentialAddress;
@@ -31,7 +32,8 @@ function photoSrc(profile) {
   return profile.profilePicture.preview ? `${API_BASE_URL}${url}` : url;
 }
 
-function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
+// `badge`: e.g. "Interested in you" on the Liked page's Received tab.
+function ProfileCard({ profile, isLiked = false, isShortlisted = false, badge = null }) {
   // All hooks must be called before any early returns
   const router = useRouter();
   const { membership } = useAuthStore();
@@ -39,6 +41,7 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
   const { toggleLike, isLoading } = useLikeMutation();
   const { toggleShortlist, isLoading: isShortlistLoading } = useShortlistMutation();
   const [showSpendDialog, setShowSpendDialog] = useState(false);
+  const [showLimitedDialog, setShowLimitedDialog] = useState(false);
   // A missing/deleted photo file would otherwise show a broken-image icon + alt text.
   const [imageFailed, setImageFailed] = useState(false);
 
@@ -54,14 +57,16 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
   // the existing no-membership/insufficient-credits screen on the profile
   // detail page already handles those cases.
   const profileViewCost = membership?.planId?.costs?.profileView;
+  const validPlan = !!membership?.isActive && !membership?.isExpired;
+  const lockedHere = enforcementActive && !!profile?.nameMasked;
   const needsSpendConfirm =
-    enforcementActive &&
-    !!profile?.nameMasked &&
-    membership?.isActive &&
-    !membership?.isExpired &&
+    lockedHere &&
+    validPlan &&
     profileViewCost &&
     !profileViewCost.unlimited &&
     profileViewCost.cost > 0;
+  // No valid plan: the free limited view, or a plan (LimitedViewDialog).
+  const needsLimitedChoice = lockedHere && !validPlan;
 
   const handleLike = useCallback((e) => {
     e.preventDefault();
@@ -86,27 +91,30 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
   }, [profile, setSelectedChatUserId, router]);
 
   const handleCardClick = useCallback((e) => {
-    // Deliberately not blocked here: navigating through shows the profile
-    // page's own "Unlock This Profile" upgrade card with a direct path to
-    // the plans page, which is a clearer next step than a dead-end toast.
-    // A member on a valid plan always gets the confirm dialog for a locked
-    // profile — including at 0 credits, where it says "Not enough credits"
-    // and offers Buy Credits instead of a dead end.
+    // A locked profile asks first. On a valid plan: spend the credits (the
+    // dialog says "Not enough credits" at 0) or see the free limited view.
+    // Without one: the limited view or a plan. One the member already
+    // unlocked keeps opening in full, even at 0 credits.
     if (needsSpendConfirm) {
       e.preventDefault();
       setShowSpendDialog(true);
       return;
     }
-    // Only a profile that's actually still locked (masked name) — one the
-    // member already unlocked keeps opening for free even at 0 credits.
-    if (hasNoMembership && profile?.nameMasked) {
-      toastInfo('This profile is locked — view membership plans to unlock it');
+    if (needsLimitedChoice) {
+      e.preventDefault();
+      setShowLimitedDialog(true);
     }
-  }, [hasNoMembership, needsSpendConfirm, profile?.nameMasked]);
+  }, [needsSpendConfirm, needsLimitedChoice]);
 
   const handleConfirmSpend = useCallback(() => {
     setShowSpendDialog(false);
     if (profile?._id) router.push(`/profiles/${profile._id}`);
+  }, [router, profile]);
+
+  const openLimitedView = useCallback(() => {
+    setShowSpendDialog(false);
+    setShowLimitedDialog(false);
+    if (profile?._id) router.push(`/profiles/${profile._id}?view=limited`);
   }, [router, profile]);
 
   // Validate profile data (after hooks)
@@ -142,10 +150,14 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
             onError={() => setImageFailed(true)}
           />
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-            <UserIcon className="w-14 h-14 text-[#D4A843]/40" strokeWidth={1.5} />
-            <span className="font-sans text-xs text-[#2C3E50]/50">Photo not available</span>
-          </div>
+          // When locked, the lock overlay below takes the centre (and says
+          // there's no photo), so the placeholder would only sit behind it.
+          !hasNoMembership && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+              <UserIcon className="w-14 h-14 text-[#D4A843]/40" strokeWidth={1.5} />
+              <span className="font-sans text-xs text-[#2C3E50]/50">Photo not available</span>
+            </div>
+          )
         )}
 
         {verification === 'verified' && (
@@ -178,6 +190,9 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
             <span className="font-sans text-xs font-semibold text-white bg-[#1A1A1A]/60 px-2.5 py-1 rounded-full">
               Tap to Unlock
             </span>
+            {(!profileImageUrl || imageFailed) && (
+              <span className="font-sans text-xs font-medium text-[#2C3E50]">No photo added yet</span>
+            )}
           </div>
         )}
       </div>
@@ -192,6 +207,12 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
             <span className="font-sans text-sm text-[#2C3E50]/70 shrink-0">{profile.age} yrs</span>
           )}
         </div>
+        {badge && (
+          <p className="inline-flex items-center gap-1 mb-2 font-sans text-xs font-semibold text-[#C75B39] bg-[#C75B39]/10 px-2.5 py-0.5 rounded-full">
+            <Heart size={11} className="fill-[#C75B39]" aria-hidden="true" />
+            {badge}
+          </p>
+        )}
 
         <div className="space-y-1 mb-3">
           {profile?.education && (
@@ -274,6 +295,16 @@ function ProfileCard({ profile, isLiked = false, isShortlisted = false }) {
         activityLabel="Viewing this profile"
         onConfirm={handleConfirmSpend}
         onCancel={() => setShowSpendDialog(false)}
+        secondaryAction={{ label: 'See limited details for free', onClick: openLimitedView }}
+      />
+    )}
+    {needsLimitedChoice && (
+      <LimitedViewDialog
+        open={showLimitedDialog}
+        onContinue={openLimitedView}
+        onUpgrade={() => { setShowLimitedDialog(false); router.push('/membership/purchase'); }}
+        onCancel={() => setShowLimitedDialog(false)}
+        upgradeLabel={isPlanLapsed(membership) ? 'Renew Plan' : 'Upgrade Plan'}
       />
     )}
     </>

@@ -7,6 +7,8 @@ import { ArrowLeft, BadgeCheck, MapPin, ShieldAlert } from 'lucide-react';
 import ImageLightbox from '@/components/ui/image-lightbox';
 import { getVerificationState } from '@/lib/verification';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
 function formatLocation(profile) {
   const addr = profile?.presentResidentialAddress;
   const parts = [addr?.city, addr?.state, addr?.country].filter(Boolean);
@@ -24,7 +26,12 @@ export default function ProfileHeader({ profile, mode = 'self', primaryAction })
   const [imageFailed, setImageFailed] = useState(false);
   const bannerStyle = { backgroundColor: profile?.profileBanner?.bannerColor || '#F5E6C3' };
   // A missing/deleted photo file falls back to the "No Photo" placeholder.
-  const profileImageUrl = imageFailed ? null : profile?.profilePicture?.url;
+  // The limited view gets a blurred preview served by the API (relative path),
+  // which isn't offered enlarged.
+  const isPreview = !!profile?.profilePicture?.preview;
+  const rawImageUrl = profile?.profilePicture?.url;
+  const profileImageUrl = imageFailed || !rawImageUrl ? null : isPreview ? `${API_BASE_URL}${rawImageUrl}` : rawImageUrl;
+  const canEnlarge = !!profileImageUrl && !isPreview;
   const verification = getVerificationState(profile);
   const location = formatLocation(profile);
   const genderLabel = profile?.gender ? profile.gender[0].toUpperCase() + profile.gender.slice(1) : null;
@@ -48,15 +55,15 @@ export default function ProfileHeader({ profile, mode = 'self', primaryAction })
       <div className="px-4 sm:px-6">
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-start gap-4 -mt-12 sm:-mt-14">
           <div
-            className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-4 border-white overflow-hidden shadow-lg bg-[#F5E6C3]/40 flex items-center justify-center shrink-0 ${profileImageUrl ? 'cursor-pointer' : ''}`}
-            onClick={() => profileImageUrl && setLightboxIndex(0)}
-            role={profileImageUrl ? 'button' : undefined}
-            aria-label={profileImageUrl ? 'View profile photo' : undefined}
+            className={`relative w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-4 border-white overflow-hidden shadow-lg bg-[#F5E6C3]/40 flex items-center justify-center shrink-0 ${canEnlarge ? 'cursor-pointer' : ''}`}
+            onClick={() => canEnlarge && setLightboxIndex(0)}
+            role={canEnlarge ? 'button' : undefined}
+            aria-label={canEnlarge ? 'View profile photo' : undefined}
           >
             {profileImageUrl ? (
               <Image
                 src={profileImageUrl}
-                alt={profile?.fullName || 'Profile'}
+                alt={isPreview ? 'Blurred photo — unlock the full profile to see it' : profile?.fullName || 'Profile'}
                 fill
                 className="object-cover select-none"
                 sizes="128px"
@@ -70,7 +77,7 @@ export default function ProfileHeader({ profile, mode = 'self', primaryAction })
             )}
           </div>
 
-          {profileImageUrl && (
+          {canEnlarge && (
             <ImageLightbox
               images={[{ url: profileImageUrl, alt: profile?.fullName || 'Profile photo' }]}
               index={lightboxIndex}

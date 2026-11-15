@@ -35,7 +35,12 @@ export function useMobileBottomNavVisible() {
  */
 export function BottomNavSpacer() {
   const visible = useMobileBottomNavVisible();
-  return visible ? <div aria-hidden="true" className="h-[calc(4rem+env(safe-area-inset-bottom))] md:hidden" /> : null;
+  const pathname = usePathname();
+  // The chat already sizes itself to stop at the bottom nav. A spacer there
+  // makes the page taller than the screen, so focusing the message box (or
+  // the phone keyboard opening) shifts the page and hides the chat header.
+  if (!visible || pathname === '/messages' || pathname?.startsWith('/messages/')) return null;
+  return <div aria-hidden="true" className="h-[calc(4rem+env(safe-area-inset-bottom))] md:hidden" />;
 }
 
 /**

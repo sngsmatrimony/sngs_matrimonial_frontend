@@ -233,7 +233,9 @@ export default function MessageInput({
         </Button>
       </div>
 
-      <div className="flex justify-between gap-2 mt-1.5 px-2 min-h-[16px]">
+      {/* On phones this row is empty (the keyboard hint is desktop-only)
+          until the character counter shows, so it only takes space then. */}
+      <div className={cn("justify-between gap-2 mt-1.5 px-2 min-h-[16px]", remaining <= 500 ? "flex" : "hidden md:flex")}>
         <p className="hidden md:block text-[11px] font-sans text-[#2C3E50]/50">
           Enter to send · Shift + Enter for a new line
         </p>

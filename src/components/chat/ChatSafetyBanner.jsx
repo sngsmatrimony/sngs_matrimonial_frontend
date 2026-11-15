@@ -14,7 +14,7 @@ export default function ChatSafetyBanner() {
       <ShieldCheck size={15} className="text-[#B8860B] shrink-0 mt-0.5" aria-hidden="true" />
       <p className="font-sans text-xs text-[#2C3E50] leading-relaxed">
         <span className="font-semibold">Stay safe:</span> never share bank details or OTPs, or send money.
-        Verify identity before sharing personal details.
+        Verify identity before sharing personal details. Phone numbers, emails, links and social media IDs are hidden in chat.
       </p>
     </div>
   );

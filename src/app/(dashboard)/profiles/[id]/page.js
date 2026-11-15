@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { client } from '@/lib/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { toastError, toastSuccess } from '@/lib/toast';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Lock, Sparkles } from 'lucide-react';
+import { ArrowLeft, Eye, Lock, Sparkles } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import ProfileDetailView from '@/components/profile/ProfileDetailView';
 import { useQueryClient } from '@tanstack/react-query';
@@ -16,6 +16,9 @@ import { markProfileUnlocked } from '@/lib/unlockedProfileCache';
 export default function ProfileViewPage() {
   const router = useRouter();
   const params = useParams();
+  // ?view=limited: the free limited view (no credits used) — see
+  // getLimitedProfile on the API.
+  const limitedRequested = useSearchParams().get('view') === 'limited';
   const { membership, refreshMembership } = useAuthStore();
   const queryClient = useQueryClient();
   const [profile, setProfile] = useState(null);
@@ -30,7 +33,7 @@ export default function ProfileViewPage() {
 
   useEffect(() => {
     fetchProfile();
-  }, [params.id]);
+  }, [params.id, limitedRequested]);
 
   // Always open a profile at the top. Coming from far down Search (e.g. the
   // "outside your preferred age range" list) the browser otherwise keeps the
@@ -50,6 +53,13 @@ export default function ProfileViewPage() {
     try {
       if (!silent) setLoading(true);
       setError(null);
+
+      if (limitedRequested) {
+        const limitedResponse = await client.get(`/api/profiles/${params.id}/limited`);
+        setProfile(limitedResponse.data.data);
+        setCreditsDeducted(false);
+        return;
+      }
 
       const response = await client.get(`/api/profiles/${params.id}`);
       setProfile(response.data.data);
@@ -142,9 +152,17 @@ export default function ProfileViewPage() {
               </Link>
             </Button>
             <Button
-              onClick={() => router.back()}
+              onClick={() => router.replace(`/profiles/${params.id}?view=limited`)}
               variant="outline"
-              className="w-full font-sans h-12 rounded-xl border-[#D4A843]/30"
+              className="w-full font-sans font-semibold h-12 rounded-xl border-2 border-[#D4A843] bg-transparent hover:bg-[#F5E6C3]/40"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              See limited details for free
+            </Button>
+            <Button
+              onClick={() => router.back()}
+              variant="ghost"
+              className="w-full font-sans h-11 rounded-xl"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Go Back

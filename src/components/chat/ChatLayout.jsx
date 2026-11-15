@@ -32,7 +32,6 @@ export default function ChatLayout({ initialUserId = null }) {
   // Only gate profile links when paid access is actually enforced — in free
   // (promotional) mode everyone can open profiles, same as from Search.
   const enforcementActive = useEnforcementStatus();
-  const hasNoMembership = enforcementActive && (!membership?.isActive || membership?.isExpired || membership?.credits <= 0);
   const { clearSelectedChatUserId } = useLandingStore();
   const {
     conversations,
@@ -199,7 +198,11 @@ export default function ChatLayout({ initialUserId = null }) {
   // Handle sending a message
   const handleSendMessage = async (messageContent) => {
     if (!activeConversationId || !messageContent.trim()) return;
-    await sendMessage(activeConversationId, messageContent);
+    const message = await sendMessage(activeConversationId, messageContent);
+    // The server hides phone numbers, emails, links and social IDs.
+    if (message?.contactHidden) {
+      toastInfo('Phone numbers, emails, links and social media IDs aren’t shared in chat, so they were hidden from your message.');
+    }
   };
 
   // Handle marking message as read
@@ -211,13 +214,10 @@ export default function ChatLayout({ initialUserId = null }) {
 
   const other = activeConversation?.otherParticipant;
   const otherIsOnline = !!other?._id && typeof onlineUsers?.has === "function" && onlineUsers.has(other._id.toString());
-  const profileHref = other?._id ? `/profiles/${other._id}` : "#";
-  const guardProfileLink = (e) => {
-    if (hasNoMembership) {
-      e.preventDefault();
-      toastInfo('Get a membership plan to view full profiles');
-    }
-  };
+  // Without a valid plan (paid features on), their profile opens in the free
+  // limited view.
+  const noValidPlan = enforcementActive && !(membership?.isActive && !membership?.isExpired);
+  const profileHref = other?._id ? `/profiles/${other._id}${noValidPlan ? '?view=limited' : ''}` : "#";
 
   return (
     // Fills exactly the space between the fixed top bar (65px) and, on
@@ -263,7 +263,7 @@ export default function ChatLayout({ initialUserId = null }) {
               </Button>
             )}
 
-            <Link href={profileHref} onClick={guardProfileLink} className="relative shrink-0" tabIndex={-1} aria-hidden="true">
+            <Link href={profileHref} className="relative shrink-0" tabIndex={-1} aria-hidden="true">
               <Avatar className="w-11 h-11 ring-1 ring-[#D4A843]/30">
                 <AvatarImage
                   src={other?.profilePicture?.url || other?.profilePicture}
@@ -292,7 +292,7 @@ export default function ChatLayout({ initialUserId = null }) {
               size="sm"
               className="shrink-0 h-10 rounded-lg border-[#D4A843]/40 text-[#1A1A1A] hover:bg-[#F5E6C3]/40 font-sans"
             >
-              <Link href={profileHref} onClick={guardProfileLink}>
+              <Link href={profileHref}>
                 <UserRound className="w-4 h-4 sm:mr-1.5" aria-hidden="true" />
                 <span className="hidden sm:inline">View profile</span>
                 <span className="sm:hidden">Profile</span>

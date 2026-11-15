@@ -67,8 +67,15 @@ export default function AllianceMeetAnnouncement() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent showCloseButton={false} className="sm:max-w-lg p-0 overflow-hidden bg-[#FDF8F0] border-[#D4A843]/40 gap-0 max-h-[92vh] overflow-y-auto">
-        <div className="bg-gradient-to-br from-[#2C3E50] to-[#1A1A1A] px-6 pt-7 pb-6 text-center">
+      {/* Only the middle scrolls on short phone screens: "Not now" (the only
+          way to close it) always stays in view at the bottom. */}
+      <DialogContent showCloseButton={false} className="sm:max-w-lg p-0 overflow-hidden bg-[#FDF8F0] border-[#D4A843]/40 gap-0 max-h-[92dvh] flex flex-col outline-none"
+        // Focus the popup itself, not its first button: otherwise "Not now"
+        // opens highlighted and draws the eye away from registering.
+        onOpenAutoFocus={(e) => { e.preventDefault(); e.currentTarget?.focus?.({ preventScroll: true }); }}
+      >
+        <div className="min-h-0 overflow-y-auto overscroll-contain">
+        <div className="bg-gradient-to-br from-[#2C3E50] to-[#1A1A1A] px-6 pt-6 pb-5 sm:pt-7 sm:pb-6 text-center">
           <span className="mx-auto mb-3 flex w-12 h-12 items-center justify-center rounded-full bg-[#D4A843]">
             <CalendarHeart className="w-6 h-6 text-[#1A1A1A]" strokeWidth={1.75} aria-hidden="true" />
           </span>
@@ -111,12 +118,15 @@ export default function AllianceMeetAnnouncement() {
               </Button>
             </div>
           </div>
+        </div>
+        </div>
 
+        <div className="shrink-0 border-t border-[#D4A843]/20 px-6 py-2">
           <Button
             type="button"
             variant="ghost"
             onClick={() => setOpen(false)}
-            className="w-full h-10 font-sans text-[#2C3E50] hover:bg-[#F5E6C3]/40"
+            className="w-full h-11 font-sans text-[#2C3E50] hover:bg-[#F5E6C3]/40"
           >
             Not now
           </Button>

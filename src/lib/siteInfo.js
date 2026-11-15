@@ -23,4 +23,4 @@ export const JURISDICTION = 'Pune, Maharashtra';
 // Date the current Terms, Privacy, Refund and Delivery policies took effect.
 export const POLICIES_EFFECTIVE_DATE = '22 October 2026';
 // The Terms were updated after that (marital status note, event free credits).
-export const TERMS_EFFECTIVE_DATE = '13 November 2026';
+export const TERMS_EFFECTIVE_DATE = '15 November 2026';

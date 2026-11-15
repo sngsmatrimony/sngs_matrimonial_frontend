@@ -12,7 +12,7 @@ import { Users, User, Clock, ArrowRight, IndianRupee, CreditCard } from 'lucide-
 function StatsCard({ icon: Icon, label, value, subtitle, color = 'text-primary' }) {
   return (
     <Card className="border-[#D4A843]/15">
-      <CardContent className="pt-6">
+      <CardContent>
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-[#2C3E50]/70 font-sans">{label}</p>
@@ -101,7 +101,7 @@ export default function AdminDashboard() {
       {pendingApprovals > 0 && (
         <Link href="/admin/users?approvalFilter=pending">
           <Card className="border-[#D4A843]/30 bg-gradient-to-r from-[#FDF8F0] to-[#F5E6C3]/50 hover:to-[#F5E6C3]/70 transition-colors cursor-pointer">
-            <CardContent className="pt-6">
+            <CardContent>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-3 rounded-lg bg-[#D4A843]/15 text-[#B8860B]">

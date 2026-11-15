@@ -82,6 +82,7 @@ export default function TermsAndConditionsPage() {
         <List items={[
           'Some event registrations come with free credits. When they do, the number of credits and what each action uses are shown before you pay.',
           'These free credits do not expire. Once they are used up, choose a membership plan to continue. If you buy a plan while you still have free credits, the credits left are added to it. Credit packs are available only with a plan.',
+          `If you register for the SNGS Alliance Meet and do not find a suitable partner at the meet, you will receive a complimentary registration on ${SITE_NAME}, so you can continue your search with us.`,
         ]} />
       </Section>
 

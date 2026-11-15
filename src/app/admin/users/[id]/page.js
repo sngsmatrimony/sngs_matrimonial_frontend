@@ -544,7 +544,7 @@ export default function AdminUserDetailPage() {
 
         {/* User Status and Actions */}
         <Card>
-          <CardContent className="pt-6">
+          <CardContent>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="space-y-2">
                 <p className="text-sm text-gray-600">Account Status</p>
@@ -590,7 +590,7 @@ export default function AdminUserDetailPage() {
 
         {/* ID Proof — drives the member's Verified tick; never affects approval or visibility */}
         <Card>
-          <CardContent className="pt-6">
+          <CardContent>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="space-y-2">
                 <p className="text-sm text-gray-600">ID Proof</p>

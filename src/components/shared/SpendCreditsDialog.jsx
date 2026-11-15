@@ -28,8 +28,10 @@ import { isOnFreeCredits } from '@/lib/membershipStatus';
  * @param {() => void} onConfirm
  * @param {() => void} onCancel
  * @param {boolean} [isLoading]
+ * @param {{ label: string, onClick: () => void }} [secondaryAction] - another way
+ *   on, e.g. "See limited details for free" instead of spending credits
  */
-export default function SpendCreditsDialog({ open, cost, activityLabel, onConfirm, onCancel, isLoading = false }) {
+export default function SpendCreditsDialog({ open, cost, activityLabel, onConfirm, onCancel, isLoading = false, secondaryAction }) {
   const router = useRouter();
   const refreshMembership = useAuthStore((state) => state.refreshMembership);
   const [balance, setBalance] = useState(null);
@@ -103,6 +105,16 @@ export default function SpendCreditsDialog({ open, cost, activityLabel, onConfir
             </AlertDialogAction>
           )}
         </AlertDialogFooter>
+        {secondaryAction && (
+          <button
+            type="button"
+            onClick={secondaryAction.onClick}
+            disabled={isLoading}
+            className="w-full text-center font-sans text-sm font-medium text-[#B8860B] underline underline-offset-2 hover:text-[#1A1A1A] disabled:opacity-50"
+          >
+            {secondaryAction.label}
+          </button>
+        )}
       </AlertDialogContent>
     </AlertDialog>
   );

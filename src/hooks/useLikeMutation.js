@@ -63,6 +63,8 @@ export function useLikeMutation() {
       // Always refetch to ensure cache is in sync with server
       queryClient.invalidateQueries({ queryKey: ['likedProfiles'] });
       queryClient.invalidateQueries({ queryKey: ['browseInteractions'] });
+      // Received interests show whether it's mutual.
+      queryClient.invalidateQueries({ queryKey: ['receivedInterests'] });
     },
   });
 
@@ -112,6 +114,8 @@ export function useLikeMutation() {
       // Always refetch to ensure cache is in sync with server
       queryClient.invalidateQueries({ queryKey: ['likedProfiles'] });
       queryClient.invalidateQueries({ queryKey: ['browseInteractions'] });
+      // Received interests show whether it's mutual.
+      queryClient.invalidateQueries({ queryKey: ['receivedInterests'] });
     },
   });
 

@@ -191,6 +191,13 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* Member profile pages: room under the footer for the fixed action bar
+     (ProfileDetailView: 48px buttons + 12px padding top and bottom + border),
+     so the end of the page can scroll clear of it. */
+  body.has-profile-action-bar {
+    padding-bottom: calc(73px + env(safe-area-inset-bottom, 0px));
+  }
+
   /* Headings, Names, Big Labels */
   h1, h2, h3, h4, h5, h6,
   .profile-name,

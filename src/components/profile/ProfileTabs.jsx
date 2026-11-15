@@ -49,6 +49,37 @@ const Section = ({ title, children }) => (
   </div>
 );
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+/**
+ * Limited view (profile not unlocked): what this section holds opens with
+ * the full profile.
+ */
+const LockedSection = ({ title, what, onUnlock, unlockLabel }) => (
+  <Section title={title}>
+    <div className="flex items-start gap-3">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5E6C3]">
+        <Lock size={16} className="text-[#B8860B]" aria-hidden="true" />
+      </span>
+      <div className="space-y-3">
+        <p className="font-sans text-sm text-[#2C3E50]/80 leading-relaxed">
+          {what} open when you unlock the full profile.
+        </p>
+        {onUnlock && (
+          <Button
+            type="button"
+            size="sm"
+            onClick={onUnlock}
+            className="bg-[#D4A843] hover:bg-[#B8860B] text-[#1A1A1A] font-sans font-semibold"
+          >
+            {unlockLabel}
+          </Button>
+        )}
+      </div>
+    </div>
+  </Section>
+);
+
 function formatTimeToAMPM(time24) {
   if (!time24) return null;
   const [hours, minutes] = time24.split(':');
@@ -147,7 +178,7 @@ function UnlockContactPanel({ profileId, onUnlocked }) {
  * free. `onContactUnlocked` lets the parent re-fetch the profile after a
  * successful unlock, so the real number replaces the masked prompt.
  */
-export default function ProfileTabs({ profile, mode = 'self', contactMasked = false, onDownloadHoroscope, onUnlockHoroscope, onContactUnlocked, initialTab = 'about' }) {
+export default function ProfileTabs({ profile, mode = 'self', contactMasked = false, onDownloadHoroscope, onUnlockHoroscope, onContactUnlocked, initialTab = 'about', limited = false, onUnlockFull, unlockLabel = 'Unlock Full Profile' }) {
   const [activeTab, setActiveTab] = useState(TABS.some((t) => t.value === initialTab) ? initialTab : 'about');
   // Another member's horoscope document: only once bought (or while it can
   // be bought, a locked card with the price). The server leaves the link out
@@ -212,6 +243,9 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
           )}
         </Section>
 
+        {limited ? (
+          <LockedSection title="Contact Information" what="Phone number and chat" onUnlock={onUnlockFull} unlockLabel={unlockLabel} />
+        ) : (
         <Section title="Contact Information">
           {contactMasked ? (
             <UnlockContactPanel profileId={profile?._id} onUnlocked={onContactUnlocked} />
@@ -225,10 +259,15 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
             </>
           )}
         </Section>
+        )}
       </TabsContent>
 
       {/* FAMILY */}
       <TabsContent value="family" className="pt-5">
+        {limited ? (
+          <LockedSection title="Family & Address" what="Family details, address and native place (Tharavadu)" onUnlock={onUnlockFull} unlockLabel={unlockLabel} />
+        ) : (
+        <>
         <Section title="Family Details">
           <Field label="Father's Name" value={profile?.fatherName} />
           <Field label="Father's Occupation" value={profile?.fatherOccupation} />
@@ -241,10 +280,21 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
           <Field label="Present Residential Address" value={formatAddress(profile?.presentResidentialAddress)} />
           <Field label="Native Place (Tharavadu)" value={formatAddress(profile?.nativePlaceAddress)} />
         </Section>
+        </>
+        )}
       </TabsContent>
 
       {/* EDUCATION & CAREER */}
       <TabsContent value="career" className="pt-5">
+        {limited ? (
+          // Free: the qualification. Career details come with the full profile.
+          <>
+            <Section title="Education">
+              <Field label="Education" value={profile?.education} />
+            </Section>
+            <LockedSection title="Career" what="Job, employment type and income" onUnlock={onUnlockFull} unlockLabel={unlockLabel} />
+          </>
+        ) : (
         <Section title="Education & Career">
           <Field label="Education" value={profile?.education} />
           <Field label="Employment Type" value={profile?.employmentType} />
@@ -260,6 +310,7 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
             </div>
           )}
         </Section>
+        )}
       </TabsContent>
 
       {/* HOROSCOPE */}
@@ -398,7 +449,30 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
 
       {/* PHOTOS */}
       <TabsContent value="photos" className="pt-5">
-        {profile?.gallery?.photos?.length > 0 ? (
+        {limited && profile?.gallery?.photos?.length > 0 && (
+          <p className="flex items-center gap-2 font-sans text-sm text-[#2C3E50]/80 mb-4">
+            <Lock size={14} className="text-[#B8860B] shrink-0" aria-hidden="true" />
+            Photos are blurred until you unlock the full profile.
+          </p>
+        )}
+        {limited && profile?.gallery?.photos?.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {profile.gallery.photos.map((photo, idx) => (
+              <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-[#D4A843]/15 bg-[#F5E6C3]/40">
+                <Image
+                  src={`${API_BASE_URL}${photo.url}`}
+                  alt={`Blurred photo ${idx + 1} — unlock the full profile to see it`}
+                  fill
+                  className="object-cover select-none"
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                  unoptimized
+                  draggable={false}
+                  onContextMenu={(e) => e.preventDefault()}
+                />
+              </div>
+            ))}
+          </div>
+        ) : profile?.gallery?.photos?.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {profile.gallery.photos.map((photo, idx) => (
               <button
@@ -427,7 +501,7 @@ export default function ProfileTabs({ profile, mode = 'self', contactMasked = fa
       </TabsContent>
 
       <ImageLightbox
-        images={(profile?.gallery?.photos || []).map((photo, idx) => ({ url: photo.url, alt: `Photo ${idx + 1}` }))}
+        images={limited ? [] : (profile?.gallery?.photos || []).map((photo, idx) => ({ url: photo.url, alt: `Photo ${idx + 1}` }))}
         index={lightboxIndex}
         onOpenChange={setLightboxIndex}
       />
